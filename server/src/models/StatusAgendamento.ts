@@ -1,0 +1,5 @@
+export enum StatusAgendamento {
+  AGENDADO = "AGENDADO",
+  EM_ATENDIMENTO = "EM_ATENDIMENTO",
+  FINALIZADO = "FINALIZADO",
+}
