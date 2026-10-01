@@ -53,4 +53,8 @@ export class Horario {
   public toString(): string {
     return this.valor;
   }
+
+  public toJSON(): string {
+    return this.valor;
+  }
 }

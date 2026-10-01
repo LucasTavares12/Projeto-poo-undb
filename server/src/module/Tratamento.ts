@@ -78,4 +78,15 @@ export class Tratamento {
   public getQuantidadeSlots(): number {
     return this.duracaoMinutos / Horario.DURACAO_SLOT_MINUTOS;
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      nome: this.nome,
+      descricao: this.descricao,
+      valor: this.valor,
+      duracaoMinutos: this.duracaoMinutos,
+      quantidadeSlots: this.getQuantidadeSlots(),
+    };
+  }
 }

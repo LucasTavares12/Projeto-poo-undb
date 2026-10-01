@@ -40,4 +40,13 @@ export class HorarioDisponivel {
   public getHoraInicio(): Horario {
     return this.horaInicio;
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      profissionalId: this.profissionalId,
+      diaSemana: this.diaSemana,
+      horaInicio: this.horaInicio,
+    };
+  }
 }

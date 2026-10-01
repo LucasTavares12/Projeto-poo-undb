@@ -8,7 +8,7 @@ export class Agendamento {
   private id?: number;
   private cliente: Cliente;
   private profissional: Profissional;
-  private tratamento: Tratamento;
+  private tratamentos: Tratamento[];
   private data: Date;
   private horarioInicio: Horario; // primeiro slot ocupado
   private status: StatusAgendamento;
@@ -16,15 +16,19 @@ export class Agendamento {
   constructor(
     cliente: Cliente,
     profissional: Profissional,
-    tratamento: Tratamento,
+    tratamentos: Tratamento[],
     data: Date,
     horarioInicio: Horario,
     status: StatusAgendamento = StatusAgendamento.AGENDADO,
     id?: number
   ) {
+    if (tratamentos.length === 0) {
+      throw new Error("O agendamento precisa ter ao menos um tratamento.");
+    }
+
     this.cliente = cliente;
     this.profissional = profissional;
-    this.tratamento = tratamento;
+    this.tratamentos = tratamentos;
     this.data = data;
     this.horarioInicio = horarioInicio;
     this.status = status;
@@ -43,8 +47,29 @@ export class Agendamento {
     return this.profissional;
   }
 
-  public getTratamento(): Tratamento {
-    return this.tratamento;
+  public getTratamentos(): Tratamento[] {
+    return this.tratamentos;
+  }
+
+  /** Soma os valores de todos os tratamentos escolhidos neste agendamento. */
+  public getValorTotal(): number {
+    return this.tratamentos.reduce((total, tratamento) => total + tratamento.getValor(), 0);
+  }
+
+  /** Soma a duração (em minutos) de todos os tratamentos escolhidos. */
+  public getDuracaoTotalMinutos(): number {
+    return this.tratamentos.reduce(
+      (total, tratamento) => total + tratamento.getDuracaoMinutos(),
+      0
+    );
+  }
+
+  /** Soma a quantidade de slots de 30min de todos os tratamentos escolhidos. */
+  public getQuantidadeSlots(): number {
+    return this.tratamentos.reduce(
+      (total, tratamento) => total + tratamento.getQuantidadeSlots(),
+      0
+    );
   }
 
   public getData(): Date {
@@ -61,11 +86,12 @@ export class Agendamento {
 
   /**
    * Lista de horários (slots de 30min) ocupados por este agendamento,
-   * a partir de `horarioInicio`, de acordo com a duração do tratamento.
-   * Ex: tratamento de 1h iniciando às 09:00 ocupa [Horario("09:00"), Horario("09:30")].
+   * a partir de `horarioInicio`, somando a duração de TODOS os tratamentos
+   * escolhidos. Ex: dois tratamentos de 30min cada, iniciando às 09:00,
+   * ocupam [Horario("09:00"), Horario("09:30")].
    */
   public getHorariosOcupados(): Horario[] {
-    const quantidadeSlots = this.tratamento.getQuantidadeSlots();
+    const quantidadeSlots = this.getQuantidadeSlots();
 
     const slots: Horario[] = [];
     for (let i = 0; i < quantidadeSlots; i++) {
@@ -86,5 +112,19 @@ export class Agendamento {
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
   public moverPara(novoStatus: StatusAgendamento): void {
     this.status = novoStatus;
+  }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      data: this.data.toISOString().slice(0, 10),
+      horarioInicio: this.horarioInicio,
+      status: this.status,
+      cliente: this.cliente,
+      profissional: this.profissional,
+      tratamentos: this.tratamentos,
+      valorTotal: this.getValorTotal(),
+      duracaoTotalMinutos: this.getDuracaoTotalMinutos(),
+    };
   }
 }

@@ -15,4 +15,12 @@ export class Cliente extends Pessoa {
   public apresentar(): string {
     return `Cliente: ${this.nome} (contato: ${this.telefone})`;
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      nome: this.nome,
+      telefone: this.telefone,
+    };
+  }
 }

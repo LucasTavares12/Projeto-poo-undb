@@ -25,4 +25,13 @@ export class Profissional extends Pessoa {
   public apresentar(): string {
     return `Profissional: ${this.nome} - ${this.especialidade}`;
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      nome: this.nome,
+      telefone: this.telefone,
+      especialidade: this.especialidade,
+    };
+  }
 }
