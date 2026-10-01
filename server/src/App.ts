@@ -24,6 +24,7 @@ export class App {
 
   private configurarRotas(): void {
     this.app.get("/health", (req, res) => this.healthController.check(req, res));
+    this.app.get("/health/db", (req, res) => this.healthController.checkDatabase(req, res));
   }
 
   public getExpressApp(): Express {
