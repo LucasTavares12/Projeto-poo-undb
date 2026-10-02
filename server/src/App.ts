@@ -1,9 +1,11 @@
 import express, { Express } from "express";
+import cors from "cors";
 import { HealthController } from "./controllers/HealthController";
 import { ProfissionalController } from "./controllers/ProfissionalController";
 import { TratamentoController } from "./controllers/TratamentoController";
 import { HorarioDisponivelController } from "./controllers/HorarioDisponivelController";
 import { AgendamentoController } from "./controllers/AgendamentoController";
+import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 
 /**
  * Classe responsável por montar a aplicação Express: middlewares, rotas
@@ -17,16 +19,26 @@ export class App {
   private readonly tratamentoController = new TratamentoController();
   private readonly horarioDisponivelController = new HorarioDisponivelController();
   private readonly agendamentoController = new AgendamentoController();
+  private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   constructor() {
     this.app = express();
 
     this.configurarMiddlewares();
     this.configurarRotas();
+    this.configurarTratamentoDeErros();
   }
 
   private configurarMiddlewares(): void {
+    this.app.use(cors());
     this.app.use(express.json());
+  }
+
+  /** Precisa ser registrado DEPOIS das rotas: só assim o Express sabe que é um error handler. */
+  private configurarTratamentoDeErros(): void {
+    this.app.use((erro: Error, req: express.Request, res: express.Response, next: express.NextFunction) =>
+      this.errorHandlerMiddleware.tratar(erro, req, res, next)
+    );
   }
 
   private configurarRotas(): void {
