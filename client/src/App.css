@@ -10,33 +10,251 @@
   padding: 32px 16px;
 }
 
+.pagina-larga {
+  max-width: none;
+  padding-inline: 24px;
+}
+
 .admin-layout {
   display: flex;
-  flex-direction: column;
   min-height: 100svh;
+}
+
+.admin-lateral {
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  width: 230px;
+  height: 100svh;
+  padding: 24px 12px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--border);
+  text-align: left;
+}
+
+.admin-lateral-titulo {
+  display: block;
+  padding: 0 12px 20px;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .admin-nav {
   display: flex;
-  gap: 16px;
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  gap: 4px;
 }
 
 .admin-nav a {
   color: var(--text);
   text-decoration: none;
-  padding: 8px 4px;
-  border-bottom: 2px solid transparent;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.admin-nav a:hover {
+  background: var(--accent-bg);
 }
 
 .admin-nav a.active {
-  color: var(--text-h);
-  border-bottom-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .admin-conteudo {
   flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-lateral {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .admin-lateral-titulo {
+    padding-bottom: 8px;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Mesma cor principal da área do cliente. */
+.admin-layout {
+  --accent: #a05c68;
+  --accent-bg: rgba(160, 92, 104, 0.14);
+}
+
+.admin-conteudo a {
+  color: var(--accent);
+}
+
+.admin-conteudo h1 {
+  font-size: 32px;
+  letter-spacing: normal;
+  margin: 0 0 24px;
+}
+
+.admin-formulario {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.admin-formulario h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.admin-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.admin-campos label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.admin-campo-largo {
+  grid-column: 1 / -1;
+}
+
+.admin-campos input,
+.admin-campos select,
+.admin-campos textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-dica {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.admin-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-botao {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.admin-botao.principal {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-botao.perigo {
+  border-color: #e11d48;
+  color: #e11d48;
+}
+
+.admin-botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.admin-tabela th,
+.admin-tabela td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.admin-tabela th {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.admin-tabela-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.admin-grade {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.admin-grade th {
+  color: var(--text-h);
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-grade tbody th {
+  width: 64px;
+  font-weight: 400;
+}
+
+.admin-grade-celula {
+  display: block;
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-grade-celula:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.admin-grade-celula.liberado {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.admin-grade-celula:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 .mensagem-erro {
@@ -45,6 +263,112 @@
   color: #e11d48;
   border-radius: 6px;
   margin-bottom: 16px;
+}
+
+/* Kanban de agendamentos */
+
+.kanban-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kanban-cabecalho h1 {
+  margin: 0;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 16px;
+  align-items: start;
+  overflow-x: auto;
+}
+
+.kanban-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--social-bg);
+}
+
+.kanban-coluna.alvo {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.kanban-coluna-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kanban-coluna-cabecalho h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.kanban-contador {
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.kanban-vazio {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.kanban-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 14px;
+  cursor: grab;
+}
+
+.kanban-cartao.arrastando {
+  opacity: 0.4;
+}
+
+.kanban-cartao strong {
+  color: var(--text-h);
+  font-size: 16px;
+}
+
+.kanban-cartao-quando {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.kanban-cartao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.kanban-cartao-acoes .admin-botao {
+  padding: 5px 10px;
+  font-size: 13px;
+}
+
+.kanban-cartao-acoes .admin-botao:only-child {
+  margin-left: auto;
 }
 
 /* ---------- Área do cliente ---------- */

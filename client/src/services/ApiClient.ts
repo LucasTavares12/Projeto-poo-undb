@@ -5,7 +5,7 @@ const URL_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
  * (ProfissionalService, TratamentoService...) estende esta classe e ganha
  * os verbos HTTP já prontos, sem repetir a lógica de fetch/erro.
  */
-export class ApiClient {
+export abstract class ApiClient {
   protected async get<T>(caminho: string): Promise<T> {
     return this.requisitar<T>(caminho, { method: "GET" });
   }

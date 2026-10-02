@@ -41,10 +41,7 @@ export class AgendamentoService {
     }
 
     const tratamentos = await this.buscarTratamentos(dados.tratamentoIds);
-    const quantidadeSlots = tratamentos.reduce(
-      (total, tratamento) => total + tratamento.getQuantidadeSlots(),
-      0
-    );
+    const quantidadeSlots = this.somarSlots(tratamentos);
 
     const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
       dados.profissionalId,
@@ -85,10 +82,7 @@ export class AgendamentoService {
     tratamentoIds: number[]
   ): Promise<Horario[]> {
     const tratamentos = await this.buscarTratamentos(tratamentoIds);
-    const quantidadeSlots = tratamentos.reduce(
-      (total, tratamento) => total + tratamento.getQuantidadeSlots(),
-      0
-    );
+    const quantidadeSlots = this.somarSlots(tratamentos);
     return this.disponibilidadeService.listarHorariosDisponiveis(
       profissionalId,
       data,
@@ -106,6 +100,11 @@ export class AgendamentoService {
     agendamento.moverPara(novoStatus);
     await this.agendamentoRepo.atualizarStatus(id, agendamento.getStatus());
     return agendamento;
+  }
+
+  /** Quantos slots de 30min seguidos o conjunto de tratamentos ocupa na agenda. */
+  private somarSlots(tratamentos: Tratamento[]): number {
+    return tratamentos.reduce((total, tratamento) => total + tratamento.getQuantidadeSlots(), 0);
   }
 
   private async buscarTratamentos(ids: number[]): Promise<Tratamento[]> {

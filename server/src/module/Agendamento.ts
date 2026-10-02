@@ -111,6 +111,9 @@ export class Agendamento {
 
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
   public moverPara(novoStatus: StatusAgendamento): void {
+    if (!Object.values(StatusAgendamento).includes(novoStatus)) {
+      throw new Error(`Status de agendamento inválido: ${novoStatus}.`);
+    }
     this.status = novoStatus;
   }
 

@@ -7,6 +7,7 @@ import { SeletorProfissional } from "../../components/cliente/SeletorProfissiona
 import { SeletorTratamentos } from "../../components/cliente/SeletorTratamentos";
 import { SeletorHorario } from "../../components/cliente/SeletorHorario";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
+import { DataAgenda } from "../../models/DataAgenda";
 import {
   IconeCalendario,
   IconeConfirmado,
@@ -32,19 +33,6 @@ const TITULOS_ETAPA: Record<Etapa, string> = {
   5: "Confirme seu Agendamento",
 };
 
-function hoje(): string {
-  const agora = new Date();
-  const mes = String(agora.getMonth() + 1).padStart(2, "0");
-  const dia = String(agora.getDate()).padStart(2, "0");
-  return `${agora.getFullYear()}-${mes}-${dia}`;
-}
-
-/** "YYYY-MM-DD" -> "DD/MM/YYYY". */
-function formatarData(data: string): string {
-  const [ano, mes, dia] = data.slice(0, 10).split("-");
-  return dia && mes && ano ? `${dia}/${mes}/${ano}` : data;
-}
-
 export function AgendamentoPage() {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
@@ -55,7 +43,7 @@ export function AgendamentoPage() {
 
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [tratamentoIds, setTratamentoIds] = useState<number[]>([]);
-  const [data, setData] = useState<string>(hoje());
+  const [data, setData] = useState<string>(DataAgenda.hoje().toString());
   const [horarioInicio, setHorarioInicio] = useState<string | null>(null);
 
   const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
@@ -239,7 +227,7 @@ export function AgendamentoPage() {
               </p>
               <p>Profissional: {agendamentoConfirmado.profissional.nome}</p>
               <p>
-                Data: {formatarData(agendamentoConfirmado.data)} às{" "}
+                Data: {new DataAgenda(agendamentoConfirmado.data).formatar()} às{" "}
                 {agendamentoConfirmado.horarioInicio}
               </p>
               <p>
@@ -357,7 +345,7 @@ export function AgendamentoPage() {
               <input
                 type="date"
                 className="campo"
-                min={hoje()}
+                min={DataAgenda.hoje().toString()}
                 value={data}
                 onChange={(evento) => setData(evento.target.value)}
               />
@@ -366,7 +354,7 @@ export function AgendamentoPage() {
 
           {etapa === 4 && (
             <>
-              <h3>Horários em {formatarData(data)}</h3>
+              <h3>Horários em {new DataAgenda(data).formatar()}</h3>
               <SeletorHorario
                 horarios={horariosDisponiveis}
                 selecionado={horarioInicio}
@@ -380,7 +368,7 @@ export function AgendamentoPage() {
             <>
               <div className="resumo">
                 <p>
-                  Horário escolhido: {formatarData(data)} às {horarioInicio}
+                  Horário escolhido: {new DataAgenda(data).formatar()} às {horarioInicio}
                 </p>
                 <p>
                   Duração total: {duracaoTotal} min — Valor total: R$ {valorTotal.toFixed(2)}

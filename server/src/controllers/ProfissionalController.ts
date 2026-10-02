@@ -26,7 +26,15 @@ export class ProfissionalController {
     try {
       const id = Number(req.params.id);
       const { nome, telefone, especialidade } = req.body;
-      const profissional = new Profissional(nome, telefone, especialidade, id);
+      const profissional = await this.repositorio.buscarPorId(id);
+      if (!profissional) {
+        res.status(404).json({ erro: "Profissional não encontrado." });
+        return;
+      }
+
+      profissional.setNome(nome);
+      profissional.setTelefone(telefone);
+      profissional.setEspecialidade(especialidade);
       await this.repositorio.atualizar(profissional);
       res.json(profissional);
     } catch (erro) {

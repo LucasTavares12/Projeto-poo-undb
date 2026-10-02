@@ -26,7 +26,16 @@ export class TratamentoController {
     try {
       const id = Number(req.params.id);
       const { nome, descricao, valor, duracaoMinutos } = req.body;
-      const tratamento = new Tratamento(nome, descricao, Number(valor), Number(duracaoMinutos), id);
+      const tratamento = await this.repositorio.buscarPorId(id);
+      if (!tratamento) {
+        res.status(404).json({ erro: "Tratamento não encontrado." });
+        return;
+      }
+
+      tratamento.setNome(nome);
+      tratamento.setDescricao(descricao);
+      tratamento.setValor(Number(valor));
+      tratamento.setDuracaoMinutos(Number(duracaoMinutos));
       await this.repositorio.atualizar(tratamento);
       res.json(tratamento);
     } catch (erro) {
