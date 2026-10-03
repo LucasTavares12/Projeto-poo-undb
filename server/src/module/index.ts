@@ -1,3 +1,5 @@
+export * from "./Administrador";
+export * from "./ConfiguracoesClinica";
 export * from "./Pessoa";
 export * from "./Cliente";
 export * from "./Profissional";

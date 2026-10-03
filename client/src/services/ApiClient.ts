@@ -1,3 +1,5 @@
+import { SessaoAdmin } from "./SessaoAdmin";
+
 const URL_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 /**
@@ -39,7 +41,19 @@ export abstract class ApiClient {
   }
 
   private async requisitar<T>(caminho: string, opcoes: RequestInit): Promise<T> {
-    const resposta = await fetch(`${URL_BASE}${caminho}`, opcoes);
+    const token = SessaoAdmin.getToken();
+    const headers = new Headers(opcoes.headers);
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const resposta = await fetch(`${URL_BASE}${caminho}`, { ...opcoes, headers });
+
+    // Token recusado (expirou ou o servidor trocou o segredo): volta para o login.
+    if (resposta.status === 401 && token) {
+      SessaoAdmin.encerrar();
+      window.location.assign("/admin/login");
+    }
 
     if (resposta.status === 204) {
       return undefined as T;

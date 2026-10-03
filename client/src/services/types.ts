@@ -42,3 +42,7 @@ export interface Agendamento {
   valorTotal: number;
   duracaoTotalMinutos: number;
 }
+
+export interface Configuracoes {
+  acessoPublicoLiberado: boolean;
+}

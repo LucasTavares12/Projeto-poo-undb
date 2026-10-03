@@ -1,6 +1,21 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { AutenticacaoService } from "../../services/AutenticacaoService";
+import { SessaoAdmin } from "../../services/SessaoAdmin";
+
+const autenticacaoService = new AutenticacaoService();
 
 export function AdminLayout() {
+  const navegar = useNavigate();
+
+  if (!SessaoAdmin.estaAtiva()) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  function sair(): void {
+    autenticacaoService.sair();
+    navegar("/", { replace: true });
+  }
+
   return (
     <div className="admin-layout">
       <aside className="admin-lateral">
@@ -12,7 +27,11 @@ export function AdminLayout() {
           <NavLink to="/admin/profissionais">Profissionais</NavLink>
           <NavLink to="/admin/tratamentos">Tratamentos</NavLink>
           <NavLink to="/admin/horarios">Horários</NavLink>
+          <NavLink to="/admin/configuracoes">Configurações</NavLink>
         </nav>
+        <button type="button" className="admin-botao admin-sair" onClick={sair}>
+          Sair
+        </button>
       </aside>
       <section className="admin-conteudo">
         <Outlet />

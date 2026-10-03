@@ -30,6 +30,12 @@
   box-sizing: border-box;
   border-right: 1px solid var(--border);
   text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sair {
+  margin-top: auto;
 }
 
 .admin-lateral-titulo {
@@ -92,9 +98,71 @@
 }
 
 /* Mesma cor principal da área do cliente. */
-.admin-layout {
+.admin-layout,
+.login {
   --accent: #a05c68;
   --accent-bg: rgba(160, 92, 104, 0.14);
+}
+
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.login-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.login-cartao .admin-lateral-titulo {
+  padding: 0;
+}
+
+.login-cartao h1 {
+  font-size: 28px;
+  letter-spacing: normal;
+  margin: 0;
+}
+
+.login-cartao .admin-campos {
+  grid-template-columns: 1fr;
+}
+
+.login-cartao .mensagem-erro,
+.login-cartao .mensagem-sucesso {
+  margin: 0;
+}
+
+.login-voltar {
+  align-self: flex-start;
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.login-voltar:hover {
+  color: var(--accent);
+}
+
+.login-alternativa {
+  font-size: 14px;
+  text-align: center;
+}
+
+.login-alternativa a {
+  color: var(--accent);
 }
 
 .admin-conteudo a {
@@ -146,6 +214,69 @@
   font-size: 15px;
   background: var(--bg);
   color: var(--text-h);
+}
+
+.admin-opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.admin-opcao strong {
+  display: block;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.admin-opcao-descricao {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+/* Checkbox desenhado como interruptor liga/desliga. */
+.admin-interruptor {
+  appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  margin: 2px 0 0;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.admin-interruptor::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.admin-interruptor:checked {
+  background: var(--accent);
+}
+
+.admin-interruptor:checked::after {
+  transform: translateX(18px);
+}
+
+.admin-interruptor:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.admin-mensagem {
+  margin-top: 16px;
 }
 
 .admin-dica {
@@ -255,6 +386,13 @@
 .admin-grade-celula:disabled {
   opacity: 0.5;
   cursor: wait;
+}
+
+.mensagem-sucesso {
+  padding: 12px 16px;
+  border: 1px solid #16a34a;
+  color: #15803d;
+  border-radius: 6px;
 }
 
 .mensagem-erro {
@@ -401,13 +539,32 @@
 .cliente-cabecalho {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 20px 24px;
+  padding: 16px 24px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   color: var(--principal);
   font-size: 20px;
   font-weight: 700;
+}
+
+.cliente-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cliente-cabecalho-acoes {
+  display: flex;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.cliente-cabecalho-acoes a {
+  text-decoration: none;
 }
 
 .cliente-conteudo {
