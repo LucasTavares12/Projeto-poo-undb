@@ -34,6 +34,11 @@ export class AgendamentoService extends ApiClient {
     return this.post<Agendamento>("/agendamentos", dados);
   }
 
+  /** Apaga um agendamento ainda não atendido, liberando os horários que ele ocupava. */
+  public cancelar(id: number): Promise<void> {
+    return this.excluir(`/agendamentos/${id}`);
+  }
+
   public atualizarStatus(id: number, status: StatusAgendamento): Promise<Agendamento> {
     return this.patch<Agendamento>(`/agendamentos/${id}/status`, { status });
   }

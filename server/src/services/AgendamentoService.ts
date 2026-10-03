@@ -102,6 +102,25 @@ export class AgendamentoService {
     return agendamento;
   }
 
+  /**
+   * Cancela (apaga) um agendamento que ainda não foi atendido. Os horários que
+   * ele ocupava voltam a aparecer livres, já que a disponibilidade é calculada
+   * a partir dos agendamentos existentes.
+   */
+  public async cancelar(id: number): Promise<void> {
+    const agendamento = await this.agendamentoRepo.buscarPorId(id);
+    if (!agendamento) {
+      throw new Error("Agendamento não encontrado.");
+    }
+    if (!agendamento.podeSerCancelado()) {
+      throw new Error(
+        "Só é possível cancelar agendamentos que ainda não começaram a ser atendidos."
+      );
+    }
+
+    await this.agendamentoRepo.deletar(id);
+  }
+
   /** Quantos slots de 30min seguidos o conjunto de tratamentos ocupa na agenda. */
   private somarSlots(tratamentos: Tratamento[]): number {
     return tratamentos.reduce((total, tratamento) => total + tratamento.getQuantidadeSlots(), 0);

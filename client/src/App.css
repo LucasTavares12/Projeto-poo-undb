@@ -505,6 +505,16 @@
   font-size: 13px;
 }
 
+.kanban-cartao-confirmacao {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.kanban-cartao-confirmacao .kanban-cartao-acoes {
+  margin-top: 8px;
+}
+
 .kanban-cartao-acoes .admin-botao:only-child {
   margin-left: auto;
 }

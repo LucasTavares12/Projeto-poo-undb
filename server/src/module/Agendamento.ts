@@ -109,6 +109,11 @@ export class Agendamento {
     }
   }
 
+  /** Só dá para cancelar o que ainda não começou a ser atendido. */
+  public podeSerCancelado(): boolean {
+    return this.status === StatusAgendamento.AGENDADO;
+  }
+
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
   public moverPara(novoStatus: StatusAgendamento): void {
     if (!Object.values(StatusAgendamento).includes(novoStatus)) {

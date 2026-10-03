@@ -115,6 +115,9 @@ export class App {
       this.agendamentoController.listar(req, res)
     );
     this.app.post("/agendamentos", (req, res) => this.agendamentoController.criar(req, res));
+    this.app.delete("/agendamentos/:id", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.cancelar(req, res)
+    );
     this.app.patch("/agendamentos/:id/status", this.exigirAdmin, (req, res) =>
       this.agendamentoController.atualizarStatus(req, res)
     );

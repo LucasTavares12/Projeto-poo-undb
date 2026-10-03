@@ -101,6 +101,22 @@ export class AgendamentoRepository extends Repositorio {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
   }
 
+  /** Apaga o agendamento e seus tratamentos juntos: ou sai tudo, ou nada. */
+  public async deletar(id: number): Promise<void> {
+    const conexao = await this.pool.getConnection();
+    try {
+      await conexao.beginTransaction();
+      await conexao.query("DELETE FROM agendamento_tratamentos WHERE agendamento_id = ?", [id]);
+      await conexao.query("DELETE FROM agendamentos WHERE id = ?", [id]);
+      await conexao.commit();
+    } catch (erro) {
+      await conexao.rollback();
+      throw erro;
+    } finally {
+      conexao.release();
+    }
+  }
+
   private async salvarTratamentos(agendamentoId: number, tratamentos: Tratamento[]): Promise<void> {
     const valores = tratamentos.map((tratamento) => [agendamentoId, tratamento.getId()]);
     await this.pool.query(

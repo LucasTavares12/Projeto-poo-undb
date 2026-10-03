@@ -54,6 +54,17 @@ export class AgendamentoController {
     }
   }
 
+  /** Botão "Cancelar" dos cards da coluna "Agendados" no Kanban. */
+  public async cancelar(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Number(req.params.id);
+      await this.servico.cancelar(id);
+      res.status(204).send();
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
   /** Admin arrasta o card no Kanban para outra coluna. */
   public async atualizarStatus(req: Request, res: Response): Promise<void> {
     try {

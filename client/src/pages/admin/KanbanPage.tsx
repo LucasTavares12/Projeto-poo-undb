@@ -20,6 +20,7 @@ export function KanbanPage() {
 
   const [arrastandoId, setArrastandoId] = useState<number | null>(null);
   const [colunaAlvo, setColunaAlvo] = useState<StatusAgendamento | null>(null);
+  const [confirmandoCancelamentoId, setConfirmandoCancelamentoId] = useState<number | null>(null);
 
   useEffect(() => {
     async function carregar() {
@@ -62,6 +63,17 @@ export function KanbanPage() {
       await agendamentoService.atualizarStatus(id, novoStatus);
     } catch (erroRequisicao) {
       aplicarStatus(statusAnterior);
+      setErro((erroRequisicao as Error).message);
+    }
+  }
+
+  async function cancelar(id: number): Promise<void> {
+    setConfirmandoCancelamentoId(null);
+    setErro(null);
+    try {
+      await agendamentoService.cancelar(id);
+      setAgendamentos((lista) => lista.filter((agendamento) => agendamento.id !== id));
+    } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
     }
   }
@@ -151,26 +163,57 @@ export function KanbanPage() {
                     <p>
                       {agendamento.duracaoTotalMinutos} min — R$ {agendamento.valorTotal.toFixed(2)}
                     </p>
-                    <div className="kanban-cartao-acoes">
-                      {anterior && (
-                        <button
-                          type="button"
-                          className="admin-botao"
-                          onClick={() => mover(agendamento.id, anterior.status)}
-                        >
-                          ← {anterior.titulo}
-                        </button>
-                      )}
-                      {proxima && (
-                        <button
-                          type="button"
-                          className="admin-botao principal"
-                          onClick={() => mover(agendamento.id, proxima.status)}
-                        >
-                          {proxima.titulo} →
-                        </button>
-                      )}
-                    </div>
+                    {confirmandoCancelamentoId === agendamento.id ? (
+                      <div className="kanban-cartao-confirmacao">
+                        <p>Cancelar este agendamento? O horário volta a ficar livre.</p>
+                        <div className="kanban-cartao-acoes">
+                          <button
+                            type="button"
+                            className="admin-botao"
+                            onClick={() => setConfirmandoCancelamentoId(null)}
+                          >
+                            Voltar
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-botao perigo"
+                            onClick={() => cancelar(agendamento.id)}
+                          >
+                            Confirmar cancelamento
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="kanban-cartao-acoes">
+                        {agendamento.status === "AGENDADO" && (
+                          <button
+                            type="button"
+                            className="admin-botao perigo"
+                            onClick={() => setConfirmandoCancelamentoId(agendamento.id)}
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                        {anterior && (
+                          <button
+                            type="button"
+                            className="admin-botao"
+                            onClick={() => mover(agendamento.id, anterior.status)}
+                          >
+                            ← {anterior.titulo}
+                          </button>
+                        )}
+                        {proxima && (
+                          <button
+                            type="button"
+                            className="admin-botao principal"
+                            onClick={() => mover(agendamento.id, proxima.status)}
+                          >
+                            {proxima.titulo} →
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
