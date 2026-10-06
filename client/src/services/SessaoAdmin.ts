@@ -1,3 +1,8 @@
+interface ConteudoToken {
+  email?: string;
+  expiraEm?: number;
+}
+
 /**
  * Guarda o token de login do administrador no navegador. É a única classe
  * que conhece onde o token fica salvo; o restante do sistema só pergunta
@@ -20,23 +25,31 @@ export class SessaoAdmin {
 
   /** Confere só a validade (a assinatura quem confere é o servidor). */
   public static estaAtiva(): boolean {
-    const token = SessaoAdmin.getToken();
-    if (!token) {
-      return false;
-    }
-
-    try {
-      const conteudoCodificado = token.split(".")[0];
-      const base64 = conteudoCodificado.replace(/-/g, "+").replace(/_/g, "/");
-      const conteudo = JSON.parse(atob(base64)) as { expiraEm?: number };
-      if (typeof conteudo.expiraEm === "number" && conteudo.expiraEm > Date.now()) {
-        return true;
-      }
-    } catch {
-      // Token malformado: trata como sessão encerrada.
+    const expiraEm = SessaoAdmin.lerConteudo()?.expiraEm;
+    if (typeof expiraEm === "number" && expiraEm > Date.now()) {
+      return true;
     }
 
     SessaoAdmin.encerrar();
     return false;
+  }
+
+  /** E-mail de quem está logado, para exibir no painel. */
+  public static getEmail(): string {
+    return SessaoAdmin.lerConteudo()?.email ?? "";
+  }
+
+  private static lerConteudo(): ConteudoToken | null {
+    const token = SessaoAdmin.getToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const base64 = token.split(".")[0].replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(atob(base64)) as ConteudoToken;
+    } catch {
+      return null; // token malformado
+    }
   }
 }

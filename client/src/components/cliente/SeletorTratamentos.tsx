@@ -1,4 +1,5 @@
 import type { Tratamento } from "../../services/types";
+import { Dinheiro } from "../../models/Dinheiro";
 
 interface Props {
   tratamentos: Tratamento[];
@@ -31,7 +32,7 @@ export function SeletorTratamentos({ tratamentos, selecionadosIds, onAlternar }:
             </div>
             <div className="item-tratamento-info">
               <span>{tratamento.duracaoMinutos} min</span>
-              <span>R$ {tratamento.valor.toFixed(2)}</span>
+              <span>{new Dinheiro(tratamento.valor).formatar()}</span>
             </div>
           </label>
         );

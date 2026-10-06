@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import type { DadosProfissional } from "../../services/ProfissionalService";
 import type { Profissional } from "../../services/types";
+import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const profissionalService = new ProfissionalService();
 
@@ -97,7 +98,10 @@ export function ProfissionaisPage() {
 
   return (
     <section className="pagina">
-      <h1>Profissionais</h1>
+      <CabecalhoPagina
+        titulo="Profissionais"
+        descricao="Cadastre quem realiza os atendimentos na clínica."
+      />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
@@ -161,7 +165,14 @@ export function ProfissionaisPage() {
           <tbody>
             {profissionais.map((profissional) => (
               <tr key={profissional.id}>
-                <td>{profissional.nome}</td>
+                <td>
+                  <span className="admin-tabela-nome">
+                    <span className="admin-avatar pequeno">
+                      {profissional.nome.charAt(0).toUpperCase()}
+                    </span>
+                    {profissional.nome}
+                  </span>
+                </td>
                 <td>{profissional.telefone}</td>
                 <td>{profissional.especialidade}</td>
                 <td className="admin-tabela-acoes">

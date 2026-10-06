@@ -4,6 +4,7 @@ import { ProfissionalService } from "../../services/ProfissionalService";
 import { HorarioDisponivelService } from "../../services/HorarioDisponivelService";
 import type { HorarioDisponivel, Profissional } from "../../services/types";
 import { GradeSemanal } from "../../models/GradeSemanal";
+import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const profissionalService = new ProfissionalService();
 const horarioService = new HorarioDisponivelService();
@@ -101,7 +102,10 @@ export function HorariosPage() {
   if (carregando) {
     return (
       <section className="pagina">
-        <h1>Horários disponíveis</h1>
+        <CabecalhoPagina
+          titulo="Horários disponíveis"
+          descricao="Defina em quais dias e horários cada profissional atende."
+        />
         <p>Carregando...</p>
       </section>
     );
@@ -109,7 +113,10 @@ export function HorariosPage() {
 
   return (
     <section className="pagina">
-      <h1>Horários disponíveis</h1>
+      <CabecalhoPagina
+        titulo="Horários disponíveis"
+        descricao="Defina em quais dias e horários cada profissional atende."
+      />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 

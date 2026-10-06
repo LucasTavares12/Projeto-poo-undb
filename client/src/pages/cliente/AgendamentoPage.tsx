@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import { TratamentoService } from "../../services/TratamentoService";
 import { AgendamentoService } from "../../services/AgendamentoService";
@@ -8,6 +8,7 @@ import { SeletorTratamentos } from "../../components/cliente/SeletorTratamentos"
 import { SeletorHorario } from "../../components/cliente/SeletorHorario";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { DataAgenda } from "../../models/DataAgenda";
+import { Dinheiro } from "../../models/Dinheiro";
 import {
   IconeCalendario,
   IconeConfirmado,
@@ -16,21 +17,37 @@ import {
   IconeServico,
   IconeSetaDireita,
   IconeSetaEsquerda,
-} from "../../components/cliente/Icones";
+} from "../../components/Icones";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
 const agendamentoService = new AgendamentoService();
 
 type Modo = "inicio" | "ver" | "agendar";
-type Etapa = 1 | 2 | 3 | 4 | 5;
+type Etapa = "profissional" | "servico" | "data" | "horarios" | "dados";
+
+// "Ver horários" só consulta a agenda; o serviço e os dados do cliente entram ao agendar.
+const ETAPAS_POR_MODO: Record<"ver" | "agendar", Etapa[]> = {
+  ver: ["profissional", "data", "horarios"],
+  agendar: ["profissional", "servico", "data", "horarios", "dados"],
+};
+
+interface ResultadoHorarios {
+  consulta: string;
+  horarios: string[];
+}
+
+interface SelecaoHorario {
+  consulta: string;
+  horario: string;
+}
 
 const TITULOS_ETAPA: Record<Etapa, string> = {
-  1: "Escolha o Profissional",
-  2: "Escolha o Serviço",
-  3: "Escolha a Data",
-  4: "Horários Disponíveis",
-  5: "Confirme seu Agendamento",
+  profissional: "Escolha o Profissional",
+  servico: "Escolha o Serviço",
+  data: "Escolha a Data",
+  horarios: "Horários Disponíveis",
+  dados: "Confirme seu Agendamento",
 };
 
 export function AgendamentoPage() {
@@ -39,15 +56,18 @@ export function AgendamentoPage() {
   const [carregandoCadastros, setCarregandoCadastros] = useState(true);
 
   const [modo, setModo] = useState<Modo>("inicio");
-  const [etapa, setEtapa] = useState<Etapa>(1);
+  const [etapa, setEtapa] = useState<Etapa>("profissional");
 
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [tratamentoIds, setTratamentoIds] = useState<number[]>([]);
   const [data, setData] = useState<string>(DataAgenda.hoje().toString());
-  const [horarioInicio, setHorarioInicio] = useState<string | null>(null);
 
-  const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
-  const [carregandoHorarios, setCarregandoHorarios] = useState(false);
+  // Resposta da API e horário escolhido ficam marcados com a consulta (profissional + data +
+  // serviços) a que pertencem: se a consulta muda, eles deixam de valer sozinhos.
+  const [resultadoHorarios, setResultadoHorarios] = useState<ResultadoHorarios | null>(null);
+  const [selecaoHorario, setSelecaoHorario] = useState<SelecaoHorario | null>(null);
+  // Horário que o cliente escolheu em "Ver horários": volta pré-selecionado ao agendar, se couber.
+  const horarioPreferido = useRef<string | null>(null);
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
@@ -77,39 +97,55 @@ export function AgendamentoPage() {
     carregarCadastros();
   }, []);
 
-  useEffect(() => {
-    setHorarioInicio(null);
+  // No "Agendar" os horários dependem dos serviços escolhidos; no "Ver horários", não.
+  const consultaHorarios =
+    profissionalId !== null && data !== "" && (modo !== "agendar" || tratamentoIds.length > 0)
+      ? `${profissionalId}|${data}|${tratamentoIds.join(",")}`
+      : null;
 
-    if (!profissionalId || tratamentoIds.length === 0 || !data) {
-      setHorariosDisponiveis([]);
+  useEffect(() => {
+    if (consultaHorarios === null || profissionalId === null) {
       return;
     }
 
     let cancelado = false;
-    setCarregandoHorarios(true);
 
     agendamentoService
       .disponibilidade(profissionalId, data, tratamentoIds)
       .then((horarios) => {
-        if (!cancelado) {
-          setHorariosDisponiveis(horarios);
+        if (cancelado) {
+          return;
+        }
+        setResultadoHorarios({ consulta: consultaHorarios, horarios });
+        const preferido = horarioPreferido.current;
+        if (preferido && horarios.includes(preferido)) {
+          setSelecaoHorario({ consulta: consultaHorarios, horario: preferido });
         }
       })
       .catch(() => {
         if (!cancelado) {
+          setResultadoHorarios({ consulta: consultaHorarios, horarios: [] });
           setErro("Não foi possível carregar os horários disponíveis.");
-        }
-      })
-      .finally(() => {
-        if (!cancelado) {
-          setCarregandoHorarios(false);
         }
       });
 
     return () => {
       cancelado = true;
     };
-  }, [profissionalId, tratamentoIds, data]);
+  }, [consultaHorarios, profissionalId, data, tratamentoIds]);
+
+  const horariosDisponiveis =
+    resultadoHorarios?.consulta === consultaHorarios ? resultadoHorarios.horarios : [];
+  const carregandoHorarios =
+    consultaHorarios !== null && resultadoHorarios?.consulta !== consultaHorarios;
+  const horarioInicio =
+    selecaoHorario?.consulta === consultaHorarios ? selecaoHorario.horario : null;
+
+  function selecionarHorario(horario: string): void {
+    if (consultaHorarios !== null) {
+      setSelecaoHorario({ consulta: consultaHorarios, horario });
+    }
+  }
 
   const tratamentosSelecionados = useMemo(
     () => tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id)),
@@ -134,26 +170,27 @@ export function AgendamentoPage() {
     clienteNome.trim().length > 0 &&
     clienteTelefone.trim().length > 0;
 
-  // No modo "ver" o fluxo termina na lista de horários; os dados do cliente só entram ao agendar.
-  const totalEtapas = modo === "ver" ? 4 : 5;
+  const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
+  const indiceEtapa = etapas.indexOf(etapa);
 
   const podeAvancar =
-    (etapa === 1 && profissionalId !== null) ||
-    (etapa === 2 && tratamentoIds.length > 0) ||
-    (etapa === 3 && data !== "") ||
-    (etapa === 4 && horarioInicio !== null);
+    (etapa === "profissional" && profissionalId !== null) ||
+    (etapa === "servico" && tratamentoIds.length > 0) ||
+    (etapa === "data" && data !== "") ||
+    (etapa === "horarios" && horarioInicio !== null);
 
   function iniciarFluxo(novoModo: "ver" | "agendar"): void {
     setModo(novoModo);
-    setEtapa(1);
+    setEtapa("profissional");
     setErro(null);
   }
 
   function voltarAoInicio(): void {
     setModo("inicio");
-    setEtapa(1);
+    setEtapa("profissional");
+    horarioPreferido.current = null;
     setTratamentoIds([]);
-    setHorarioInicio(null);
+    setSelecaoHorario(null);
     setClienteNome("");
     setClienteTelefone("");
     setAgendamentoConfirmado(null);
@@ -161,18 +198,25 @@ export function AgendamentoPage() {
   }
 
   function voltarEtapa(): void {
-    setEtapa((atual) => (atual > 1 ? ((atual - 1) as Etapa) : atual));
+    if (indiceEtapa > 0) {
+      setEtapa(etapas[indiceEtapa - 1]);
+    }
   }
 
   function avancarEtapa(): void {
     if (!podeAvancar) {
       return;
     }
-    // Quem estava só vendo os horários e escolheu um passa para o fluxo de agendamento.
-    if (etapa === 4 && modo === "ver") {
+    // Quem estava só vendo os horários e escolheu um passa a agendar: falta escolher o serviço.
+    if (modo === "ver" && etapa === "horarios") {
+      horarioPreferido.current = horarioInicio;
       setModo("agendar");
+      setEtapa("servico");
+      return;
     }
-    setEtapa((atual) => (atual < 5 ? ((atual + 1) as Etapa) : atual));
+    if (indiceEtapa < etapas.length - 1) {
+      setEtapa(etapas[indiceEtapa + 1]);
+    }
   }
 
   function alternarTratamento(id: number): void {
@@ -234,7 +278,7 @@ export function AgendamentoPage() {
                 Serviços:{" "}
                 {agendamentoConfirmado.tratamentos.map((tratamento) => tratamento.nome).join(", ")}
               </p>
-              <p>Valor total: R$ {agendamentoConfirmado.valorTotal.toFixed(2)}</p>
+              <p>Valor total: {new Dinheiro(agendamentoConfirmado.valorTotal).formatar()}</p>
             </div>
           </div>
           <footer className="passo-rodape">
@@ -310,14 +354,14 @@ export function AgendamentoPage() {
         <header className="passo-cabecalho">
           <h2>{TITULOS_ETAPA[etapa]}</h2>
           <span className="passo-indicador">
-            Passo {etapa}/{totalEtapas}
+            Passo {indiceEtapa + 1}/{etapas.length}
           </span>
         </header>
 
         <div className="passo-corpo">
           {erro && <p className="mensagem-erro">{erro}</p>}
 
-          {etapa === 1 && (
+          {etapa === "profissional" && (
             <>
               <h3>Selecione o Profissional</h3>
               <SeletorProfissional
@@ -328,7 +372,7 @@ export function AgendamentoPage() {
             </>
           )}
 
-          {etapa === 2 && (
+          {etapa === "servico" && (
             <>
               <h3>Selecione o(s) Serviço(s)</h3>
               <SeletorTratamentos
@@ -339,7 +383,7 @@ export function AgendamentoPage() {
             </>
           )}
 
-          {etapa === 3 && (
+          {etapa === "data" && (
             <>
               <h3>Selecione a Data</h3>
               <input
@@ -352,26 +396,31 @@ export function AgendamentoPage() {
             </>
           )}
 
-          {etapa === 4 && (
+          {etapa === "horarios" && (
             <>
               <h3>Horários em {new DataAgenda(data).formatar()}</h3>
+              {modo === "ver" && (
+                <p className="passo-dica">
+                  Horários livres para atendimentos
+                </p>
+              )}
               <SeletorHorario
                 horarios={horariosDisponiveis}
                 selecionado={horarioInicio}
-                onSelecionar={setHorarioInicio}
+                onSelecionar={selecionarHorario}
                 carregando={carregandoHorarios}
               />
             </>
           )}
 
-          {etapa === 5 && (
+          {etapa === "dados" && (
             <>
               <div className="resumo">
                 <p>
                   Horário escolhido: {new DataAgenda(data).formatar()} às {horarioInicio}
                 </p>
                 <p>
-                  Duração total: {duracaoTotal} min — Valor total: R$ {valorTotal.toFixed(2)}
+                  Duração total: {duracaoTotal} min — Valor total: {new Dinheiro(valorTotal).formatar()}
                 </p>
               </div>
               <h3>Preencha seus Dados</h3>
@@ -399,12 +448,12 @@ export function AgendamentoPage() {
           <button
             type="button"
             className="botao-contorno"
-            onClick={etapa === 1 ? voltarAoInicio : voltarEtapa}
+            onClick={indiceEtapa === 0 ? voltarAoInicio : voltarEtapa}
           >
-            <IconeSetaEsquerda /> {etapa === 1 ? "Cancelar" : "Voltar"}
+            <IconeSetaEsquerda /> {indiceEtapa === 0 ? "Cancelar" : "Voltar"}
           </button>
 
-          {etapa === 5 ? (
+          {etapa === "dados" ? (
             <button
               type="button"
               className="botao-primario"
@@ -420,7 +469,7 @@ export function AgendamentoPage() {
               disabled={!podeAvancar}
               onClick={avancarEtapa}
             >
-              {etapa === 4 && modo === "ver" ? "Agendar este horário" : "Próximo"}{" "}
+              {etapa === "horarios" && modo === "ver" ? "Agendar este horário" : "Próximo"}{" "}
               <IconeSetaDireita />
             </button>
           )}

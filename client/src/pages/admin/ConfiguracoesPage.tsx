@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { ConfiguracaoService } from "../../services/ConfiguracaoService";
 import type { Configuracoes } from "../../services/types";
+import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const configuracaoService = new ConfiguracaoService();
 
@@ -50,7 +51,10 @@ export function ConfiguracoesPage() {
 
   return (
     <section className="pagina">
-      <h1>Configurações</h1>
+      <CabecalhoPagina
+        titulo="Configurações"
+        descricao="Preferências gerais do sistema."
+      />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 

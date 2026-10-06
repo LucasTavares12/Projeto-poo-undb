@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { IconeCalendario } from "./Icones";
+import { IconeCalendario } from "../Icones";
 import { SessaoAdmin } from "../../services/SessaoAdmin";
 import { useConfiguracoes } from "../../hooks/useConfiguracoes";
 

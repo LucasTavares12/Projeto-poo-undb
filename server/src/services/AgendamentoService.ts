@@ -82,7 +82,8 @@ export class AgendamentoService {
     tratamentoIds: number[]
   ): Promise<Horario[]> {
     const tratamentos = await this.buscarTratamentos(tratamentoIds);
-    const quantidadeSlots = this.somarSlots(tratamentos);
+    // Sem tratamento escolhido ("Ver horários" da página inicial), mostra os horários de 30min livres.
+    const quantidadeSlots = Math.max(1, this.somarSlots(tratamentos));
     return this.disponibilidadeService.listarHorariosDisponiveis(
       profissionalId,
       data,

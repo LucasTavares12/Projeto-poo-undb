@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { TratamentoService } from "../../services/TratamentoService";
 import type { Tratamento } from "../../services/types";
 import { Duracao } from "../../models/Duracao";
+import { Dinheiro } from "../../models/Dinheiro";
+import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const tratamentoService = new TratamentoService();
 
@@ -107,7 +109,10 @@ export function TratamentosPage() {
 
   return (
     <section className="pagina">
-      <h1>Tratamentos</h1>
+      <CabecalhoPagina
+        titulo="Tratamentos"
+        descricao="Procedimentos oferecidos, com duração e valor."
+      />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
@@ -183,7 +188,7 @@ export function TratamentosPage() {
               <th>Nome</th>
               <th>Descrição</th>
               <th>Duração</th>
-              <th>Valor</th>
+              <th className="admin-tabela-valor">Valor</th>
               <th />
             </tr>
           </thead>
@@ -192,8 +197,12 @@ export function TratamentosPage() {
               <tr key={tratamento.id}>
                 <td>{tratamento.nome}</td>
                 <td>{tratamento.descricao}</td>
-                <td>{new Duracao(tratamento.duracaoMinutos).formatar()}</td>
-                <td>R$ {tratamento.valor.toFixed(2)}</td>
+                <td>
+                  <span className="admin-etiqueta">
+                    {new Duracao(tratamento.duracaoMinutos).formatar()}
+                  </span>
+                </td>
+                <td className="admin-tabela-valor">{new Dinheiro(tratamento.valor).formatar()}</td>
                 <td className="admin-tabela-acoes">
                   {confirmandoExclusaoId === tratamento.id ? (
                     <>

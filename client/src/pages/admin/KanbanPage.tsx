@@ -3,6 +3,18 @@ import type { DragEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
 import type { Agendamento, StatusAgendamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
+import { Duracao } from "../../models/Duracao";
+import { Dinheiro } from "../../models/Dinheiro";
+import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import {
+  IconeAtualizar,
+  IconeBrilho,
+  IconeCalendario,
+  IconeDinheiro,
+  IconePessoas,
+  IconeRelogio,
+  IconeTelefone,
+} from "../../components/Icones";
 
 const agendamentoService = new AgendamentoService();
 
@@ -107,119 +119,193 @@ export function KanbanPage() {
     }
   }
 
+  const hoje = DataAgenda.hoje().toString();
+  const resumo = [
+    {
+      rotulo: "Hoje",
+      valor: String(agendamentos.filter((agendamento) => agendamento.data === hoje).length),
+      detalhe: "agendamentos para hoje",
+      icone: <IconeCalendario />,
+    },
+    {
+      rotulo: "Na fila",
+      valor: String(agendamentos.filter((agendamento) => agendamento.status === "AGENDADO").length),
+      detalhe: "aguardando atendimento",
+      icone: <IconeRelogio />,
+    },
+    {
+      rotulo: "Em atendimento",
+      valor: String(
+        agendamentos.filter((agendamento) => agendamento.status === "EM_ATENDIMENTO").length
+      ),
+      detalhe: "acontecendo agora",
+      icone: <IconeBrilho />,
+    },
+    {
+      rotulo: "Faturado",
+      valor: new Dinheiro(
+        agendamentos
+          .filter((agendamento) => agendamento.status === "FINALIZADO")
+          .reduce((total, agendamento) => total + agendamento.valorTotal, 0)
+      ).formatar(),
+      detalhe: "em atendimentos finalizados",
+      icone: <IconeDinheiro />,
+    },
+  ];
+
   return (
     <section className="pagina pagina-larga">
-      <div className="kanban-cabecalho">
-        <h1>Agendamentos</h1>
-        <button type="button" className="admin-botao" onClick={atualizarLista}>
-          Atualizar
-        </button>
-      </div>
+      <CabecalhoPagina
+        titulo="Agendamentos"
+        descricao="Acompanhe os atendimentos e arraste os cards para mudar de etapa."
+        acoes={
+          <button type="button" className="admin-botao" onClick={atualizarLista}>
+            <IconeAtualizar tamanho={16} /> Atualizar
+          </button>
+        }
+      />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
       {carregando ? (
         <p>Carregando...</p>
       ) : (
-        <div className="kanban">
-          {COLUNAS.map((coluna, indice) => {
-            const cartoes = agendamentos.filter(
-              (agendamento) => agendamento.status === coluna.status
-            );
-            const anterior = COLUNAS[indice - 1];
-            const proxima = COLUNAS[indice + 1];
-
-            return (
-              <div
-                key={coluna.status}
-                className={`kanban-coluna ${colunaAlvo === coluna.status ? "alvo" : ""}`}
-                onDragOver={(evento) => permitirSoltar(evento, coluna.status)}
-                onDrop={(evento) => soltar(evento, coluna.status)}
-              >
-                <header className="kanban-coluna-cabecalho">
-                  <h2>{coluna.titulo}</h2>
-                  <span className="kanban-contador">{cartoes.length}</span>
-                </header>
-
-                {cartoes.length === 0 && <p className="kanban-vazio">Nenhum agendamento.</p>}
-
-                {cartoes.map((agendamento) => (
-                  <article
-                    key={agendamento.id}
-                    className={`kanban-cartao ${arrastandoId === agendamento.id ? "arrastando" : ""}`}
-                    draggable
-                    onDragStart={(evento) => iniciarArraste(evento, agendamento.id)}
-                    onDragEnd={encerrarArraste}
-                  >
-                    <p className="kanban-cartao-quando">
-                      {new DataAgenda(agendamento.data).formatar()} às {agendamento.horarioInicio}
-                    </p>
-                    <strong>{agendamento.cliente.nome}</strong>
-                    <p>{agendamento.cliente.telefone}</p>
-                    <p>Profissional: {agendamento.profissional.nome}</p>
-                    <p>
-                      {agendamento.tratamentos.map((tratamento) => tratamento.nome).join(", ")}
-                    </p>
-                    <p>
-                      {agendamento.duracaoTotalMinutos} min — R$ {agendamento.valorTotal.toFixed(2)}
-                    </p>
-                    {confirmandoCancelamentoId === agendamento.id ? (
-                      <div className="kanban-cartao-confirmacao">
-                        <p>Cancelar este agendamento? O horário volta a ficar livre.</p>
-                        <div className="kanban-cartao-acoes">
-                          <button
-                            type="button"
-                            className="admin-botao"
-                            onClick={() => setConfirmandoCancelamentoId(null)}
-                          >
-                            Voltar
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-botao perigo"
-                            onClick={() => cancelar(agendamento.id)}
-                          >
-                            Confirmar cancelamento
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="kanban-cartao-acoes">
-                        {agendamento.status === "AGENDADO" && (
-                          <button
-                            type="button"
-                            className="admin-botao perigo"
-                            onClick={() => setConfirmandoCancelamentoId(agendamento.id)}
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                        {anterior && (
-                          <button
-                            type="button"
-                            className="admin-botao"
-                            onClick={() => mover(agendamento.id, anterior.status)}
-                          >
-                            ← {anterior.titulo}
-                          </button>
-                        )}
-                        {proxima && (
-                          <button
-                            type="button"
-                            className="admin-botao principal"
-                            onClick={() => mover(agendamento.id, proxima.status)}
-                          >
-                            {proxima.titulo} →
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </article>
-                ))}
+        <>
+          <div className="admin-resumo">
+            {resumo.map((item) => (
+              <div key={item.rotulo} className="admin-resumo-cartao">
+                <span className="admin-resumo-icone">{item.icone}</span>
+                <span className="admin-resumo-rotulo">{item.rotulo}</span>
+                <strong className="admin-resumo-valor">{item.valor}</strong>
+                <span className="admin-resumo-detalhe">{item.detalhe}</span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+
+          <div className="kanban">
+            {COLUNAS.map((coluna, indice) => {
+              const cartoes = agendamentos.filter(
+                (agendamento) => agendamento.status === coluna.status
+              );
+              const anterior = COLUNAS[indice - 1];
+              const proxima = COLUNAS[indice + 1];
+
+              return (
+                <div
+                  key={coluna.status}
+                  className={`kanban-coluna ${colunaAlvo === coluna.status ? "alvo" : ""}`}
+                  data-status={coluna.status}
+                  onDragOver={(evento) => permitirSoltar(evento, coluna.status)}
+                  onDrop={(evento) => soltar(evento, coluna.status)}
+                >
+                  <header className="kanban-coluna-cabecalho">
+                    <h2>{coluna.titulo}</h2>
+                    <span className="kanban-contador">{cartoes.length}</span>
+                  </header>
+
+                  {cartoes.length === 0 && <p className="kanban-vazio">Nenhum agendamento.</p>}
+
+                  {cartoes.map((agendamento) => (
+                    <article
+                      key={agendamento.id}
+                      className={`kanban-cartao ${arrastandoId === agendamento.id ? "arrastando" : ""}`}
+                      draggable
+                      onDragStart={(evento) => iniciarArraste(evento, agendamento.id)}
+                      onDragEnd={encerrarArraste}
+                    >
+                      <div className="kanban-cartao-topo">
+                        <span className="kanban-cartao-quando">
+                          <IconeCalendario tamanho={13} />
+                          {new DataAgenda(agendamento.data).formatar()} · {agendamento.horarioInicio}
+                        </span>
+                        <span className="kanban-cartao-valor">
+                          {new Dinheiro(agendamento.valorTotal).formatar()}
+                        </span>
+                      </div>
+
+                      <div className="kanban-cartao-cliente">
+                        <span className="admin-avatar pequeno">
+                          {agendamento.cliente.nome.charAt(0).toUpperCase()}
+                        </span>
+                        <span>
+                          <strong>{agendamento.cliente.nome}</strong>
+                          <span className="kanban-cartao-telefone">
+                            <IconeTelefone tamanho={12} /> {agendamento.cliente.telefone}
+                          </span>
+                        </span>
+                      </div>
+
+                      <ul className="kanban-cartao-detalhes">
+                        <li>
+                          <IconePessoas tamanho={14} /> {agendamento.profissional.nome}
+                        </li>
+                        <li>
+                          <IconeBrilho tamanho={14} />
+                          {agendamento.tratamentos.map((tratamento) => tratamento.nome).join(", ")}
+                        </li>
+                        <li>
+                          <IconeRelogio tamanho={14} />
+                          {new Duracao(agendamento.duracaoTotalMinutos).formatar()}
+                        </li>
+                      </ul>
+                      {confirmandoCancelamentoId === agendamento.id ? (
+                        <div className="kanban-cartao-confirmacao">
+                          <p>Cancelar este agendamento? O horário volta a ficar livre.</p>
+                          <div className="kanban-cartao-acoes">
+                            <button
+                              type="button"
+                              className="admin-botao"
+                              onClick={() => setConfirmandoCancelamentoId(null)}
+                            >
+                              Voltar
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-botao perigo"
+                              onClick={() => cancelar(agendamento.id)}
+                            >
+                              Confirmar cancelamento
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="kanban-cartao-acoes">
+                          {agendamento.status === "AGENDADO" && (
+                            <button
+                              type="button"
+                              className="admin-botao perigo"
+                              onClick={() => setConfirmandoCancelamentoId(agendamento.id)}
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                          {anterior && (
+                            <button
+                              type="button"
+                              className="admin-botao"
+                              onClick={() => mover(agendamento.id, anterior.status)}
+                            >
+                              ← {anterior.titulo}
+                            </button>
+                          )}
+                          {proxima && (
+                            <button
+                              type="button"
+                              className="admin-botao principal"
+                              onClick={() => mover(agendamento.id, proxima.status)}
+                            >
+                              {proxima.titulo} →
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </section>
   );
