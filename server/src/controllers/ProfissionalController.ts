@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Profissional } from "../module/Profissional";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
+import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
 export class ProfissionalController {
   private readonly repositorio = new ProfissionalRepository();
@@ -25,6 +26,10 @@ export class ProfissionalController {
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
+      if (!SessaoDaRequisicao.podeAcessarProfissional(res, id)) {
+        res.status(403).json({ erro: "Você só pode editar o seu próprio cadastro." });
+        return;
+      }
       const { nome, telefone, especialidade } = req.body;
       const profissional = await this.repositorio.buscarPorId(id);
       if (!profissional) {
@@ -49,7 +54,9 @@ export class ProfissionalController {
       res.status(204).send();
     } catch (erro) {
       res.status(409).json({
-        erro: "Não é possível excluir este profissional: existem agendamentos ou horários vinculados a ele.",
+        erro:
+          "Não é possível excluir este profissional: existem agendamentos, horários, tratamentos ou um " +
+          "usuário do sistema vinculados a ele.",
       });
     }
   }

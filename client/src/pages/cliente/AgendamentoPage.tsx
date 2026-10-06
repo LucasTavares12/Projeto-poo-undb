@@ -150,6 +150,16 @@ export function AgendamentoPage() {
     }
   }
 
+  // Só os serviços que o profissional escolhido realiza (os sem profissional valem para todos).
+  const tratamentosDoProfissional = useMemo(
+    () =>
+      tratamentos.filter(
+        (tratamento) =>
+          tratamento.profissionalId === null || tratamento.profissionalId === profissionalId
+      ),
+    [tratamentos, profissionalId]
+  );
+
   const tratamentosSelecionados = useMemo(
     () => tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id)),
     [tratamentos, tratamentoIds]
@@ -227,6 +237,17 @@ export function AgendamentoPage() {
     if (indiceEtapa < etapas.length - 1) {
       setEtapa(etapas[indiceEtapa + 1]);
     }
+  }
+
+  /** Trocar de profissional desmarca os serviços que o novo profissional não realiza. */
+  function selecionarProfissional(id: number): void {
+    setProfissionalId(id);
+    setTratamentoIds((atual) =>
+      atual.filter((tratamentoId) => {
+        const dono = tratamentos.find((tratamento) => tratamento.id === tratamentoId)?.profissionalId;
+        return dono === null || dono === id;
+      })
+    );
   }
 
   function alternarTratamento(id: number): void {
@@ -378,7 +399,7 @@ export function AgendamentoPage() {
               <SeletorProfissional
                 profissionais={profissionais}
                 selecionadoId={profissionalId}
-                onSelecionar={setProfissionalId}
+                onSelecionar={selecionarProfissional}
               />
             </>
           )}
@@ -387,7 +408,7 @@ export function AgendamentoPage() {
             <>
               <h3>Selecione o(s) Serviço(s)</h3>
               <SeletorTratamentos
-                tratamentos={tratamentos}
+                tratamentos={tratamentosDoProfissional}
                 selecionadosIds={tratamentoIds}
                 onAlternar={alternarTratamento}
               />

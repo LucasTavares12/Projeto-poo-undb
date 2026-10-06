@@ -27,6 +27,7 @@ interface LinhaTratamento extends RowDataPacket {
   descricao: string | null;
   valor: string;
   duracao_minutos: number;
+  profissional_id?: number | null;
 }
 
 const SELECT_BASE = `
@@ -81,6 +82,15 @@ export class AgendamentoRepository extends Repositorio {
   public async listarTodos(): Promise<Agendamento[]> {
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
       `${SELECT_BASE} ORDER BY a.data, a.hora_inicio`
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
+  /** Kanban de um usuário ligado a um profissional: só os agendamentos dele. */
+  public async listarPorProfissional(profissionalId: number): Promise<Agendamento[]> {
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${SELECT_BASE} WHERE a.profissional_id = ? ORDER BY a.data, a.hora_inicio`,
+      [profissionalId]
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
@@ -141,7 +151,14 @@ export class AgendamentoRepository extends Repositorio {
     );
     return linhas.map(
       (linha) =>
-        new Tratamento(linha.nome, linha.descricao ?? "", Number(linha.valor), linha.duracao_minutos, linha.id)
+        new Tratamento(
+          linha.nome,
+          linha.descricao ?? "",
+          Number(linha.valor),
+          linha.duracao_minutos,
+          linha.id,
+          linha.profissional_id ?? null
+        )
     );
   }
 

@@ -1,4 +1,4 @@
-import { Pool } from "mysql2/promise";
+import { Pool, RowDataPacket } from "mysql2/promise";
 import { Database } from "../database/Database";
 
 /**
@@ -30,6 +30,34 @@ export abstract class Repositorio {
           throw erro;
         });
       Repositorio.tabelasProntas.set(sqlCriacao, pronta);
+    }
+    return pronta;
+  }
+
+  /**
+   * Para bancos criados antes de uma coluna existir: se `coluna` ainda não estiver em
+   * `tabela`, roda o `ALTER TABLE` informado. Também roda uma única vez por execução.
+   */
+  protected garantirColuna(tabela: string, coluna: string, sqlAlteracao: string): Promise<void> {
+    const chave = `coluna:${tabela}.${coluna}`;
+    let pronta = Repositorio.tabelasProntas.get(chave);
+    if (!pronta) {
+      pronta = this.pool
+        .query<RowDataPacket[]>(
+          `SELECT 1 FROM information_schema.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+          [tabela, coluna]
+        )
+        .then(async ([linhas]) => {
+          if (linhas.length === 0) {
+            await this.pool.query(sqlAlteracao);
+          }
+        })
+        .catch((erro) => {
+          Repositorio.tabelasProntas.delete(chave);
+          throw erro;
+        });
+      Repositorio.tabelasProntas.set(chave, pronta);
     }
     return pronta;
   }

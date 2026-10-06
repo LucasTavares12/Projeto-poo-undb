@@ -4,6 +4,7 @@ import { ProfissionalService } from "../../services/ProfissionalService";
 import { HorarioDisponivelService } from "../../services/HorarioDisponivelService";
 import type { HorarioDisponivel, Profissional } from "../../services/types";
 import { GradeSemanal } from "../../models/GradeSemanal";
+import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const profissionalService = new ProfissionalService();
@@ -12,6 +13,7 @@ const horarioService = new HorarioDisponivelService();
 const grade = new GradeSemanal();
 
 export function HorariosPage() {
+  const { profissionalId: proprioId } = useUsuarioLogado();
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
@@ -32,10 +34,13 @@ export function HorariosPage() {
     async function carregar() {
       try {
         const lista = await profissionalService.listar();
-        setProfissionais(lista);
-        if (lista.length > 0) {
-          setProfissionalId(lista[0].id);
-          await carregarHorarios(lista[0].id);
+        // Conta ligada a um profissional: só a agenda dele.
+        const visiveis =
+          proprioId === null ? lista : lista.filter((profissional) => profissional.id === proprioId);
+        setProfissionais(visiveis);
+        if (visiveis.length > 0) {
+          setProfissionalId(visiveis[0].id);
+          await carregarHorarios(visiveis[0].id);
         }
       } catch {
         setErro("Não foi possível carregar os profissionais.");
@@ -44,7 +49,7 @@ export function HorariosPage() {
       }
     }
     carregar();
-  }, []);
+  }, [proprioId]);
 
   const horariosPorChave = useMemo(
     () =>

@@ -15,6 +15,8 @@ const tratamentoService = new TratamentoService();
 const agendamentoService = new AgendamentoService();
 
 interface Props {
+  /** Conta ligada a um profissional: o agendamento é sempre para ele (select travado). */
+  profissionalFixo?: number | null;
   onFechar: () => void;
   onCriado: (agendamento: Agendamento) => void;
 }
@@ -25,13 +27,13 @@ interface HorariosDisponiveis {
   horarios: string[];
 }
 
-export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
+export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCriado }: Props) {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
-  const [profissionalId, setProfissionalId] = useState<number | null>(null);
+  const [profissionalId, setProfissionalId] = useState<number | null>(profissionalFixo);
   const [tratamentoIds, setTratamentoIds] = useState<number[]>([]);
   const [data, setData] = useState(DataAgenda.hoje().toString());
   const [horario, setHorario] = useState("");
@@ -47,12 +49,12 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
       .then(([listaProfissionais, listaTratamentos]) => {
         setProfissionais(listaProfissionais);
         setTratamentos(listaTratamentos);
-        if (listaProfissionais.length === 1) {
+        if (profissionalFixo === null && listaProfissionais.length === 1) {
           setProfissionalId(listaProfissionais[0].id);
         }
       })
       .catch(() => setErro("Não foi possível carregar profissionais e tratamentos."));
-  }, []);
+  }, [profissionalFixo]);
 
   // Esc fecha a janela.
   useEffect(() => {
@@ -110,6 +112,11 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
           ? "Nenhum horário disponível"
           : "Selecione...";
 
+  // Só os tratamentos que o profissional escolhido realiza (os sem profissional valem para todos).
+  const tratamentosDoProfissional = tratamentos.filter(
+    (tratamento) =>
+      tratamento.profissionalId === null || tratamento.profissionalId === profissionalId
+  );
   const selecionados = tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id));
   const duracaoTotal = selecionados.reduce((total, tratamento) => total + tratamento.duracaoMinutos, 0);
   const valorTotal = selecionados.reduce((total, tratamento) => total + tratamento.valor, 0);
@@ -129,6 +136,17 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
   };
   const formularioValido = Object.values(erros).every((mensagem) => mensagem === null);
   const mostrarErro = (campo: keyof typeof erros) => (tentouEnviar ? erros[campo] : null);
+
+  /** Trocar de profissional desmarca os tratamentos que o novo profissional não realiza. */
+  function selecionarProfissional(id: number | null): void {
+    setProfissionalId(id);
+    setTratamentoIds((atual) =>
+      atual.filter((tratamentoId) => {
+        const dono = tratamentos.find((tratamento) => tratamento.id === tratamentoId)?.profissionalId;
+        return dono === null || dono === id;
+      })
+    );
+  }
 
   function alternarTratamento(id: number): void {
     setTratamentoIds((atual) =>
@@ -225,8 +243,11 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
                 required
                 aria-invalid={Boolean(mostrarErro("profissional"))}
                 value={profissionalId ?? ""}
+                disabled={profissionalFixo !== null}
                 onChange={(evento) =>
-                  setProfissionalId(evento.target.value === "" ? null : Number(evento.target.value))
+                  selecionarProfissional(
+                    evento.target.value === "" ? null : Number(evento.target.value)
+                  )
                 }
               >
                 <option value="" disabled>
@@ -249,7 +270,7 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
               Tratamentos <span className="campo-obrigatorio">*</span>
             </legend>
             <div className="modal-opcoes">
-              {tratamentos.map((tratamento) => {
+              {tratamentosDoProfissional.map((tratamento) => {
                 const marcado = tratamentoIds.includes(tratamento.id);
                 return (
                   <button
@@ -264,7 +285,13 @@ export function ModalAgendamentoManual({ onFechar, onCriado }: Props) {
                   </button>
                 );
               })}
-              {tratamentos.length === 0 && <p className="admin-dica">Nenhum tratamento cadastrado.</p>}
+              {tratamentosDoProfissional.length === 0 && (
+                <p className="admin-dica">
+                  {tratamentos.length === 0
+                    ? "Nenhum tratamento cadastrado."
+                    : "Nenhum tratamento cadastrado para este profissional."}
+                </p>
+              )}
             </div>
             {mostrarErro("tratamentos") && (
               <span className="campo-erro">{erros.tratamentos}</span>

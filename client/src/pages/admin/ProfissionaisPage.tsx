@@ -4,12 +4,17 @@ import { ProfissionalService } from "../../services/ProfissionalService";
 import type { DadosProfissional } from "../../services/ProfissionalService";
 import type { Profissional } from "../../services/types";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 
 const profissionalService = new ProfissionalService();
 
 const FORMULARIO_VAZIO: DadosProfissional = { nome: "", telefone: "", especialidade: "" };
 
 export function ProfissionaisPage() {
+  // Conta ligada a um profissional: só o próprio cadastro, sem criar nem excluir.
+  const { profissionalId: proprioId } = useUsuarioLogado();
+  const acessoTotal = proprioId === null;
+
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -23,7 +28,8 @@ export function ProfissionaisPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        setProfissionais(await profissionalService.listar());
+        const lista = await profissionalService.listar();
+        setProfissionais(acessoTotal ? lista : lista.filter((item) => item.id === proprioId));
       } catch {
         setErro("Não foi possível carregar os profissionais.");
       } finally {
@@ -31,7 +37,7 @@ export function ProfissionaisPage() {
       }
     }
     carregar();
-  }, []);
+  }, [acessoTotal, proprioId]);
 
   function alterarCampo(campo: keyof DadosProfissional, valor: string): void {
     setFormulario((atual) => ({ ...atual, [campo]: valor }));
@@ -99,12 +105,17 @@ export function ProfissionaisPage() {
   return (
     <section className="pagina">
       <CabecalhoPagina
-        titulo="Profissionais"
-        descricao="Cadastre quem realiza os atendimentos na clínica."
+        titulo={acessoTotal ? "Profissionais" : "Meu cadastro"}
+        descricao={
+          acessoTotal
+            ? "Cadastre quem realiza os atendimentos na clínica."
+            : "Seus dados de profissional da clínica."
+        }
       />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
+      {(acessoTotal || editandoId !== null) && (
       <form className="admin-formulario" onSubmit={salvar}>
         <h2>{editandoId === null ? "Novo profissional" : "Editar profissional"}</h2>
         <div className="admin-campos">
@@ -147,6 +158,7 @@ export function ProfissionaisPage() {
           )}
         </div>
       </form>
+      )}
 
       {carregando ? (
         <p>Carregando...</p>
@@ -202,13 +214,15 @@ export function ProfissionaisPage() {
                       >
                         Editar
                       </button>
-                      <button
-                        type="button"
-                        className="admin-botao perigo"
-                        onClick={() => setConfirmandoExclusaoId(profissional.id)}
-                      >
-                        Excluir
-                      </button>
+                      {acessoTotal && (
+                        <button
+                          type="button"
+                          className="admin-botao perigo"
+                          onClick={() => setConfirmandoExclusaoId(profissional.id)}
+                        >
+                          Excluir
+                        </button>
+                      )}
                     </>
                   )}
                 </td>

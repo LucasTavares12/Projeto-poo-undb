@@ -1539,6 +1539,106 @@
   box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
 }
 
+/* ---------- Usuários do sistema (aba Configurações) ---------- */
+
+.usuarios-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.usuarios-cabecalho h2 {
+  margin-bottom: 0;
+}
+
+.usuarios-cabecalho .admin-dica {
+  margin-top: 2px;
+}
+
+.admin-mensagem-topo {
+  margin-bottom: 16px;
+}
+
+.usuarios-form {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--raio);
+  background: var(--fundo);
+}
+
+.usuarios-form h3 {
+  margin: 0 0 14px;
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.usuarios-tabela {
+  box-shadow: none;
+}
+
+.usuarios-tabela .admin-etiqueta {
+  margin-left: 2px;
+}
+
+.usuarios-tabela .admin-tabela-acoes {
+  flex-wrap: wrap;
+}
+
+.usuarios-acesso {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--superficie-alt);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.usuarios-acesso.profissional {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.admin-usuario-papel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-carregando {
+  align-items: center;
+  justify-content: center;
+}
+
+.usuarios-aviso {
+  align-self: center;
+  color: var(--perigo);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.usuarios-dica-unico {
+  margin-top: 10px;
+}
+
+/* Linha extra aberta abaixo do usuário para editar e-mail ou senha. */
+.usuarios-edicao td {
+  background: var(--fundo);
+}
+
+.admin-tabela tbody tr.usuarios-edicao:hover td {
+  background: var(--fundo);
+}
+
+.usuarios-edicao .admin-acoes {
+  margin-top: 14px;
+}
+
 /* ---------- Janela de agendamento manual ---------- */
 
 .kanban-mensagem {

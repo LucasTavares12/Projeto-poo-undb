@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { ConfiguracaoService } from "../../services/ConfiguracaoService";
 import type { Configuracoes } from "../../services/types";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { GerenciarUsuarios } from "../../components/admin/GerenciarUsuarios";
 
 const configuracaoService = new ConfiguracaoService();
 
@@ -53,7 +54,7 @@ export function ConfiguracoesPage() {
     <section className="pagina">
       <CabecalhoPagina
         titulo="Configurações"
-        descricao="Preferências gerais do sistema."
+        descricao="Preferências gerais e usuários do sistema."
       />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
@@ -89,6 +90,8 @@ export function ConfiguracoesPage() {
           {mensagem && <p className="mensagem-sucesso admin-mensagem">{mensagem}</p>}
         </form>
       )}
+
+      <GerenciarUsuarios />
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AutenticacaoService } from "../services/AutenticacaoService";
 import { ErroAutenticacao } from "../services/ErroAutenticacao";
+import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
 export class AutenticacaoController {
   constructor(private readonly servico: AutenticacaoService) {}
@@ -13,6 +14,16 @@ export class AutenticacaoController {
       res.status(201).json(administrador);
     } catch (erro) {
       const status = erro instanceof ErroAutenticacao ? erro.status : 400;
+      res.status(status).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Painel: quem está logado e, se for de um profissional, qual. */
+  public async sessao(req: Request, res: Response): Promise<void> {
+    try {
+      res.json(await this.servico.dadosDaSessao(SessaoDaRequisicao.adminId(res)));
+    } catch (erro) {
+      const status = erro instanceof ErroAutenticacao ? erro.status : 500;
       res.status(status).json({ erro: (erro as Error).message });
     }
   }

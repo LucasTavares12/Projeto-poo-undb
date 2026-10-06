@@ -33,6 +33,14 @@ export class HorarioDisponivelRepository extends Repositorio {
     return linhas.map((linha) => this.paraHorarioDisponivel(linha));
   }
 
+  public async buscarPorId(id: number): Promise<HorarioDisponivel | null> {
+    const [linhas] = await this.pool.query<LinhaHorarioDisponivel[]>(
+      "SELECT * FROM horarios_disponiveis WHERE id = ?",
+      [id]
+    );
+    return linhas.length > 0 ? this.paraHorarioDisponivel(linhas[0]) : null;
+  }
+
   public async deletar(id: number): Promise<void> {
     await this.pool.query("DELETE FROM horarios_disponiveis WHERE id = ?", [id]);
   }

@@ -6,6 +6,7 @@ import { MesReferencia } from "../../models/MesReferencia";
 import { Dinheiro } from "../../models/Dinheiro";
 import { DataAgenda } from "../../models/DataAgenda";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { GraficoFaturamentoDiario } from "../../components/admin/GraficoFaturamentoDiario";
 import { GraficoRanking } from "../../components/admin/GraficoRanking";
 import {
@@ -28,9 +29,11 @@ interface DadosDoMes {
 }
 
 export function RelatoriosPage() {
+  // Conta ligada a um profissional: o relatório é sempre o dele (o servidor também garante isso).
+  const { profissionalId: proprioId } = useUsuarioLogado();
   const [mes, setMes] = useState<MesReferencia>(() => MesReferencia.atual());
   // null = todos os profissionais juntos
-  const [profissionalId, setProfissionalId] = useState<number | null>(null);
+  const [profissionalId, setProfissionalId] = useState<number | null>(proprioId);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
 
   const [dados, setDados] = useState<DadosDoMes | null>(null);
@@ -86,6 +89,7 @@ export function RelatoriosPage() {
 
   const filtros = (
     <div className="relatorio-filtros">
+      {proprioId === null && (
       <label className="filtro-profissional">
         <span>Profissional</span>
         <select
@@ -102,6 +106,7 @@ export function RelatoriosPage() {
           ))}
         </select>
       </label>
+      )}
 
       <div className="seletor-mes">
         <button

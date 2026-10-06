@@ -6,13 +6,19 @@ export class Tratamento {
   private descricao: string;
   private valor: number;
   private duracaoMinutos: number;
+  /**
+   * Profissional que realiza este tratamento. null = qualquer profissional da clínica
+   * (é como ficam os tratamentos cadastrados antes de existir o vínculo).
+   */
+  private profissionalId: number | null = null;
 
   constructor(
     nome: string,
     descricao: string,
     valor: number,
     duracaoMinutos: number,
-    id?: number
+    id?: number,
+    profissionalId: number | null = null
   ) {
     if (valor < 0) {
       throw new Error("O valor do tratamento não pode ser negativo.");
@@ -28,6 +34,7 @@ export class Tratamento {
     this.valor = valor;
     this.duracaoMinutos = duracaoMinutos;
     this.id = id;
+    this.vincularProfissional(profissionalId);
   }
 
   public getId(): number | undefined {
@@ -74,6 +81,23 @@ export class Tratamento {
     this.duracaoMinutos = duracaoMinutos;
   }
 
+  public getProfissionalId(): number | null {
+    return this.profissionalId;
+  }
+
+  /** Liga o tratamento a um profissional (ou, com null, libera para todos). */
+  public vincularProfissional(profissionalId: number | null): void {
+    if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
+      throw new Error("Profissional inválido.");
+    }
+    this.profissionalId = profissionalId;
+  }
+
+  /** true se este profissional realiza o tratamento (o dono dele, ou qualquer um se não houver dono). */
+  public ehRealizadoPor(profissionalId: number): boolean {
+    return this.profissionalId === null || this.profissionalId === profissionalId;
+  }
+
   /** Quantidade de slots de 30min que o tratamento ocupa na agenda. */
   public getQuantidadeSlots(): number {
     return this.duracaoMinutos / Horario.DURACAO_SLOT_MINUTOS;
@@ -86,6 +110,7 @@ export class Tratamento {
       descricao: this.descricao,
       valor: this.valor,
       duracaoMinutos: this.duracaoMinutos,
+      profissionalId: this.profissionalId,
       quantidadeSlots: this.getQuantidadeSlots(),
     };
   }

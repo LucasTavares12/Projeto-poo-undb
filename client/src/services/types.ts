@@ -19,6 +19,8 @@ export interface Tratamento {
   descricao: string;
   valor: number;
   duracaoMinutos: number;
+  /** Profissional que realiza o tratamento; null = todos os profissionais. */
+  profissionalId: number | null;
   quantidadeSlots: number;
 }
 
@@ -77,4 +79,21 @@ export interface RelatorioMensal {
   faturamentoPorDia: FaturamentoDoDia[];
   tratamentosMaisRealizados: TratamentoRealizado[];
   faturamentoPorProfissional: FaturamentoDoProfissional[];
+}
+
+/** Usuário do painel (conta de administrador). */
+export interface Usuario {
+  id: number;
+  email: string;
+  criadoEm: string | null;
+  /** Profissional a quem a conta pertence; null = acesso total. */
+  profissionalId: number | null;
+}
+
+/** Quem está logado no painel. Com profissional, só vê o que é daquele profissional. */
+export interface UsuarioLogado {
+  id: number;
+  email: string;
+  profissionalId: number | null;
+  profissionalNome: string | null;
 }

@@ -1,4 +1,5 @@
 interface ConteudoToken {
+  adminId?: number;
   email?: string;
   expiraEm?: number;
 }
@@ -32,6 +33,11 @@ export class SessaoAdmin {
 
     SessaoAdmin.encerrar();
     return false;
+  }
+
+  /** Id de quem está logado (ex: marcar "Você" na lista de usuários). */
+  public static getAdminId(): number | null {
+    return SessaoAdmin.lerConteudo()?.adminId ?? null;
   }
 
   /** E-mail de quem está logado, para exibir no painel. */

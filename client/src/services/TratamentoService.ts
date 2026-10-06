@@ -6,6 +6,8 @@ export interface DadosTratamento {
   descricao: string;
   valor: number;
   duracaoMinutos: number;
+  /** null = tratamento realizado por todos os profissionais. */
+  profissionalId: number | null;
 }
 
 export class TratamentoService extends ApiClient {

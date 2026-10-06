@@ -13,20 +13,42 @@ export class Administrador {
   private id?: number;
   private email: string;
   private senhaHash: string; // formato "salt:hash", ambos em hexadecimal
+  private criadoEm?: Date;
+  /**
+   * Profissional a quem esta conta pertence. null = acesso total (vê tudo da clínica);
+   * com um profissional, a conta só vê e altera o que é daquele profissional.
+   */
+  private profissionalId: number | null;
 
-  constructor(email: string, senhaHash: string, id?: number) {
-    const emailNormalizado = Administrador.normalizarEmail(email);
-    if (!Administrador.FORMATO_EMAIL.test(emailNormalizado)) {
-      throw new Error("Informe um e-mail válido.");
-    }
-
-    this.email = emailNormalizado;
+  constructor(
+    email: string,
+    senhaHash: string,
+    id?: number,
+    criadoEm?: Date,
+    profissionalId: number | null = null
+  ) {
+    this.email = Administrador.validarEmail(email);
     this.senhaHash = senhaHash;
     this.id = id;
+    this.criadoEm = criadoEm;
+    this.profissionalId = profissionalId;
   }
 
   /** Cria um administrador novo a partir da senha digitada no cadastro. */
   public static async comSenha(email: string, senha: string): Promise<Administrador> {
+    return new Administrador(email, await Administrador.criarHash(senha));
+  }
+
+  private static validarEmail(email: string): string {
+    const emailNormalizado = Administrador.normalizarEmail(email);
+    if (!Administrador.FORMATO_EMAIL.test(emailNormalizado)) {
+      throw new Error("Informe um e-mail válido.");
+    }
+    return emailNormalizado;
+  }
+
+  /** Valida a senha digitada e devolve o "salt:hash" que vai para o banco. */
+  private static async criarHash(senha: string): Promise<string> {
     if (typeof senha !== "string" || senha.length < Administrador.TAMANHO_MINIMO_SENHA) {
       throw new Error(
         `A senha precisa ter pelo menos ${Administrador.TAMANHO_MINIMO_SENHA} caracteres.`
@@ -35,7 +57,7 @@ export class Administrador {
 
     const salt = randomBytes(16).toString("hex");
     const hash = await Administrador.gerarHash(senha, salt);
-    return new Administrador(email, `${salt}:${hash.toString("hex")}`);
+    return `${salt}:${hash.toString("hex")}`;
   }
 
   /** E-mails são comparados sem diferenciar maiúsculas e sem espaços nas pontas. */
@@ -70,8 +92,34 @@ export class Administrador {
     return this.email;
   }
 
+  public setEmail(email: string): void {
+    this.email = Administrador.validarEmail(email);
+  }
+
+  /** Troca a senha: guarda um hash novo, com salt novo. */
+  public async alterarSenha(novaSenha: string): Promise<void> {
+    this.senhaHash = await Administrador.criarHash(novaSenha);
+  }
+
   public getSenhaHash(): string {
     return this.senhaHash;
+  }
+
+  public getProfissionalId(): number | null {
+    return this.profissionalId;
+  }
+
+  /** Sem profissional vinculado: administra a clínica inteira. */
+  public temAcessoTotal(): boolean {
+    return this.profissionalId === null;
+  }
+
+  /** Liga a conta a um profissional (ou desliga, com null, voltando ao acesso total). */
+  public vincularProfissional(profissionalId: number | null): void {
+    if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
+      throw new Error("Profissional inválido.");
+    }
+    this.profissionalId = profissionalId;
   }
 
   /** Nunca expõe o hash da senha nas respostas da API. */
@@ -79,6 +127,8 @@ export class Administrador {
     return {
       id: this.id,
       email: this.email,
+      criadoEm: this.criadoEm?.toISOString() ?? null,
+      profissionalId: this.profissionalId,
     };
   }
 }

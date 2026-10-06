@@ -3,13 +3,14 @@ import { AgendamentoService } from "../services/AgendamentoService";
 import type { DadosNovoAgendamento } from "../services/AgendamentoService";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
+import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
 export class AgendamentoController {
   private readonly servico = new AgendamentoService();
 
-  /** Painel Kanban do admin: lista todos os agendamentos. */
+  /** Kanban: todos os agendamentos, ou só os do profissional ligado ao usuário logado. */
   public async listar(req: Request, res: Response): Promise<void> {
-    const agendamentos = await this.servico.listarTodos();
+    const agendamentos = await this.servico.listarTodos(SessaoDaRequisicao.profissionalId(res));
     res.json(agendamentos);
   }
 
@@ -78,7 +79,7 @@ export class AgendamentoController {
   public async cancelar(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      await this.servico.cancelar(id);
+      await this.servico.cancelar(id, SessaoDaRequisicao.profissionalId(res));
       res.status(204).send();
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });
@@ -90,7 +91,11 @@ export class AgendamentoController {
     try {
       const id = Number(req.params.id);
       const status = req.body.status as StatusAgendamento;
-      const agendamento = await this.servico.moverStatus(id, status);
+      const agendamento = await this.servico.moverStatus(
+        id,
+        status,
+        SessaoDaRequisicao.profissionalId(res)
+      );
       res.json(agendamento);
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });

@@ -1,6 +1,14 @@
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  Navigate,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { AutenticacaoService } from "../../services/AutenticacaoService";
 import { SessaoAdmin } from "../../services/SessaoAdmin";
+import type { UsuarioLogado } from "../../services/types";
 import {
   IconeBrilho,
   IconeCalendario,
@@ -14,18 +22,47 @@ import {
 
 const autenticacaoService = new AutenticacaoService();
 
+// Áreas da clínica inteira: só para usuários com acesso total (sem profissional vinculado).
+const AREAS_DE_ACESSO_TOTAL = ["/admin/tratamentos", "/admin/configuracoes"];
+
 export function AdminLayout() {
   const navegar = useNavigate();
+  const { pathname } = useLocation();
+  const logado = SessaoAdmin.estaAtiva();
 
-  if (!SessaoAdmin.estaAtiva()) {
+  const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!logado) {
+      return;
+    }
+    autenticacaoService
+      .usuarioLogado()
+      .then(setUsuario)
+      .catch((erroRequisicao: Error) => setErro(erroRequisicao.message));
+  }, [logado]);
+
+  if (!logado) {
     return <Navigate to="/admin/login" replace />;
   }
-
-  const email = SessaoAdmin.getEmail();
 
   function sair(): void {
     autenticacaoService.sair();
     navegar("/", { replace: true });
+  }
+
+  if (!usuario) {
+    return (
+      <div className="admin-layout admin-carregando">
+        {erro ? <p className="mensagem-erro">{erro}</p> : <p>Carregando...</p>}
+      </div>
+    );
+  }
+
+  const acessoTotal = usuario.profissionalId === null;
+  if (!acessoTotal && AREAS_DE_ACESSO_TOTAL.some((area) => pathname.startsWith(area))) {
+    return <Navigate to="/admin" replace />;
   }
 
   return (
@@ -47,11 +84,13 @@ export function AdminLayout() {
             <IconeQuadro /> Agendamentos
           </NavLink>
           <NavLink to="/admin/profissionais">
-            <IconePessoas /> Profissionais
+            <IconePessoas /> {acessoTotal ? "Profissionais" : "Meu cadastro"}
           </NavLink>
-          <NavLink to="/admin/tratamentos">
-            <IconeBrilho /> Tratamentos
-          </NavLink>
+          {acessoTotal && (
+            <NavLink to="/admin/tratamentos">
+              <IconeBrilho /> Tratamentos
+            </NavLink>
+          )}
           <NavLink to="/admin/horarios">
             <IconeRelogio /> Horários
           </NavLink>
@@ -60,19 +99,25 @@ export function AdminLayout() {
           </NavLink>
         </nav>
 
-        <span className="admin-nav-secao">Sistema</span>
-        <nav className="admin-nav">
-          <NavLink to="/admin/configuracoes">
-            <IconeEngrenagem /> Configurações
-          </NavLink>
-        </nav>
+        {acessoTotal && (
+          <>
+            <span className="admin-nav-secao">Sistema</span>
+            <nav className="admin-nav">
+              <NavLink to="/admin/configuracoes">
+                <IconeEngrenagem /> Configurações
+              </NavLink>
+            </nav>
+          </>
+        )}
 
         <div className="admin-usuario">
-          <span className="admin-avatar">{(email.charAt(0) || "A").toUpperCase()}</span>
+          <span className="admin-avatar">{(usuario.email.charAt(0) || "A").toUpperCase()}</span>
           <span className="admin-usuario-texto">
-            <span className="admin-usuario-papel">Administrador</span>
-            <span className="admin-usuario-email" title={email}>
-              {email}
+            <span className="admin-usuario-papel" title={usuario.profissionalNome ?? undefined}>
+              {acessoTotal ? "Administrador" : usuario.profissionalNome}
+            </span>
+            <span className="admin-usuario-email" title={usuario.email}>
+              {usuario.email}
             </span>
           </span>
           <button
@@ -87,7 +132,7 @@ export function AdminLayout() {
         </div>
       </aside>
       <section className="admin-conteudo">
-        <Outlet />
+        <Outlet context={usuario} />
       </section>
     </div>
   );

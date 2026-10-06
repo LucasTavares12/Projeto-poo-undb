@@ -8,6 +8,7 @@ import { AgendamentoController } from "./controllers/AgendamentoController";
 import { AutenticacaoController } from "./controllers/AutenticacaoController";
 import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
 import { RelatorioController } from "./controllers/RelatorioController";
+import { UsuarioController } from "./controllers/UsuarioController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -26,6 +27,7 @@ export class App {
   private readonly agendamentoController = new AgendamentoController();
   private readonly configuracaoController = new ConfiguracaoController();
   private readonly relatorioController = new RelatorioController();
+  private readonly usuarioController = new UsuarioController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -36,6 +38,13 @@ export class App {
   /** Colocado antes do handler nas rotas que só o administrador pode usar. */
   private readonly exigirAdmin: express.RequestHandler = (req, res, next) =>
     this.autenticacaoMiddleware.verificar(req, res, next);
+
+  /**
+   * Depois de `exigirAdmin`, nas áreas da clínica inteira (usuários, configurações,
+   * tratamentos, cadastro e exclusão de profissionais): conta ligada a profissional não entra.
+   */
+  private readonly soAcessoTotal: express.RequestHandler = (req, res, next) =>
+    this.autenticacaoMiddleware.exigirAcessoTotal(req, res, next);
 
   constructor() {
     this.app = express();
@@ -63,6 +72,9 @@ export class App {
 
     this.app.post("/login", (req, res) => this.autenticacaoController.entrar(req, res));
     this.app.post("/cadastro", (req, res) => this.autenticacaoController.cadastrar(req, res));
+    this.app.get("/sessao", this.exigirAdmin, (req, res) =>
+      this.autenticacaoController.sessao(req, res)
+    );
 
     this.configurarRotasDeProfissionais();
     this.configurarRotasDeTratamentos();
@@ -70,30 +82,31 @@ export class App {
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
     this.configurarRotasDeRelatorios();
+    this.configurarRotasDeUsuarios();
   }
 
   private configurarRotasDeProfissionais(): void {
     this.app.get("/profissionais", (req, res) => this.profissionalController.listar(req, res));
-    this.app.post("/profissionais", this.exigirAdmin, (req, res) =>
+    this.app.post("/profissionais", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.profissionalController.criar(req, res)
     );
     this.app.put("/profissionais/:id", this.exigirAdmin, (req, res) =>
       this.profissionalController.atualizar(req, res)
     );
-    this.app.delete("/profissionais/:id", this.exigirAdmin, (req, res) =>
+    this.app.delete("/profissionais/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.profissionalController.deletar(req, res)
     );
   }
 
   private configurarRotasDeTratamentos(): void {
     this.app.get("/tratamentos", (req, res) => this.tratamentoController.listar(req, res));
-    this.app.post("/tratamentos", this.exigirAdmin, (req, res) =>
+    this.app.post("/tratamentos", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.tratamentoController.criar(req, res)
     );
-    this.app.put("/tratamentos/:id", this.exigirAdmin, (req, res) =>
+    this.app.put("/tratamentos/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.tratamentoController.atualizar(req, res)
     );
-    this.app.delete("/tratamentos/:id", this.exigirAdmin, (req, res) =>
+    this.app.delete("/tratamentos/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.tratamentoController.deletar(req, res)
     );
   }
@@ -128,7 +141,7 @@ export class App {
 
   private configurarRotasDeConfiguracoes(): void {
     this.app.get("/configuracoes", (req, res) => this.configuracaoController.obter(req, res));
-    this.app.put("/configuracoes", this.exigirAdmin, (req, res) =>
+    this.app.put("/configuracoes", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.configuracaoController.atualizar(req, res)
     );
   }
@@ -136,6 +149,27 @@ export class App {
   private configurarRotasDeRelatorios(): void {
     this.app.get("/relatorios/mensal", this.exigirAdmin, (req, res) =>
       this.relatorioController.mensal(req, res)
+    );
+  }
+
+  private configurarRotasDeUsuarios(): void {
+    this.app.get("/usuarios", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.listar(req, res)
+    );
+    this.app.post("/usuarios", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.criar(req, res)
+    );
+    this.app.put("/usuarios/:id/email", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.alterarEmail(req, res)
+    );
+    this.app.put("/usuarios/:id/senha", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.alterarSenha(req, res)
+    );
+    this.app.put("/usuarios/:id/profissional", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.vincularProfissional(req, res)
+    );
+    this.app.delete("/usuarios/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+      this.usuarioController.excluir(req, res)
     );
   }
 

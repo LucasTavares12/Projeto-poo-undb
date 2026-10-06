@@ -7,6 +7,7 @@ import { Duracao } from "../../models/Duracao";
 import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { ModalAgendamentoManual } from "../../components/admin/ModalAgendamentoManual";
+import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import {
   IconeAtualizar,
   IconeBrilho,
@@ -30,6 +31,7 @@ const COLUNAS: { status: StatusAgendamento; titulo: string; maisRecentePrimeiro:
 ];
 
 export function KanbanPage() {
+  const usuario = useUsuarioLogado();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -174,7 +176,11 @@ export function KanbanPage() {
     <section className="pagina pagina-larga">
       <CabecalhoPagina
         titulo="Agendamentos"
-        descricao="Acompanhe os atendimentos e arraste os cards para mudar de etapa."
+        descricao={
+          usuario.profissionalId === null
+            ? "Acompanhe os atendimentos e arraste os cards para mudar de etapa."
+            : "Seus atendimentos. Arraste os cards para mudar de etapa."
+        }
         acoes={
           <>
             <button type="button" className="admin-botao" onClick={atualizarLista}>
@@ -198,7 +204,11 @@ export function KanbanPage() {
       {mensagem && <p className="mensagem-sucesso kanban-mensagem">{mensagem}</p>}
 
       {modalAberto && (
-        <ModalAgendamentoManual onFechar={() => setModalAberto(false)} onCriado={aoCriarManual} />
+        <ModalAgendamentoManual
+          profissionalFixo={usuario.profissionalId}
+          onFechar={() => setModalAberto(false)}
+          onCriado={aoCriarManual}
+        />
       )}
 
       {carregando ? (

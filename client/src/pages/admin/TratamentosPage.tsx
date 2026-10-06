@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { TratamentoService } from "../../services/TratamentoService";
-import type { Tratamento } from "../../services/types";
+import { ProfissionalService } from "../../services/ProfissionalService";
+import type { Profissional, Tratamento } from "../../services/types";
 import { Duracao } from "../../models/Duracao";
 import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 
 const tratamentoService = new TratamentoService();
+const profissionalService = new ProfissionalService();
 
 interface Formulario {
   nome: string;
   descricao: string;
   valor: string;
   duracaoMinutos: number;
+  /** null = todos os profissionais. */
+  profissionalId: number | null;
 }
 
 const FORMULARIO_VAZIO: Formulario = {
@@ -20,10 +24,12 @@ const FORMULARIO_VAZIO: Formulario = {
   descricao: "",
   valor: "",
   duracaoMinutos: Duracao.SLOT_MINUTOS,
+  profissionalId: null,
 };
 
 export function TratamentosPage() {
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
+  const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   const [formulario, setFormulario] = useState<Formulario>(FORMULARIO_VAZIO);
@@ -36,7 +42,12 @@ export function TratamentosPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        setTratamentos(await tratamentoService.listar());
+        const [listaTratamentos, listaProfissionais] = await Promise.all([
+          tratamentoService.listar(),
+          profissionalService.listar(),
+        ]);
+        setTratamentos(listaTratamentos);
+        setProfissionais(listaProfissionais);
       } catch {
         setErro("Não foi possível carregar os tratamentos.");
       } finally {
@@ -53,9 +64,17 @@ export function TratamentosPage() {
       descricao: tratamento.descricao,
       valor: String(tratamento.valor),
       duracaoMinutos: tratamento.duracaoMinutos,
+      profissionalId: tratamento.profissionalId,
     });
     setConfirmandoExclusaoId(null);
     setErro(null);
+  }
+
+  function nomeDoProfissional(profissionalId: number | null): string {
+    if (profissionalId === null) {
+      return "Todos";
+    }
+    return profissionais.find((profissional) => profissional.id === profissionalId)?.nome ?? "—";
   }
 
   function limparFormulario(): void {
@@ -71,6 +90,7 @@ export function TratamentosPage() {
       descricao: formulario.descricao.trim(),
       valor: Number(formulario.valor),
       duracaoMinutos: formulario.duracaoMinutos,
+      profissionalId: formulario.profissionalId,
     };
 
     setSalvando(true);
@@ -154,6 +174,25 @@ export function TratamentosPage() {
               ))}
             </select>
           </label>
+          <label>
+            Profissional
+            <select
+              value={formulario.profissionalId ?? ""}
+              onChange={(evento) =>
+                setFormulario({
+                  ...formulario,
+                  profissionalId: evento.target.value === "" ? null : Number(evento.target.value),
+                })
+              }
+            >
+              <option value="">Todos os profissionais</option>
+              {profissionais.map((profissional) => (
+                <option key={profissional.id} value={profissional.id}>
+                  {profissional.nome}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="admin-campo-largo">
             Descrição
             <textarea
@@ -187,6 +226,7 @@ export function TratamentosPage() {
             <tr>
               <th>Nome</th>
               <th>Descrição</th>
+              <th>Profissional</th>
               <th>Duração</th>
               <th className="admin-tabela-valor">Valor</th>
               <th />
@@ -197,6 +237,7 @@ export function TratamentosPage() {
               <tr key={tratamento.id}>
                 <td>{tratamento.nome}</td>
                 <td>{tratamento.descricao}</td>
+                <td>{nomeDoProfissional(tratamento.profissionalId)}</td>
                 <td>
                   <span className="admin-etiqueta">
                     {new Duracao(tratamento.duracaoMinutos).formatar()}

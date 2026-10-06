@@ -80,6 +80,15 @@ export class AgendamentoService {
     }
 
     const tratamentos = await this.buscarTratamentos(dados.tratamentoIds);
+    const deOutroProfissional = tratamentos.find(
+      (tratamento) => !tratamento.ehRealizadoPor(dados.profissionalId)
+    );
+    if (deOutroProfissional) {
+      throw new Error(
+        `O tratamento "${deOutroProfissional.getNome()}" não é realizado por ${profissional.getNome()}.`
+      );
+    }
+
     return new Agendamento(
       new Cliente(nome, telefone),
       profissional,
@@ -103,8 +112,11 @@ export class AgendamentoService {
     );
   }
 
-  public async listarTodos(): Promise<Agendamento[]> {
-    return this.agendamentoRepo.listarTodos();
+  /** `profissionalId` null = todos (acesso total); com valor, só os daquele profissional. */
+  public async listarTodos(profissionalId: number | null = null): Promise<Agendamento[]> {
+    return profissionalId === null
+      ? this.agendamentoRepo.listarTodos()
+      : this.agendamentoRepo.listarPorProfissional(profissionalId);
   }
 
   /** Usado pela tela do cliente pra saber quais horários mostrar como clicáveis. */
@@ -124,11 +136,12 @@ export class AgendamentoService {
   }
 
   /** Usado pelo painel Kanban do admin ao arrastar um card para outra coluna. */
-  public async moverStatus(id: number, novoStatus: StatusAgendamento): Promise<Agendamento> {
-    const agendamento = await this.agendamentoRepo.buscarPorId(id);
-    if (!agendamento) {
-      throw new Error("Agendamento não encontrado.");
-    }
+  public async moverStatus(
+    id: number,
+    novoStatus: StatusAgendamento,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Agendamento> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
 
     agendamento.moverPara(novoStatus);
     await this.agendamentoRepo.atualizarStatus(id, agendamento.getStatus());
@@ -140,11 +153,8 @@ export class AgendamentoService {
    * ele ocupava voltam a aparecer livres, já que a disponibilidade é calculada
    * a partir dos agendamentos existentes.
    */
-  public async cancelar(id: number): Promise<void> {
-    const agendamento = await this.agendamentoRepo.buscarPorId(id);
-    if (!agendamento) {
-      throw new Error("Agendamento não encontrado.");
-    }
+  public async cancelar(id: number, profissionalDoUsuario: number | null = null): Promise<void> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
     if (!agendamento.podeSerCancelado()) {
       throw new Error(
         "Só é possível cancelar agendamentos que ainda não começaram a ser atendidos."
@@ -152,6 +162,25 @@ export class AgendamentoService {
     }
 
     await this.agendamentoRepo.deletar(id);
+  }
+
+  /**
+   * Busca um agendamento que o usuário logado pode ver: com `profissionalDoUsuario`,
+   * agendamentos de outros profissionais são tratados como inexistentes.
+   */
+  private async buscarVisivel(
+    id: number,
+    profissionalDoUsuario: number | null
+  ): Promise<Agendamento> {
+    const agendamento = await this.agendamentoRepo.buscarPorId(id);
+    if (
+      !agendamento ||
+      (profissionalDoUsuario !== null &&
+        agendamento.getProfissional().getId() !== profissionalDoUsuario)
+    ) {
+      throw new Error("Agendamento não encontrado.");
+    }
+    return agendamento;
   }
 
   /** Quantos slots de 30min seguidos o conjunto de tratamentos ocupa na agenda. */

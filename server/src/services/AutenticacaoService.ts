@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { Administrador } from "../module/Administrador";
 import { AdministradorRepository } from "../repositories/AdministradorRepository";
 import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
+import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { ErroAutenticacao } from "./ErroAutenticacao";
 
 interface ConteudoToken {
@@ -21,6 +22,7 @@ export class AutenticacaoService {
 
   private readonly repositorio = new AdministradorRepository();
   private readonly configuracaoRepo = new ConfiguracaoRepository();
+  private readonly profissionalRepo = new ProfissionalRepository();
   private readonly segredo: string;
 
   constructor() {
@@ -59,11 +61,38 @@ export class AutenticacaoService {
     });
   }
 
-  /** true se o token foi emitido por este servidor e ainda não expirou. */
-  public tokenEhValido(token: string): boolean {
+  /**
+   * Confere o token de uma requisição do painel e devolve a conta logada, ou null se o
+   * token for inválido, tiver expirado ou a conta tiver sido excluída. A conta vem do banco
+   * a cada requisição, então mudanças de vínculo com profissional valem na hora.
+   */
+  public async usuarioDaSessao(token: string): Promise<Administrador | null> {
+    const conteudo = this.lerToken(token);
+    return conteudo ? this.repositorio.buscarPorId(conteudo.adminId) : null;
+  }
+
+  /** Quem está logado, para o painel decidir o que mostrar (menu, filtros, etc.). */
+  public async dadosDaSessao(adminId: number) {
+    const usuario = await this.repositorio.buscarPorId(adminId);
+    if (!usuario) {
+      throw new ErroAutenticacao("Faça login como administrador para continuar.", 401);
+    }
+    const profissionalId = usuario.getProfissionalId();
+    const profissional =
+      profissionalId === null ? null : await this.profissionalRepo.buscarPorId(profissionalId);
+    return {
+      id: usuario.getId(),
+      email: usuario.getEmail(),
+      profissionalId,
+      profissionalNome: profissional?.getNome() ?? null,
+    };
+  }
+
+  /** Conteúdo do token, se ele foi emitido por este servidor e ainda não expirou. */
+  private lerToken(token: string): ConteudoToken | null {
     const [conteudoCodificado, assinatura] = token.split(".");
     if (!conteudoCodificado || !assinatura) {
-      return false;
+      return null;
     }
 
     const assinaturaRecebida = Buffer.from(assinatura);
@@ -72,16 +101,20 @@ export class AutenticacaoService {
       assinaturaRecebida.length !== assinaturaEsperada.length ||
       !timingSafeEqual(assinaturaRecebida, assinaturaEsperada)
     ) {
-      return false;
+      return null;
     }
 
     try {
       const conteudo = JSON.parse(
         Buffer.from(conteudoCodificado, "base64url").toString("utf8")
       ) as ConteudoToken;
-      return typeof conteudo.expiraEm === "number" && conteudo.expiraEm > Date.now();
+      const valido =
+        typeof conteudo.adminId === "number" &&
+        typeof conteudo.expiraEm === "number" &&
+        conteudo.expiraEm > Date.now();
+      return valido ? conteudo : null;
     } catch {
-      return false;
+      return null;
     }
   }
 
