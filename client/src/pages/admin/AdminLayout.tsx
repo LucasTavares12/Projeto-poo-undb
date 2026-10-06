@@ -5,6 +5,7 @@ import {
   IconeBrilho,
   IconeCalendario,
   IconeEngrenagem,
+  IconeGrafico,
   IconePessoas,
   IconeQuadro,
   IconeRelogio,
@@ -53,6 +54,9 @@ export function AdminLayout() {
           </NavLink>
           <NavLink to="/admin/horarios">
             <IconeRelogio /> Horários
+          </NavLink>
+          <NavLink to="/admin/relatorios">
+            <IconeGrafico /> Relatórios
           </NavLink>
         </nav>
 

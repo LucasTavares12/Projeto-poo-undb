@@ -7,6 +7,7 @@ import { HorarioDisponivelController } from "./controllers/HorarioDisponivelCont
 import { AgendamentoController } from "./controllers/AgendamentoController";
 import { AutenticacaoController } from "./controllers/AutenticacaoController";
 import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
+import { RelatorioController } from "./controllers/RelatorioController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -24,6 +25,7 @@ export class App {
   private readonly horarioDisponivelController = new HorarioDisponivelController();
   private readonly agendamentoController = new AgendamentoController();
   private readonly configuracaoController = new ConfiguracaoController();
+  private readonly relatorioController = new RelatorioController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -67,6 +69,7 @@ export class App {
     this.configurarRotasDeHorariosDisponiveis();
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
+    this.configurarRotasDeRelatorios();
   }
 
   private configurarRotasDeProfissionais(): void {
@@ -127,6 +130,12 @@ export class App {
     this.app.get("/configuracoes", (req, res) => this.configuracaoController.obter(req, res));
     this.app.put("/configuracoes", this.exigirAdmin, (req, res) =>
       this.configuracaoController.atualizar(req, res)
+    );
+  }
+
+  private configurarRotasDeRelatorios(): void {
+    this.app.get("/relatorios/mensal", this.exigirAdmin, (req, res) =>
+      this.relatorioController.mensal(req, res)
     );
   }
 

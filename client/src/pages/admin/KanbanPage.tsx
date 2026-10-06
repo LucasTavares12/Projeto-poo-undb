@@ -6,11 +6,13 @@ import { DataAgenda } from "../../models/DataAgenda";
 import { Duracao } from "../../models/Duracao";
 import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { ModalAgendamentoManual } from "../../components/admin/ModalAgendamentoManual";
 import {
   IconeAtualizar,
   IconeBrilho,
   IconeCalendario,
   IconeDinheiro,
+  IconeMais,
   IconePessoas,
   IconeRelogio,
   IconeTelefone,
@@ -19,10 +21,12 @@ import {
 const agendamentoService = new AgendamentoService();
 
 // A ordem das colunas é também a ordem em que o atendimento avança.
-const COLUNAS: { status: StatusAgendamento; titulo: string }[] = [
-  { status: "AGENDADO", titulo: "Agendados" },
-  { status: "EM_ATENDIMENTO", titulo: "Em atendimento" },
-  { status: "FINALIZADO", titulo: "Finalizados" },
+// Agendados e em atendimento: o mais próximo de acontecer fica no topo.
+// Finalizados: o mais recente fica no topo (os antigos vão descendo).
+const COLUNAS: { status: StatusAgendamento; titulo: string; maisRecentePrimeiro: boolean }[] = [
+  { status: "AGENDADO", titulo: "Agendados", maisRecentePrimeiro: false },
+  { status: "EM_ATENDIMENTO", titulo: "Em atendimento", maisRecentePrimeiro: false },
+  { status: "FINALIZADO", titulo: "Finalizados", maisRecentePrimeiro: true },
 ];
 
 export function KanbanPage() {
@@ -33,6 +37,19 @@ export function KanbanPage() {
   const [arrastandoId, setArrastandoId] = useState<number | null>(null);
   const [colunaAlvo, setColunaAlvo] = useState<StatusAgendamento | null>(null);
   const [confirmandoCancelamentoId, setConfirmandoCancelamentoId] = useState<number | null>(null);
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [mensagem, setMensagem] = useState<string | null>(null);
+
+  /** O card novo entra direto na coluna "Agendados", já na posição do seu horário. */
+  function aoCriarManual(criado: Agendamento): void {
+    setAgendamentos((lista) => [...lista, criado]);
+    setModalAberto(false);
+    setMensagem(
+      `Agendamento de ${criado.cliente.nome} criado para ` +
+        `${new DataAgenda(criado.data).formatar()} às ${criado.horarioInicio}.`
+    );
+  }
 
   useEffect(() => {
     async function carregar() {
@@ -159,13 +176,30 @@ export function KanbanPage() {
         titulo="Agendamentos"
         descricao="Acompanhe os atendimentos e arraste os cards para mudar de etapa."
         acoes={
-          <button type="button" className="admin-botao" onClick={atualizarLista}>
-            <IconeAtualizar tamanho={16} /> Atualizar
-          </button>
+          <>
+            <button type="button" className="admin-botao" onClick={atualizarLista}>
+              <IconeAtualizar tamanho={16} /> Atualizar
+            </button>
+            <button
+              type="button"
+              className="admin-botao principal"
+              onClick={() => {
+                setMensagem(null);
+                setModalAberto(true);
+              }}
+            >
+              <IconeMais tamanho={16} /> Novo agendamento
+            </button>
+          </>
         }
       />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
+      {mensagem && <p className="mensagem-sucesso kanban-mensagem">{mensagem}</p>}
+
+      {modalAberto && (
+        <ModalAgendamentoManual onFechar={() => setModalAberto(false)} onCriado={aoCriarManual} />
+      )}
 
       {carregando ? (
         <p>Carregando...</p>
@@ -184,9 +218,16 @@ export function KanbanPage() {
 
           <div className="kanban">
             {COLUNAS.map((coluna, indice) => {
-              const cartoes = agendamentos.filter(
-                (agendamento) => agendamento.status === coluna.status
-              );
+              // "AAAA-MM-DD HH:MM" ordena certo como texto: data primeiro, depois o horário.
+              const momento = (agendamento: Agendamento) =>
+                `${agendamento.data.slice(0, 10)} ${agendamento.horarioInicio}`;
+              const cartoes = agendamentos
+                .filter((agendamento) => agendamento.status === coluna.status)
+                .sort((a, b) =>
+                  coluna.maisRecentePrimeiro
+                    ? momento(b).localeCompare(momento(a))
+                    : momento(a).localeCompare(momento(b))
+                );
               const anterior = COLUNAS[indice - 1];
               const proxima = COLUNAS[indice + 1];
 

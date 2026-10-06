@@ -8,6 +8,7 @@ import { ProfissionaisPage } from "./pages/admin/ProfissionaisPage";
 import { TratamentosPage } from "./pages/admin/TratamentosPage";
 import { HorariosPage } from "./pages/admin/HorariosPage";
 import { ConfiguracoesPage } from "./pages/admin/ConfiguracoesPage";
+import { RelatoriosPage } from "./pages/admin/RelatoriosPage";
 import "./App.css";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="profissionais" element={<ProfissionaisPage />} />
         <Route path="tratamentos" element={<TratamentosPage />} />
         <Route path="horarios" element={<HorariosPage />} />
+        <Route path="relatorios" element={<RelatoriosPage />} />
         <Route path="configuracoes" element={<ConfiguracoesPage />} />
       </Route>
     </Routes>

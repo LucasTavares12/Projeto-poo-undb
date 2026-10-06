@@ -97,6 +97,15 @@ export class AgendamentoRepository extends Repositorio {
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
+  /** Agendamentos entre duas datas, inclusive ("YYYY-MM-DD"). Usado nos relatórios. */
+  public async listarPorPeriodo(inicio: string, fim: string): Promise<Agendamento[]> {
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${SELECT_BASE} WHERE a.data BETWEEN ? AND ? ORDER BY a.data, a.hora_inicio`,
+      [inicio, fim]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
   public async atualizarStatus(id: number, status: StatusAgendamento): Promise<void> {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
   }

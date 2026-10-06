@@ -149,3 +149,37 @@ export function IconeDinheiro(props: Props) {
     </Icone>
   );
 }
+
+export function IconeGrafico(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M3 3v18h18" />
+      <path d="M8 17V11M13 17V7M18 17v-4" />
+    </Icone>
+  );
+}
+
+export function IconeTendencia(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="m22 7-8.5 8.5-5-5L2 17" />
+      <path d="M16 7h6v6" />
+    </Icone>
+  );
+}
+
+export function IconeMais(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Icone>
+  );
+}
+
+export function IconeFechar(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Icone>
+  );
+}

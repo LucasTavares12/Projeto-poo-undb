@@ -9,6 +9,7 @@ import { SeletorHorario } from "../../components/cliente/SeletorHorario";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
+import { Telefone } from "../../models/Telefone";
 import {
   IconeCalendario,
   IconeConfirmado,
@@ -71,6 +72,8 @@ export function AgendamentoPage() {
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
+  // Só mostra os avisos de campo obrigatório depois da primeira tentativa de confirmar.
+  const [tentouConfirmar, setTentouConfirmar] = useState(false);
 
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -163,12 +166,18 @@ export function AgendamentoPage() {
     [tratamentosSelecionados]
   );
 
-  const podeConfirmar =
-    profissionalId !== null &&
-    tratamentoIds.length > 0 &&
-    horarioInicio !== null &&
-    clienteNome.trim().length > 0 &&
-    clienteTelefone.trim().length > 0;
+  // Campos obrigatórios do agendamento: nome, telefone, data e horário.
+  const errosDosDados = {
+    nome: clienteNome.trim() === "" ? "Informe seu nome." : null,
+    telefone:
+      clienteTelefone.trim() === ""
+        ? "Informe um telefone para contato."
+        : !new Telefone(clienteTelefone).ehValido()
+          ? "Telefone incompleto: informe o DDD e o número."
+          : null,
+    dataHorario: data === "" || horarioInicio === null ? "Escolha a data e o horário." : null,
+  };
+  const dadosValidos = !errosDosDados.nome && !errosDosDados.telefone && !errosDosDados.dataHorario;
 
   const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
   const indiceEtapa = etapas.indexOf(etapa);
@@ -193,6 +202,7 @@ export function AgendamentoPage() {
     setSelecaoHorario(null);
     setClienteNome("");
     setClienteTelefone("");
+    setTentouConfirmar(false);
     setAgendamentoConfirmado(null);
     setErro(null);
   }
@@ -226,7 +236,8 @@ export function AgendamentoPage() {
   }
 
   async function confirmarAgendamento(): Promise<void> {
-    if (!profissionalId || !horarioInicio) {
+    setTentouConfirmar(true);
+    if (!dadosValidos || !profissionalId || !horarioInicio || tratamentoIds.length === 0) {
       return;
     }
 
@@ -385,7 +396,9 @@ export function AgendamentoPage() {
 
           {etapa === "data" && (
             <>
-              <h3>Selecione a Data</h3>
+              <h3>
+                Selecione a Data <span className="campo-obrigatorio">*</span>
+              </h3>
               <input
                 type="date"
                 className="campo"
@@ -398,7 +411,10 @@ export function AgendamentoPage() {
 
           {etapa === "horarios" && (
             <>
-              <h3>Horários em {new DataAgenda(data).formatar()}</h3>
+              <h3>
+                Horários em {new DataAgenda(data).formatar()}{" "}
+                {modo === "agendar" && <span className="campo-obrigatorio">*</span>}
+              </h3>
               {modo === "ver" && (
                 <p className="passo-dica">
                   Horários livres para atendimentos
@@ -424,21 +440,52 @@ export function AgendamentoPage() {
                 </p>
               </div>
               <h3>Preencha seus Dados</h3>
+              {tentouConfirmar && errosDosDados.dataHorario && (
+                <p className="mensagem-erro">{errosDosDados.dataHorario}</p>
+              )}
               <div className="formulario-cliente">
-                <input
-                  type="text"
-                  className="campo"
-                  placeholder="Seu nome"
-                  value={clienteNome}
-                  onChange={(evento) => setClienteNome(evento.target.value)}
-                />
-                <input
-                  type="tel"
-                  className="campo"
-                  placeholder="Telefone para contato"
-                  value={clienteTelefone}
-                  onChange={(evento) => setClienteTelefone(evento.target.value)}
-                />
+                <label className="campo-rotulo">
+                  <span>
+                    Nome <span className="campo-obrigatorio">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    className={`campo ${tentouConfirmar && errosDosDados.nome ? "invalido" : ""}`}
+                    placeholder="Seu nome completo"
+                    autoComplete="name"
+                    required
+                    aria-invalid={tentouConfirmar && Boolean(errosDosDados.nome)}
+                    value={clienteNome}
+                    onChange={(evento) => setClienteNome(evento.target.value)}
+                  />
+                  {tentouConfirmar && errosDosDados.nome && (
+                    <span className="campo-erro">{errosDosDados.nome}</span>
+                  )}
+                </label>
+                <label className="campo-rotulo">
+                  <span>
+                    Telefone <span className="campo-obrigatorio">*</span>
+                  </span>
+                  <input
+                    type="tel"
+                    className={`campo ${tentouConfirmar && errosDosDados.telefone ? "invalido" : ""}`}
+                    placeholder="(00) 00000-0000"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    required
+                    aria-invalid={tentouConfirmar && Boolean(errosDosDados.telefone)}
+                    value={clienteTelefone}
+                    onChange={(evento) =>
+                      setClienteTelefone(new Telefone(evento.target.value).formatar())
+                    }
+                  />
+                  {tentouConfirmar && errosDosDados.telefone && (
+                    <span className="campo-erro">{errosDosDados.telefone}</span>
+                  )}
+                </label>
+                <p className="campo-legenda">
+                  <span className="campo-obrigatorio">*</span> Campos obrigatórios
+                </p>
               </div>
             </>
           )}
@@ -457,7 +504,7 @@ export function AgendamentoPage() {
             <button
               type="button"
               className="botao-primario"
-              disabled={!podeConfirmar || enviando}
+              disabled={enviando}
               onClick={confirmarAgendamento}
             >
               {enviando ? "Agendando..." : "Confirmar agendamento"}

@@ -30,9 +30,48 @@ export class AgendamentoService {
   private readonly agendamentoRepo = new AgendamentoRepository();
   private readonly disponibilidadeService = new DisponibilidadeService();
 
+  /**
+   * Cria um agendamento (pela página do cliente ou pelo "Novo agendamento" do painel):
+   * só aceita horários livres na agenda liberada do profissional.
+   */
   public async criar(dados: DadosNovoAgendamento): Promise<Agendamento> {
+    const novo = await this.montarNovoAgendamento(dados);
+
+    const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
+      dados.profissionalId,
+      dados.data,
+      novo.getQuantidadeSlots()
+    );
+    const horarioAindaDisponivel = horariosDisponiveis.some((horario) =>
+      horario.equals(dados.horarioInicio)
+    );
+    if (!horarioAindaDisponivel) {
+      throw new Error("Esse horário não está mais disponível. Escolha outro horário.");
+    }
+
+    return this.salvarComCliente(novo);
+  }
+
+  /** Valida os dados e monta o agendamento (ainda sem salvar nada no banco). */
+  private async montarNovoAgendamento(dados: DadosNovoAgendamento): Promise<Agendamento> {
+    const nome = String(dados.clienteNome ?? "").trim();
+    const telefone = String(dados.clienteTelefone ?? "").trim();
+    if (!nome) {
+      throw new Error("Informe o nome do cliente.");
+    }
+    if (!telefone) {
+      throw new Error("Informe o telefone do cliente.");
+    }
+    // Telefone com DDD: 10 dígitos (fixo) ou 11 (celular).
+    const digitosTelefone = telefone.replace(/\D/g, "").length;
+    if (digitosTelefone < 10 || digitosTelefone > 11) {
+      throw new Error("Telefone inválido: informe o DDD e o número.");
+    }
     if (dados.tratamentoIds.length === 0) {
       throw new Error("Selecione ao menos um tratamento.");
+    }
+    if (Number.isNaN(dados.data.getTime())) {
+      throw new Error("Data inválida.");
     }
 
     const profissional = await this.profissionalRepo.buscarPorId(dados.profissionalId);
@@ -41,34 +80,27 @@ export class AgendamentoService {
     }
 
     const tratamentos = await this.buscarTratamentos(dados.tratamentoIds);
-    const quantidadeSlots = this.somarSlots(tratamentos);
-
-    const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
-      dados.profissionalId,
-      dados.data,
-      quantidadeSlots
-    );
-
-    const horarioAindaDisponivel = horariosDisponiveis.some((horario) =>
-      horario.equals(dados.horarioInicio)
-    );
-    if (!horarioAindaDisponivel) {
-      throw new Error("Esse horário não está mais disponível. Escolha outro horário.");
-    }
-
-    const cliente = await this.clienteRepo.salvar(
-      new Cliente(dados.clienteNome, dados.clienteTelefone)
-    );
-
-    const agendamento = new Agendamento(
-      cliente,
+    return new Agendamento(
+      new Cliente(nome, telefone),
       profissional,
       tratamentos,
       dados.data,
       dados.horarioInicio
     );
+  }
 
-    return this.agendamentoRepo.salvar(agendamento);
+  /** Grava o cliente e depois o agendamento já ligado a ele. */
+  private async salvarComCliente(novo: Agendamento): Promise<Agendamento> {
+    const cliente = await this.clienteRepo.salvar(novo.getCliente());
+    return this.agendamentoRepo.salvar(
+      new Agendamento(
+        cliente,
+        novo.getProfissional(),
+        novo.getTratamentos(),
+        novo.getData(),
+        novo.getHorarioInicio()
+      )
+    );
   }
 
   public async listarTodos(): Promise<Agendamento[]> {

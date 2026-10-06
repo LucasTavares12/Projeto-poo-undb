@@ -27,6 +27,7 @@
   --perigo: #c2410c;
   --perigo-bg: rgba(194, 65, 12, 0.08);
   --raio: 10px;
+  --grafico: #b14d66;
 
   background: var(--fundo);
   color: var(--text);
@@ -49,6 +50,7 @@
     --sombra-elevada: 0 4px 12px rgba(0, 0, 0, 0.4);
     --perigo: #f08a5d;
     --perigo-bg: rgba(240, 138, 93, 0.12);
+    --grafico: #d86f8a;
   }
 }
 
@@ -1037,6 +1039,678 @@
   margin-top: 8px;
 }
 
+/* ---------- Aba Relatórios ---------- */
+
+.relatorio-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filtro-profissional {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.filtro-profissional select {
+  min-width: 190px;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 7px;
+  background: var(--superficie-alt);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filtro-profissional select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.seletor-mes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.seletor-mes .admin-botao {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.seletor-mes-nome {
+  min-width: 150px;
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.relatorio {
+  transition: opacity 0.2s;
+}
+
+/* Recarregando outro mês: mantém o anterior na tela, mais apagado. */
+.relatorio.atualizando {
+  opacity: 0.55;
+}
+
+.relatorio-resumo {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Cartão principal: o faturamento do mês, maior e com fundo rosé. */
+.relatorio-destaque {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 14px;
+  grid-column: span 2;
+  padding: 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8a4b56 0%, #b06372 100%);
+  box-shadow: 0 6px 18px rgba(138, 75, 86, 0.28);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.relatorio-destaque .admin-resumo-icone {
+  grid-row: 1 / 4;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.relatorio-destaque .admin-resumo-rotulo {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.relatorio-destaque-valor {
+  color: #fff;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.relatorio-variacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.relatorio-variacao span {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.relatorio-variacao.neutra {
+  font-weight: 400;
+}
+
+.relatorio-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.relatorio-cartao {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.relatorio-cartao-cabecalho {
+  margin-bottom: 20px;
+}
+
+.relatorio-cartao-inteiro {
+  grid-column: 1 / -1;
+}
+
+.relatorio-cartao-cabecalho h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.relatorio-cartao-cabecalho p {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.relatorio-vazio {
+  padding: 48px 0;
+  font-size: 14px;
+  text-align: center;
+  opacity: 0.75;
+}
+
+.relatorio-tabela {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.relatorio-tabela summary {
+  width: fit-content;
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.relatorio-tabela .admin-tabela {
+  margin-top: 12px;
+  box-shadow: none;
+}
+
+.relatorio-tabela-total td {
+  background: var(--superficie-alt);
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .relatorio-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorio-resumo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .relatorio-resumo {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorio-destaque {
+    grid-column: auto;
+  }
+}
+
+/* Gráfico de colunas: faturamento por dia */
+
+.grafico {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  grid-template-rows: 240px auto;
+  column-gap: 8px;
+}
+
+.grafico-eixo-y {
+  position: relative;
+}
+
+.grafico-eixo-y span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  color: var(--text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.grafico-area {
+  position: relative;
+}
+
+.grafico-grade {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.grafico-colunas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Cada dia ocupa uma faixa inteira: a área de passar o mouse é maior que a coluna. */
+.grafico-faixa {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  padding: 0 1px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: default;
+}
+
+.grafico-faixa.ativa,
+.grafico-faixa:focus-visible {
+  background: var(--accent-bg);
+  outline: none;
+}
+
+.grafico-coluna {
+  display: block;
+  width: 100%;
+  max-width: 22px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--grafico);
+  transition: filter 0.15s;
+}
+
+.grafico-faixa.ativa .grafico-coluna {
+  filter: brightness(1.12);
+}
+
+.grafico-rotulo {
+  position: absolute;
+  left: 50%;
+  margin-bottom: 4px;
+  transform: translateX(-50%);
+  color: var(--text-h);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.grafico-eixo-x {
+  display: flex;
+  grid-column: 2;
+  padding-top: 8px;
+}
+
+.grafico-eixo-x span {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.grafico-dica {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 132px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-elevada);
+  font-size: 12px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.grafico-dica-titulo {
+  text-transform: capitalize;
+}
+
+.grafico-dica strong {
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Ranking em barras horizontais: tratamentos mais realizados */
+
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranking li {
+  display: block;
+}
+
+.ranking-item {
+  display: grid;
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.ranking-item:hover {
+  background: var(--fundo);
+}
+
+/* Linha que funciona como botão (ex: escolher o profissional no filtro). */
+.ranking-item.clicavel {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ranking-item.clicavel:hover {
+  background: var(--fundo);
+}
+
+.ranking-item.clicavel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ranking-posicao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  grid-row: 1 / 3;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--superficie-alt);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ranking li:first-child .ranking-posicao {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.ranking-nome {
+  grid-column: 2;
+  grid-row: 1;
+  overflow: hidden;
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-valor {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ranking-valor strong {
+  color: var(--text-h);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking-trilha {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--superficie-alt);
+}
+
+.ranking-barra {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: 999px;
+  background: var(--grafico);
+}
+
+.ranking-restantes {
+  margin-top: 8px;
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* ---------- Campos obrigatórios (cliente e painel) ---------- */
+
+.campo-obrigatorio {
+  color: #be123c;
+  font-weight: 700;
+}
+
+.campo-erro {
+  color: #be123c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.campo-legenda {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.admin-campos input[aria-invalid="true"],
+.admin-campos select[aria-invalid="true"],
+.campo.invalido {
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
+}
+
+/* ---------- Janela de agendamento manual ---------- */
+
+.kanban-mensagem {
+  margin-bottom: 20px;
+}
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+  background: rgba(31, 19, 24, 0.45);
+  backdrop-filter: blur(2px);
+  animation: modal-surgir 0.15s ease-out;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 580px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--superficie);
+  box-shadow: 0 24px 48px rgba(31, 19, 24, 0.25);
+  text-align: left;
+}
+
+@keyframes modal-surgir {
+  from {
+    opacity: 0;
+  }
+}
+
+.modal-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 0;
+}
+
+.modal-cabecalho h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-cabecalho p {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.modal-fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.modal-fechar:hover {
+  background: var(--superficie-alt);
+  color: var(--text-h);
+}
+
+.modal-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 24px;
+}
+
+.modal-corpo .mensagem-erro {
+  margin: 0;
+}
+
+.modal-grupo {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.modal-grupo legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.modal-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.modal-opcao span {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.modal-opcao:hover {
+  border-color: var(--accent);
+}
+
+.modal-opcao.marcada {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.modal-opcao.marcada span {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.modal-total {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.modal-total strong {
+  color: var(--text-h);
+}
+
+.modal-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 16px 16px;
+  background: var(--fundo);
+}
+
+.modal-rodape .campo-legenda {
+  margin-right: auto;
+}
+
+@media (max-width: 560px) {
+  .modal-fundo {
+    padding: 16px 8px;
+  }
+}
+
 /* ---------- Área do cliente ---------- */
 
 .cliente {
@@ -1413,7 +2087,25 @@
 .formulario-cliente {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
+}
+
+.campo-rotulo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+  color: #3f2f32;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.campo-rotulo .campo {
+  font-weight: 400;
+}
+
+.formulario-cliente .campo-legenda {
+  color: var(--cliente-texto);
 }
 
 .resumo {

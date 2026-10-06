@@ -32,18 +32,23 @@ export class DisponibilidadeService {
 
     const conjuntoLiberados = new Set(horariosDoDiaSemana.map((horario) => horario.toString()));
 
+    const conjuntoOcupados = await this.horariosOcupados(profissionalId, data);
+
+    return horariosDoDiaSemana.filter((candidato) =>
+      this.todosOsSlotsCabem(candidato, quantidadeSlotsNecessarios, conjuntoLiberados, conjuntoOcupados)
+    );
+  }
+
+  /** Todos os slots de 30min já ocupados por agendamentos do profissional nesse dia. */
+  private async horariosOcupados(profissionalId: number, data: Date): Promise<Set<string>> {
     const agendamentosDoDia = await this.agendamentoRepo.listarPorProfissionalEData(
       profissionalId,
       data
     );
-    const conjuntoOcupados = new Set(
+    return new Set(
       agendamentosDoDia.flatMap((agendamento) =>
         agendamento.getHorariosOcupados().map((horario) => horario.toString())
       )
-    );
-
-    return horariosDoDiaSemana.filter((candidato) =>
-      this.todosOsSlotsCabem(candidato, quantidadeSlotsNecessarios, conjuntoLiberados, conjuntoOcupados)
     );
   }
 

@@ -46,3 +46,35 @@ export interface Agendamento {
 export interface Configuracoes {
   acessoPublicoLiberado: boolean;
 }
+
+export interface FaturamentoDoDia {
+  data: string;
+  valor: number;
+  atendimentos: number;
+}
+
+export interface TratamentoRealizado {
+  tratamentoId: number;
+  nome: string;
+  quantidade: number;
+  faturamento: number;
+}
+
+export interface FaturamentoDoProfissional {
+  profissionalId: number;
+  nome: string;
+  atendimentos: number;
+  faturamento: number;
+}
+
+export interface RelatorioMensal {
+  mes: string;
+  /** null = todos os profissionais juntos. */
+  profissionalId: number | null;
+  faturamentoTotal: number;
+  quantidadeAtendimentos: number;
+  ticketMedio: number;
+  faturamentoPorDia: FaturamentoDoDia[];
+  tratamentosMaisRealizados: TratamentoRealizado[];
+  faturamentoPorProfissional: FaturamentoDoProfissional[];
+}
