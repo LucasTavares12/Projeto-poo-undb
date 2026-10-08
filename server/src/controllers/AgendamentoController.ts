@@ -75,6 +75,28 @@ export class AgendamentoController {
     };
   }
 
+  /** Página do cliente: agendamentos em aberto do telefone informado (?telefone=...). */
+  public async listarDoCliente(req: Request, res: Response): Promise<void> {
+    try {
+      res.json(await this.servico.listarDoCliente(String(req.query.telefone ?? "")));
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Página do cliente: a pessoa cancela o próprio agendamento, confirmando pelo telefone. */
+  public async cancelarDoCliente(req: Request, res: Response): Promise<void> {
+    try {
+      await this.servico.cancelarPeloCliente(
+        Number(req.params.id),
+        String(req.query.telefone ?? "")
+      );
+      res.status(204).send();
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
   /** Botão "Cancelar" dos cards da coluna "Agendados" no Kanban. */
   public async cancelar(req: Request, res: Response): Promise<void> {
     try {
@@ -84,6 +106,28 @@ export class AgendamentoController {
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });
     }
+  }
+
+  /** Botão "Limpar" da coluna "Finalizados": some do Kanban, mas continua nos relatórios. */
+  public async arquivarFinalizados(req: Request, res: Response): Promise<void> {
+    const arquivados = await this.servico.arquivarFinalizados(
+      SessaoDaRequisicao.profissionalId(res)
+    );
+    res.json({ arquivados });
+  }
+
+  /** Quantos finalizados estão ocultos: o Kanban usa para mostrar o botão "Mostrar ocultos". */
+  public async contarArquivados(req: Request, res: Response): Promise<void> {
+    const quantidade = await this.servico.contarArquivados(SessaoDaRequisicao.profissionalId(res));
+    res.json({ quantidade });
+  }
+
+  /** Botão "Mostrar ocultos" da coluna "Finalizados": traz de volta o que foi limpo. */
+  public async restaurarArquivados(req: Request, res: Response): Promise<void> {
+    const restaurados = await this.servico.restaurarArquivados(
+      SessaoDaRequisicao.profissionalId(res)
+    );
+    res.json({ restaurados });
   }
 
   /** Admin arrasta o card no Kanban para outra coluna. */

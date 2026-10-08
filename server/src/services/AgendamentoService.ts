@@ -112,11 +112,44 @@ export class AgendamentoService {
     );
   }
 
-  /** `profissionalId` null = todos (acesso total); com valor, só os daquele profissional. */
+  /**
+   * Agendamentos do Kanban (os arquivados ficam de fora).
+   * `profissionalId` null = todos (acesso total); com valor, só os daquele profissional.
+   */
   public async listarTodos(profissionalId: number | null = null): Promise<Agendamento[]> {
     return profissionalId === null
-      ? this.agendamentoRepo.listarTodos()
-      : this.agendamentoRepo.listarPorProfissional(profissionalId);
+      ? this.agendamentoRepo.listarNoQuadro()
+      : this.agendamentoRepo.listarNoQuadroPorProfissional(profissionalId);
+  }
+
+  /**
+   * Botão "Limpar" da coluna "Finalizados": tira do Kanban os atendimentos já finalizados
+   * que o usuário enxerga. Eles continuam no banco e nos relatórios. Devolve quantos saíram.
+   */
+  public async arquivarFinalizados(profissionalDoUsuario: number | null = null): Promise<number> {
+    const noQuadro = await this.listarTodos(profissionalDoUsuario);
+    const finalizados = noQuadro.filter((agendamento) => agendamento.podeSerArquivado());
+
+    finalizados.forEach((agendamento) => agendamento.arquivar());
+    await this.agendamentoRepo.salvarArquivamento(finalizados);
+    return finalizados.length;
+  }
+
+  /** Quantos agendamentos o usuário tem fora do Kanban (para mostrar o botão de trazer de volta). */
+  public contarArquivados(profissionalDoUsuario: number | null = null): Promise<number> {
+    return this.agendamentoRepo.contarArquivados(profissionalDoUsuario);
+  }
+
+  /**
+   * Botão "Mostrar ocultos" da coluna "Finalizados": devolve ao Kanban tudo o que o
+   * usuário tinha limpado da tela. Devolve quantos voltaram.
+   */
+  public async restaurarArquivados(profissionalDoUsuario: number | null = null): Promise<number> {
+    const arquivados = await this.agendamentoRepo.listarArquivados(profissionalDoUsuario);
+
+    arquivados.forEach((agendamento) => agendamento.desarquivar());
+    await this.agendamentoRepo.salvarArquivamento(arquivados);
+    return arquivados.length;
   }
 
   /** Usado pela tela do cliente pra saber quais horários mostrar como clicáveis. */
@@ -162,6 +195,47 @@ export class AgendamentoService {
     }
 
     await this.agendamentoRepo.deletar(id);
+  }
+
+  /**
+   * Página do cliente: agendamentos que a pessoa ainda pode cancelar, encontrados pelo
+   * telefone informado na hora de agendar.
+   */
+  public async listarDoCliente(telefone: string): Promise<Agendamento[]> {
+    const agendamentos = await this.agendamentoRepo.listarAgendadosPorTelefone(
+      this.lerTelefone(telefone)
+    );
+    return agendamentos.filter((agendamento) => agendamento.podeSerCancelado());
+  }
+
+  /**
+   * Cancelamento feito pelo próprio cliente: só vale para um agendamento do telefone
+   * informado e que ainda não começou a ser atendido. O horário volta a ficar livre.
+   */
+  public async cancelarPeloCliente(id: number, telefone: string): Promise<void> {
+    const digitos = this.lerTelefone(telefone);
+    const agendamento = await this.agendamentoRepo.buscarPorId(id);
+
+    // Agendamento de outro telefone é tratado como inexistente.
+    if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
+      throw new Error("Agendamento não encontrado para este telefone.");
+    }
+    if (!agendamento.podeSerCancelado()) {
+      throw new Error(
+        "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser cancelado."
+      );
+    }
+
+    await this.agendamentoRepo.deletar(id);
+  }
+
+  /** Só os números do telefone, com DDD: 10 dígitos (fixo) ou 11 (celular). */
+  private lerTelefone(telefone: string): string {
+    const digitos = String(telefone ?? "").replace(/\D/g, "");
+    if (digitos.length < 10 || digitos.length > 11) {
+      throw new Error("Telefone inválido: informe o DDD e o número.");
+    }
+    return digitos;
   }
 
   /**

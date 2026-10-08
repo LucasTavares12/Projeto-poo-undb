@@ -127,10 +127,26 @@ export class App {
     this.app.get("/disponibilidade", (req, res) =>
       this.agendamentoController.disponibilidade(req, res)
     );
+    // Públicas: o cliente acha e cancela o próprio agendamento pelo telefone.
+    this.app.get("/meus-agendamentos", (req, res) =>
+      this.agendamentoController.listarDoCliente(req, res)
+    );
+    this.app.delete("/meus-agendamentos/:id", (req, res) =>
+      this.agendamentoController.cancelarDoCliente(req, res)
+    );
     this.app.get("/agendamentos", this.exigirAdmin, (req, res) =>
       this.agendamentoController.listar(req, res)
     );
     this.app.post("/agendamentos", (req, res) => this.agendamentoController.criar(req, res));
+    this.app.post("/agendamentos/finalizados/arquivar", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.arquivarFinalizados(req, res)
+    );
+    this.app.get("/agendamentos/arquivados/quantidade", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.contarArquivados(req, res)
+    );
+    this.app.post("/agendamentos/arquivados/restaurar", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.restaurarArquivados(req, res)
+    );
     this.app.delete("/agendamentos/:id", this.exigirAdmin, (req, res) =>
       this.agendamentoController.cancelar(req, res)
     );

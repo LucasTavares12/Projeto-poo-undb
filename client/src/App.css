@@ -843,7 +843,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 1fr));
   gap: 16px;
-  align-items: start;
+  /* Todas as colunas com a altura da mais comprida: dá para soltar um card em qualquer altura. */
+  align-items: stretch;
   overflow-x: auto;
 }
 
@@ -897,6 +898,31 @@
   height: 8px;
   border-radius: 50%;
   background: var(--cor-status);
+}
+
+.kanban-coluna-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.kanban-coluna-acoes .admin-botao {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.kanban-limpeza {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-size: 13px;
+}
+
+.kanban-limpeza p {
+  margin: 0;
 }
 
 .kanban-contador {
@@ -2227,4 +2253,104 @@
   .como-funciona {
     margin-top: 64px;
   }
+}
+
+/* Página do cliente: cancelar o próprio agendamento */
+
+.inicio-cancelar {
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+.botao-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--principal);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.busca-agendamento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+.busca-agendamento .campo-rotulo {
+  flex: 1 1 240px;
+}
+
+.lista-agendamentos-cliente {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agendamento-cliente {
+  padding: 16px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.agendamento-cliente-detalhes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.agendamento-cliente-detalhes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agendamento-cliente-confirmacao {
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(194, 65, 12, 0.08);
+}
+
+.agendamento-cliente-confirmacao p {
+  margin: 0 0 12px;
+}
+
+.agendamento-cliente-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.botao-perigo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #c2410c;
+  border-radius: 6px;
+  background: #c2410c;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.botao-perigo.contorno {
+  background: transparent;
+  color: #c2410c;
+}
+
+.botao-perigo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

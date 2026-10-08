@@ -7,6 +7,7 @@ import { SeletorProfissional } from "../../components/cliente/SeletorProfissiona
 import { SeletorTratamentos } from "../../components/cliente/SeletorTratamentos";
 import { SeletorHorario } from "../../components/cliente/SeletorHorario";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
+import { CancelarAgendamento } from "../../components/cliente/CancelarAgendamento";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Telefone } from "../../models/Telefone";
@@ -24,7 +25,7 @@ const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
 const agendamentoService = new AgendamentoService();
 
-type Modo = "inicio" | "ver" | "agendar";
+type Modo = "inicio" | "ver" | "agendar" | "cancelar";
 type Etapa = "profissional" | "servico" | "data" | "horarios" | "dados";
 
 // "Ver horários" só consulta a agenda; o serviço e os dados do cliente entram ao agendar.
@@ -341,6 +342,19 @@ export function AgendamentoPage() {
               Ver Horários <IconeRelogio />
             </button>
           </div>
+          <p className="inicio-cancelar">
+            Já agendou e não vai poder comparecer?{" "}
+            <button
+              type="button"
+              className="botao-link"
+              onClick={() => {
+                setErro(null);
+                setModo("cancelar");
+              }}
+            >
+              Cancele seu agendamento
+            </button>
+          </p>
         </section>
 
         <section className="como-funciona">
@@ -376,6 +390,14 @@ export function AgendamentoPage() {
             </article>
           </div>
         </section>
+      </LayoutCliente>
+    );
+  }
+
+  if (modo === "cancelar") {
+    return (
+      <LayoutCliente>
+        <CancelarAgendamento onVoltar={voltarAoInicio} />
       </LayoutCliente>
     );
   }

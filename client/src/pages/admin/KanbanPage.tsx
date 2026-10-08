@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
+import { RelatorioService } from "../../services/RelatorioService";
 import type { Agendamento, StatusAgendamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Duracao } from "../../models/Duracao";
@@ -20,6 +21,17 @@ import {
 } from "../../components/Icones";
 
 const agendamentoService = new AgendamentoService();
+const relatorioService = new RelatorioService();
+
+/**
+ * Soma dos atendimentos finalizados com data de hoje. Vem do relatório do mês, e não dos
+ * cards da tela, para continuar contando os finalizados que foram limpos do quadro.
+ */
+async function buscarFaturadoHoje(): Promise<number> {
+  const hoje = DataAgenda.hoje().toString();
+  const relatorio = await relatorioService.mensal(hoje.slice(0, 7));
+  return relatorio.faturamentoPorDia.find((dia) => dia.data === hoje)?.valor ?? 0;
+}
 
 // A ordem das colunas é também a ordem em que o atendimento avança.
 // Agendados e em atendimento: o mais próximo de acontecer fica no topo.
@@ -33,12 +45,19 @@ const COLUNAS: { status: StatusAgendamento; titulo: string; maisRecentePrimeiro:
 export function KanbanPage() {
   const usuario = useUsuarioLogado();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  // Finalizados que foram limpos da tela (continuam guardados e podem voltar).
+  const [quantidadeOcultos, setQuantidadeOcultos] = useState(0);
+  const [faturadoHoje, setFaturadoHoje] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   const [arrastandoId, setArrastandoId] = useState<number | null>(null);
   const [colunaAlvo, setColunaAlvo] = useState<StatusAgendamento | null>(null);
   const [confirmandoCancelamentoId, setConfirmandoCancelamentoId] = useState<number | null>(null);
+
+  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(false);
+  const [limpando, setLimpando] = useState(false);
+  const [restaurando, setRestaurando] = useState(false);
 
   const [modalAberto, setModalAberto] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -56,7 +75,14 @@ export function KanbanPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        setAgendamentos(await agendamentoService.listar());
+        const [lista, ocultos, faturado] = await Promise.all([
+          agendamentoService.listar(),
+          agendamentoService.contarArquivados(),
+          buscarFaturadoHoje(),
+        ]);
+        setAgendamentos(lista);
+        setQuantidadeOcultos(ocultos);
+        setFaturadoHoje(faturado);
       } catch {
         setErro("Não foi possível carregar os agendamentos.");
       } finally {
@@ -69,7 +95,14 @@ export function KanbanPage() {
   async function atualizarLista(): Promise<void> {
     setErro(null);
     try {
-      setAgendamentos(await agendamentoService.listar());
+      const [lista, ocultos, faturado] = await Promise.all([
+        agendamentoService.listar(),
+        agendamentoService.contarArquivados(),
+        buscarFaturadoHoje(),
+      ]);
+      setAgendamentos(lista);
+      setQuantidadeOcultos(ocultos);
+      setFaturadoHoje(faturado);
     } catch {
       setErro("Não foi possível carregar os agendamentos.");
     }
@@ -92,6 +125,11 @@ export function KanbanPage() {
     setErro(null);
     try {
       await agendamentoService.atualizarStatus(id, novoStatus);
+      // Entrar ou sair de "Finalizados" muda o faturado do dia.
+      if (statusAnterior === "FINALIZADO" || novoStatus === "FINALIZADO") {
+        // Falha aqui não desfaz o movimento: o card já mudou de etapa no servidor.
+        buscarFaturadoHoje().then(setFaturadoHoje).catch(() => undefined);
+      }
     } catch (erroRequisicao) {
       aplicarStatus(statusAnterior);
       setErro((erroRequisicao as Error).message);
@@ -106,6 +144,48 @@ export function KanbanPage() {
       setAgendamentos((lista) => lista.filter((agendamento) => agendamento.id !== id));
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
+    }
+  }
+
+  /** Tira os finalizados da tela. Nada é apagado: os relatórios continuam contando com eles. */
+  async function limparFinalizados(): Promise<void> {
+    setLimpando(true);
+    setErro(null);
+    try {
+      const quantidade = await agendamentoService.arquivarFinalizados();
+      // Recarrega em vez de filtrar a lista local: o servidor é quem sabe o que saiu do quadro.
+      await atualizarLista();
+      setMensagem(
+        quantidade === 1
+          ? "1 agendamento finalizado foi retirado do quadro. Ele continua nos relatórios."
+          : `${quantidade} agendamentos finalizados foram retirados do quadro. ` +
+              "Eles continuam nos relatórios."
+      );
+    } catch (erroRequisicao) {
+      setErro((erroRequisicao as Error).message);
+    } finally {
+      setLimpando(false);
+      setConfirmandoLimpeza(false);
+    }
+  }
+
+  /** Traz de volta para a coluna "Finalizados" tudo o que tinha sido limpo da tela. */
+  async function mostrarOcultos(): Promise<void> {
+    setRestaurando(true);
+    setErro(null);
+    setConfirmandoLimpeza(false);
+    try {
+      const quantidade = await agendamentoService.restaurarArquivados();
+      await atualizarLista();
+      setMensagem(
+        quantidade === 1
+          ? "1 agendamento finalizado voltou para o quadro."
+          : `${quantidade} agendamentos finalizados voltaram para o quadro.`
+      );
+    } catch (erroRequisicao) {
+      setErro((erroRequisicao as Error).message);
+    } finally {
+      setRestaurando(false);
     }
   }
 
@@ -161,13 +241,9 @@ export function KanbanPage() {
       icone: <IconeBrilho />,
     },
     {
-      rotulo: "Faturado",
-      valor: new Dinheiro(
-        agendamentos
-          .filter((agendamento) => agendamento.status === "FINALIZADO")
-          .reduce((total, agendamento) => total + agendamento.valorTotal, 0)
-      ).formatar(),
-      detalhe: "em atendimentos finalizados",
+      rotulo: "Faturado hoje",
+      valor: new Dinheiro(faturadoHoje).formatar(),
+      detalhe: "em atendimentos finalizados hoje",
       icone: <IconeDinheiro />,
     },
   ];
@@ -251,8 +327,63 @@ export function KanbanPage() {
                 >
                   <header className="kanban-coluna-cabecalho">
                     <h2>{coluna.titulo}</h2>
-                    <span className="kanban-contador">{cartoes.length}</span>
+                    <span className="kanban-coluna-acoes">
+                      {coluna.status === "FINALIZADO" && quantidadeOcultos > 0 && (
+                        <button
+                          type="button"
+                          className="admin-botao"
+                          title="Trazer de volta os finalizados que foram limpos da tela"
+                          disabled={restaurando}
+                          onClick={mostrarOcultos}
+                        >
+                          {restaurando ? "Carregando..." : `Mostrar ocultos (${quantidadeOcultos})`}
+                        </button>
+                      )}
+                      {coluna.status === "FINALIZADO" && cartoes.length > 0 && (
+                        <button
+                          type="button"
+                          className="admin-botao"
+                          title="Tirar os finalizados da tela (continuam nos relatórios)"
+                          onClick={() => {
+                            setMensagem(null);
+                            setConfirmandoLimpeza(true);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      )}
+                      <span className="kanban-contador">{cartoes.length}</span>
+                    </span>
                   </header>
+
+                  {coluna.status === "FINALIZADO" && confirmandoLimpeza && cartoes.length > 0 && (
+                    <div className="kanban-limpeza">
+                      <p>
+                        {cartoes.length === 1
+                          ? "Tirar o agendamento finalizado da tela?"
+                          : `Tirar os ${cartoes.length} agendamentos finalizados da tela?`}{" "}
+                        Nada é apagado: os valores continuam nos relatórios.
+                      </p>
+                      <div className="kanban-cartao-acoes">
+                        <button
+                          type="button"
+                          className="admin-botao"
+                          disabled={limpando}
+                          onClick={() => setConfirmandoLimpeza(false)}
+                        >
+                          Voltar
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-botao principal"
+                          disabled={limpando}
+                          onClick={limparFinalizados}
+                        >
+                          {limpando ? "Limpando..." : "Limpar finalizados"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {cartoes.length === 0 && <p className="kanban-vazio">Nenhum agendamento.</p>}
 

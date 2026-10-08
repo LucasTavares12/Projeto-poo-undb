@@ -12,6 +12,7 @@ interface LinhaAgendamentoBase extends RowDataPacket {
   data: string;
   hora_inicio: string;
   status: StatusAgendamento;
+  arquivado: number; // TINYINT: 0 ou 1
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
@@ -19,6 +20,10 @@ interface LinhaAgendamentoBase extends RowDataPacket {
   profissional_nome: string;
   profissional_telefone: string;
   especialidade: string;
+}
+
+interface LinhaContagem extends RowDataPacket {
+  total: number;
 }
 
 interface LinhaTratamento extends RowDataPacket {
@@ -32,7 +37,7 @@ interface LinhaTratamento extends RowDataPacket {
 
 const SELECT_BASE = `
   SELECT
-    a.id, a.data, a.hora_inicio, a.status,
+    a.id, a.data, a.hora_inicio, a.status, a.arquivado,
     c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
     p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
   FROM agendamentos a
@@ -48,7 +53,14 @@ const SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
 `;
 
 export class AgendamentoRepository extends Repositorio {
+  // Bancos criados antes de existir o "Limpar finalizados": acrescenta a coluna.
+  private static readonly ADICIONAR_ARQUIVADO = `
+    ALTER TABLE agendamentos
+      ADD COLUMN arquivado TINYINT(1) NOT NULL DEFAULT 0
+  `;
+
   public async salvar(agendamento: Agendamento): Promise<Agendamento> {
+    await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
       `INSERT INTO agendamentos (cliente_id, profissional_id, data, hora_inicio, status)
        VALUES (?, ?, ?, ?, ?)`,
@@ -72,6 +84,7 @@ export class AgendamentoRepository extends Repositorio {
   }
 
   public async buscarPorId(id: number): Promise<Agendamento | null> {
+    await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
       `${SELECT_BASE} WHERE a.id = ?`,
       [id]
@@ -79,18 +92,64 @@ export class AgendamentoRepository extends Repositorio {
     return linhas.length > 0 ? await this.montarAgendamento(linhas[0]) : null;
   }
 
-  public async listarTodos(): Promise<Agendamento[]> {
+  /** Kanban: tudo o que ainda está no quadro (os arquivados não aparecem). */
+  public async listarNoQuadro(): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} ORDER BY a.data, a.hora_inicio`
+      `${SELECT_BASE} WHERE a.arquivado = 0 ORDER BY a.data, a.hora_inicio`
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
   /** Kanban de um usuário ligado a um profissional: só os agendamentos dele. */
-  public async listarPorProfissional(profissionalId: number): Promise<Agendamento[]> {
+  public async listarNoQuadroPorProfissional(profissionalId: number): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.profissional_id = ? ORDER BY a.data, a.hora_inicio`,
+      `${SELECT_BASE} WHERE a.arquivado = 0 AND a.profissional_id = ?
+       ORDER BY a.data, a.hora_inicio`,
       [profissionalId]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
+  /**
+   * Agendamentos que foram limpos do Kanban. `profissionalId` null = de todos os
+   * profissionais; com valor, só os daquele profissional.
+   */
+  public async listarArquivados(profissionalId: number | null): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${SELECT_BASE} WHERE a.arquivado = 1 AND (? IS NULL OR a.profissional_id = ?)
+       ORDER BY a.data, a.hora_inicio`,
+      [profissionalId, profissionalId]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
+  /** Quantos agendamentos estão fora do Kanban (mesma regra de `listarArquivados`). */
+  public async contarArquivados(profissionalId: number | null): Promise<number> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaContagem[]>(
+      `SELECT COUNT(*) AS total FROM agendamentos
+       WHERE arquivado = 1 AND (? IS NULL OR profissional_id = ?)`,
+      [profissionalId, profissionalId]
+    );
+    return Number(linhas[0].total);
+  }
+
+  /**
+   * Página do cliente ("Cancelar agendamento"): agendamentos ainda não atendidos, de hoje
+   * em diante, feitos com este telefone. `digitos` = só os números do telefone; a máscara
+   * gravada no banco ("(98) 98877-6655") é ignorada na comparação.
+   */
+  public async listarAgendadosPorTelefone(digitos: string): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${SELECT_BASE}
+       WHERE a.status = ? AND a.arquivado = 0 AND a.data >= CURDATE()
+         AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '') = ?
+       ORDER BY a.data, a.hora_inicio`,
+      [StatusAgendamento.AGENDADO, digitos]
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
@@ -100,6 +159,7 @@ export class AgendamentoRepository extends Repositorio {
     profissionalId: number,
     data: Date
   ): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
       `${SELECT_BASE} WHERE a.profissional_id = ? AND a.data = ? ORDER BY a.hora_inicio`,
       [profissionalId, this.formatarData(data)]
@@ -107,8 +167,12 @@ export class AgendamentoRepository extends Repositorio {
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
-  /** Agendamentos entre duas datas, inclusive ("YYYY-MM-DD"). Usado nos relatórios. */
+  /**
+   * Agendamentos entre duas datas, inclusive ("YYYY-MM-DD"). Usado nos relatórios:
+   * inclui os arquivados, que saíram do Kanban mas continuam contando no faturamento.
+   */
   public async listarPorPeriodo(inicio: string, fim: string): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
       `${SELECT_BASE} WHERE a.data BETWEEN ? AND ? ORDER BY a.data, a.hora_inicio`,
       [inicio, fim]
@@ -118,6 +182,22 @@ export class AgendamentoRepository extends Repositorio {
 
   public async atualizarStatus(id: number, status: StatusAgendamento): Promise<void> {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
+  }
+
+  /** Grava se cada um destes agendamentos está dentro ou fora do Kanban (nada é apagado). */
+  public async salvarArquivamento(agendamentos: Agendamento[]): Promise<void> {
+    await this.garantirEstrutura();
+    for (const arquivado of [true, false]) {
+      const ids = agendamentos
+        .filter((agendamento) => agendamento.estaArquivado() === arquivado)
+        .map((agendamento) => agendamento.getId());
+      if (ids.length > 0) {
+        await this.pool.query("UPDATE agendamentos SET arquivado = ? WHERE id IN (?)", [
+          arquivado,
+          ids,
+        ]);
+      }
+    }
   }
 
   /** Apaga o agendamento e seus tratamentos juntos: ou sai tudo, ou nada. */
@@ -162,6 +242,14 @@ export class AgendamentoRepository extends Repositorio {
     );
   }
 
+  private garantirEstrutura(): Promise<void> {
+    return this.garantirColuna(
+      "agendamentos",
+      "arquivado",
+      AgendamentoRepository.ADICIONAR_ARQUIVADO
+    );
+  }
+
   private formatarData(data: Date): string {
     return data.toISOString().slice(0, 10);
   }
@@ -183,7 +271,8 @@ export class AgendamentoRepository extends Repositorio {
       new Date(linha.data),
       new Horario(linha.hora_inicio.slice(0, 5)),
       linha.status,
-      linha.id
+      linha.id,
+      Boolean(linha.arquivado)
     );
   }
 }

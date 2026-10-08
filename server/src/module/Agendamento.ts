@@ -12,6 +12,11 @@ export class Agendamento {
   private data: Date;
   private horarioInicio: Horario; // primeiro slot ocupado
   private status: StatusAgendamento;
+  /**
+   * Arquivado = saiu do Kanban para não poluir a tela, mas continua guardado:
+   * os relatórios seguem contando o atendimento e o valor dele.
+   */
+  private arquivado: boolean;
 
   constructor(
     cliente: Cliente,
@@ -20,7 +25,8 @@ export class Agendamento {
     data: Date,
     horarioInicio: Horario,
     status: StatusAgendamento = StatusAgendamento.AGENDADO,
-    id?: number
+    id?: number,
+    arquivado = false
   ) {
     if (tratamentos.length === 0) {
       throw new Error("O agendamento precisa ter ao menos um tratamento.");
@@ -33,6 +39,7 @@ export class Agendamento {
     this.horarioInicio = horarioInicio;
     this.status = status;
     this.id = id;
+    this.arquivado = arquivado;
   }
 
   public getId(): number | undefined {
@@ -112,6 +119,31 @@ export class Agendamento {
   /** Só dá para cancelar o que ainda não começou a ser atendido. */
   public podeSerCancelado(): boolean {
     return this.status === StatusAgendamento.AGENDADO;
+  }
+
+  public estaArquivado(): boolean {
+    return this.arquivado;
+  }
+
+  /** Só sai do Kanban o que já foi atendido: o resto ainda precisa ser acompanhado. */
+  public podeSerArquivado(): boolean {
+    return this.status === StatusAgendamento.FINALIZADO && !this.arquivado;
+  }
+
+  /** Tira o agendamento do Kanban sem apagar nada dele. */
+  public arquivar(): void {
+    if (!this.podeSerArquivado()) {
+      throw new Error("Só é possível limpar do quadro agendamentos finalizados.");
+    }
+    this.arquivado = true;
+  }
+
+  /** Devolve ao Kanban um agendamento que tinha sido limpo da tela. */
+  public desarquivar(): void {
+    if (!this.arquivado) {
+      throw new Error("Este agendamento já está no quadro.");
+    }
+    this.arquivado = false;
   }
 
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
