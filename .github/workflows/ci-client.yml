@@ -1,0 +1,27 @@
+name: CI Client
+
+on:
+  pull_request:
+    paths:
+      - "client/**"
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+
+jobs:
+  build-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
