@@ -117,9 +117,19 @@ export class AgendamentoService {
    * `profissionalId` null = todos (acesso total); com valor, só os daquele profissional.
    */
   public async listarTodos(profissionalId: number | null = null): Promise<Agendamento[]> {
+    await this.finalizarAtrasados();
     return profissionalId === null
       ? this.agendamentoRepo.listarNoQuadro()
       : this.agendamentoRepo.listarNoQuadroPorProfissional(profissionalId);
+  }
+
+  /**
+   * Finaliza sozinho o que o profissional esqueceu de mover: agendamentos com a data
+   * marcada há `Agendamento.DIAS_PARA_FINALIZAR_SOZINHO` dias ou mais. Roda sempre que o
+   * Kanban ou um relatório é carregado. Devolve quantos foram finalizados.
+   */
+  public finalizarAtrasados(): Promise<number> {
+    return this.agendamentoRepo.finalizarAtrasados(Agendamento.DIAS_PARA_FINALIZAR_SOZINHO);
   }
 
   /**

@@ -184,6 +184,19 @@ export class AgendamentoRepository extends Repositorio {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
   }
 
+  /**
+   * Passa para "Finalizado" tudo o que ainda não foi finalizado e cuja data marcada
+   * já ficou `dias` dias (ou mais) para trás. Devolve quantos foram finalizados.
+   */
+  public async finalizarAtrasados(dias: number): Promise<number> {
+    const [resultado] = await this.pool.query<ResultSetHeader>(
+      `UPDATE agendamentos SET status = ?
+       WHERE status <> ? AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY)`,
+      [StatusAgendamento.FINALIZADO, StatusAgendamento.FINALIZADO, dias]
+    );
+    return resultado.affectedRows;
+  }
+
   /** Grava se cada um destes agendamentos está dentro ou fora do Kanban (nada é apagado). */
   public async salvarArquivamento(agendamentos: Agendamento[]): Promise<void> {
     await this.garantirEstrutura();

@@ -5,6 +5,12 @@ import { StatusAgendamento } from "./StatusAgendamento";
 import { Horario } from "./Horario";
 
 export class Agendamento {
+  /**
+   * Quantos dias depois da data marcada um agendamento que ficou esquecido em
+   * "Agendado" ou "Em atendimento" passa sozinho para "Finalizado".
+   */
+  public static readonly DIAS_PARA_FINALIZAR_SOZINHO = 2;
+
   private id?: number;
   private cliente: Cliente;
   private profissional: Profissional;
