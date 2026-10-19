@@ -146,7 +146,51 @@ Manter essas informações organizadas e centralizadas é o que permite reduzir 
 
 ---
 
-## 7. Conclusão
+## 7. Infraestrutura e DevOps
+
+Nesta seção explica como rodar o sistema e como o código é conferido automaticamente a cada Pull Request (instalação, lint e compilação). Os testes funcionais do sistema ficam com o QA.
+
+### Como rodar o server com Docker
+
+Para rodar, é preciso ter o Docker Desktop instalado e aberto. Depois, no terminal:
+
+```bash
+cd server
+docker build -t meu-server .
+docker run -p 3000:3000 meu-server
+```
+
+O servidor fica disponível em `http://localhost:3000`. Para parar, use `Ctrl + C`.
+
+### Como rodar o client com Docker
+
+Com o Docker Desktop aberto, no terminal:
+
+```bash
+cd client
+docker build -t meu-client .
+docker run -p 8090:80 meu-client
+```
+
+O site fica disponível em `http://localhost:8090`. Para parar, use `Ctrl + C`.
+
+O client usa o nginx para entregar os arquivos do site já compilados, por isso a porta dentro do container é a 80. No computador usamos a 8090 para não conflitar com o server, que usa a 3000.
+
+
+### Integração Contínua (CI)
+
+O projeto usa GitHub Actions. Sempre que alguém abre um Pull Request, os workflows da pasta `.github/workflows` rodam sozinhos, instalam as dependências e compilam o código:
+
+- `ci-server.yml`: instala e compila o server.
+- `ci-client.yml`: instala, roda o lint e compila o client.
+
+Se algum passo falhar, o Pull Request aparece como reprovado e o motivo pode ser consultado na aba **Actions** do GitHub.
+
+Esses workflows não substituem os testes do QA. Eles só garantem que o código instala e compila antes de entrar na `main`.
+
+---
+
+## 8. Conclusão
 
 O projeto busca resolver a dificuldade que muitas clínicas de estética têm para organizar horários, profissionais e atendimentos quando utilizam agendas de papel, mensagens ou outros métodos descentralizados.
 
