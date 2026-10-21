@@ -269,7 +269,7 @@ export function GerenciarUsuarios() {
       {carregando ? (
         <p>Carregando...</p>
       ) : (
-        <table className="admin-tabela usuarios-tabela">
+        <table className="admin-tabela admin-tabela-cartoes usuarios-tabela">
           <thead>
             <tr>
               <th>E-mail</th>
@@ -364,21 +364,21 @@ function UsuarioLinha({
   return (
     <>
       <tr>
-        <td>
+        <td className="admin-tabela-titulo">
           <span className="admin-tabela-nome">
             <span className="admin-avatar pequeno">{usuario.email.charAt(0).toUpperCase()}</span>
             {usuario.email}
             {ehVoce && <span className="admin-etiqueta">Você</span>}
           </span>
         </td>
-        <td>
+        <td data-rotulo="Acesso">
           {nomeProfissional ? (
             <span className="usuarios-acesso profissional">{nomeProfissional}</span>
           ) : (
             <span className="usuarios-acesso">Acesso total</span>
           )}
         </td>
-        <td>{usuario.criadoEm ? new DataAgenda(usuario.criadoEm).formatar() : "—"}</td>
+        <td data-rotulo="Criado em">{usuario.criadoEm ? new DataAgenda(usuario.criadoEm).formatar() : "—"}</td>
         <td className="admin-tabela-acoes">
           {confirmandoExclusao ? (
             <>

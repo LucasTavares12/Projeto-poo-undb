@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import { TratamentoService } from "../../services/TratamentoService";
 import { AgendamentoService } from "../../services/AgendamentoService";
@@ -6,10 +6,14 @@ import type { Agendamento, Profissional, Tratamento } from "../../services/types
 import { SeletorProfissional } from "../../components/cliente/SeletorProfissional";
 import { SeletorTratamentos } from "../../components/cliente/SeletorTratamentos";
 import { SeletorHorario } from "../../components/cliente/SeletorHorario";
+import { SeletorData } from "../../components/cliente/SeletorData";
+import { ResumoAgendamento } from "../../components/cliente/ResumoAgendamento";
+import { ConfirmacaoAgendamento } from "../../components/cliente/ConfirmacaoAgendamento";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { CancelarAgendamento } from "../../components/cliente/CancelarAgendamento";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
+import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
 import {
   IconeCalendario,
@@ -77,6 +81,9 @@ export function AgendamentoPage() {
   const [tentouConfirmar, setTentouConfirmar] = useState(false);
 
   const [enviando, setEnviando] = useState(false);
+  // Janela "Está tudo certo?" aberta antes de gravar o agendamento.
+  const [conferindo, setConferindo] = useState(false);
+  const fecharConferencia = useCallback(() => setConferindo(false), []);
   const [erro, setErro] = useState<string | null>(null);
   const [agendamentoConfirmado, setAgendamentoConfirmado] = useState<Agendamento | null>(null);
 
@@ -190,6 +197,17 @@ export function AgendamentoPage() {
   };
   const dadosValidos = !errosDosDados.nome && !errosDosDados.telefone && !errosDosDados.dataHorario;
 
+  // O que foi escolhido até aqui, no formato do cartão de resumo.
+  const resumoEscolhido = {
+    profissional:
+      profissionais.find((profissional) => profissional.id === profissionalId)?.nome ?? "—",
+    tratamentos: tratamentosSelecionados.map((tratamento) => tratamento.nome),
+    data,
+    horario: horarioInicio,
+    duracaoMinutos: duracaoTotal,
+    valor: valorTotal,
+  };
+
   const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
   const indiceEtapa = etapas.indexOf(etapa);
 
@@ -257,8 +275,17 @@ export function AgendamentoPage() {
     );
   }
 
-  async function confirmarAgendamento(): Promise<void> {
+  /** Valida os campos e, se estiver tudo preenchido, abre a conferência final. */
+  function pedirConfirmacao(): void {
     setTentouConfirmar(true);
+    if (!dadosValidos || !profissionalId || !horarioInicio || tratamentoIds.length === 0) {
+      return;
+    }
+    setErro(null);
+    setConferindo(true);
+  }
+
+  async function confirmarAgendamento(): Promise<void> {
     if (!dadosValidos || !profissionalId || !horarioInicio || tratamentoIds.length === 0) {
       return;
     }
@@ -274,6 +301,7 @@ export function AgendamentoPage() {
         data,
         horarioInicio,
       });
+      setConferindo(false);
       setAgendamentoConfirmado(agendamento);
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
@@ -293,26 +321,29 @@ export function AgendamentoPage() {
   if (agendamentoConfirmado) {
     return (
       <LayoutCliente>
-        <section className="passo">
-          <header className="passo-cabecalho">
+        <section className="passo passo-sucesso">
+          <header className="sucesso-cabecalho">
+            <span className="sucesso-icone">
+              <IconeConfirmado tamanho={34} />
+            </span>
             <h2>Agendamento confirmado!</h2>
+            <p>
+              <strong>{agendamentoConfirmado.cliente.nome.split(" ")[0]}</strong>, seu horário está
+              marcado. Te esperamos!
+            </p>
           </header>
           <div className="passo-corpo">
-            <div className="resumo">
-              <p>
-                <strong>{agendamentoConfirmado.cliente.nome}</strong>, seu horário está marcado.
-              </p>
-              <p>Profissional: {agendamentoConfirmado.profissional.nome}</p>
-              <p>
-                Data: {new DataAgenda(agendamentoConfirmado.data).formatar()} às{" "}
-                {agendamentoConfirmado.horarioInicio}
-              </p>
-              <p>
-                Serviços:{" "}
-                {agendamentoConfirmado.tratamentos.map((tratamento) => tratamento.nome).join(", ")}
-              </p>
-              <p>Valor total: {new Dinheiro(agendamentoConfirmado.valorTotal).formatar()}</p>
-            </div>
+            <ResumoAgendamento
+              profissional={agendamentoConfirmado.profissional.nome}
+              tratamentos={agendamentoConfirmado.tratamentos.map((tratamento) => tratamento.nome)}
+              data={agendamentoConfirmado.data}
+              horario={agendamentoConfirmado.horarioInicio}
+              duracaoMinutos={agendamentoConfirmado.duracaoTotalMinutos}
+              valor={agendamentoConfirmado.valorTotal}
+            />
+            <p className="sucesso-dica">
+              Se não puder comparecer, cancele pela página inicial com o telefone informado.
+            </p>
           </div>
           <footer className="passo-rodape">
             <span />
@@ -411,6 +442,9 @@ export function AgendamentoPage() {
             Passo {indiceEtapa + 1}/{etapas.length}
           </span>
         </header>
+        <div className="passo-progresso" aria-hidden="true">
+          <span style={{ width: `${((indiceEtapa + 1) / etapas.length) * 100}%` }} />
+        </div>
 
         <div className="passo-corpo">
           {erro && <p className="mensagem-erro">{erro}</p>}
@@ -434,6 +468,17 @@ export function AgendamentoPage() {
                 selecionadosIds={tratamentoIds}
                 onAlternar={alternarTratamento}
               />
+              {tratamentosSelecionados.length > 0 && (
+                <p className="selecao-resumo" aria-live="polite">
+                  <span>
+                    {tratamentosSelecionados.length === 1
+                      ? "1 serviço"
+                      : `${tratamentosSelecionados.length} serviços`}{" "}
+                    · {new Duracao(duracaoTotal).formatar()}
+                  </span>
+                  <strong>{new Dinheiro(valorTotal).formatar()}</strong>
+                </p>
+              )}
             </>
           )}
 
@@ -442,13 +487,7 @@ export function AgendamentoPage() {
               <h3>
                 Selecione a Data <span className="campo-obrigatorio">*</span>
               </h3>
-              <input
-                type="date"
-                className="campo"
-                min={DataAgenda.hoje().toString()}
-                value={data}
-                onChange={(evento) => setData(evento.target.value)}
-              />
+              <SeletorData data={data} onSelecionar={setData} />
             </>
           )}
 
@@ -474,14 +513,18 @@ export function AgendamentoPage() {
 
           {etapa === "dados" && (
             <>
-              <div className="resumo">
-                <p>
-                  Horário escolhido: {new DataAgenda(data).formatar()} às {horarioInicio}
-                </p>
-                <p>
-                  Duração total: {duracaoTotal} min — Valor total: {new Dinheiro(valorTotal).formatar()}
-                </p>
-              </div>
+              <ResumoAgendamento {...resumoEscolhido} />
+              {conferindo && (
+                <ConfirmacaoAgendamento
+                  resumo={resumoEscolhido}
+                  clienteNome={clienteNome}
+                  clienteTelefone={clienteTelefone}
+                  enviando={enviando}
+                  erro={erro}
+                  onRevisar={fecharConferencia}
+                  onConfirmar={confirmarAgendamento}
+                />
+              )}
               <h3>Preencha seus Dados</h3>
               {tentouConfirmar && errosDosDados.dataHorario && (
                 <p className="mensagem-erro">{errosDosDados.dataHorario}</p>
@@ -548,9 +591,9 @@ export function AgendamentoPage() {
               type="button"
               className="botao-primario"
               disabled={enviando}
-              onClick={confirmarAgendamento}
+              onClick={pedirConfirmacao}
             >
-              {enviando ? "Agendando..." : "Confirmar agendamento"}
+              Confirmar agendamento
             </button>
           ) : (
             <button

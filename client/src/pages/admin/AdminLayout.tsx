@@ -13,7 +13,9 @@ import {
   IconeBrilho,
   IconeCalendario,
   IconeEngrenagem,
+  IconeFechar,
   IconeGrafico,
+  IconeMenu,
   IconePessoas,
   IconeQuadro,
   IconeRelogio,
@@ -32,6 +34,9 @@ export function AdminLayout() {
 
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // No celular o menu vira uma gaveta. Guarda a página em que foi aberto: ao navegar, fecha sozinho.
+  const [menuAbertoEm, setMenuAbertoEm] = useState<string | null>(null);
+  const menuAberto = menuAbertoEm === pathname;
 
   useEffect(() => {
     if (!logado) {
@@ -42,6 +47,24 @@ export function AdminLayout() {
       .then(setUsuario)
       .catch((erroRequisicao: Error) => setErro(erroRequisicao.message));
   }, [logado]);
+
+  useEffect(() => {
+    if (!menuAberto) {
+      return;
+    }
+    // Com a gaveta aberta, a página de trás não rola e o Esc fecha o menu.
+    const fecharComEsc = (evento: KeyboardEvent) => {
+      if (evento.key === "Escape") {
+        setMenuAbertoEm(null);
+      }
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", fecharComEsc);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", fecharComEsc);
+    };
+  }, [menuAberto]);
 
   if (!logado) {
     return <Navigate to="/admin/login" replace />;
@@ -66,8 +89,33 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="admin-layout">
-      <aside className="admin-lateral">
+    <div className={`admin-layout ${menuAberto ? "menu-aberto" : ""}`}>
+      {/* Barra do topo: só aparece em telas pequenas, no lugar da barra lateral. */}
+      <header className="admin-topo">
+        <button
+          type="button"
+          className="admin-topo-menu"
+          onClick={() => setMenuAbertoEm(pathname)}
+          aria-label="Abrir menu"
+          aria-expanded={menuAberto}
+          aria-controls="admin-lateral"
+        >
+          <IconeMenu tamanho={22} />
+        </button>
+        <span className="admin-topo-titulo">
+          <span className="admin-marca-logo">
+            <IconeCalendario tamanho={16} />
+          </span>
+          Painel da Clínica
+        </span>
+        <span className="admin-avatar pequeno" title={usuario.email}>
+          {(usuario.email.charAt(0) || "A").toUpperCase()}
+        </span>
+      </header>
+
+      <div className="admin-lateral-fundo" onClick={() => setMenuAbertoEm(null)} aria-hidden="true" />
+
+      <aside id="admin-lateral" className="admin-lateral">
         <div className="admin-marca">
           <span className="admin-marca-logo">
             <IconeCalendario tamanho={20} />
@@ -76,6 +124,14 @@ export function AdminLayout() {
             <span className="admin-lateral-titulo">Painel da Clínica</span>
             <span className="admin-marca-subtitulo">Gestão de agendamentos</span>
           </span>
+          <button
+            type="button"
+            className="admin-lateral-fechar"
+            onClick={() => setMenuAbertoEm(null)}
+            aria-label="Fechar menu"
+          >
+            <IconeFechar tamanho={20} />
+          </button>
         </div>
 
         <span className="admin-nav-secao">Menu</span>

@@ -221,7 +221,7 @@ export function TratamentosPage() {
       ) : tratamentos.length === 0 ? (
         <p>Nenhum tratamento cadastrado ainda.</p>
       ) : (
-        <table className="admin-tabela">
+        <table className="admin-tabela admin-tabela-cartoes">
           <thead>
             <tr>
               <th>Nome</th>
@@ -235,15 +235,15 @@ export function TratamentosPage() {
           <tbody>
             {tratamentos.map((tratamento) => (
               <tr key={tratamento.id}>
-                <td>{tratamento.nome}</td>
-                <td>{tratamento.descricao}</td>
-                <td>{nomeDoProfissional(tratamento.profissionalId)}</td>
-                <td>
+                <td className="admin-tabela-titulo">{tratamento.nome}</td>
+                <td data-rotulo="Descrição">{tratamento.descricao || "—"}</td>
+                <td data-rotulo="Profissional">{nomeDoProfissional(tratamento.profissionalId)}</td>
+                <td data-rotulo="Duração">
                   <span className="admin-etiqueta">
                     {new Duracao(tratamento.duracaoMinutos).formatar()}
                   </span>
                 </td>
-                <td className="admin-tabela-valor">{new Dinheiro(tratamento.valor).formatar()}</td>
+                <td className="admin-tabela-valor" data-rotulo="Valor">{new Dinheiro(tratamento.valor).formatar()}</td>
                 <td className="admin-tabela-acoes">
                   {confirmandoExclusaoId === tratamento.id ? (
                     <>

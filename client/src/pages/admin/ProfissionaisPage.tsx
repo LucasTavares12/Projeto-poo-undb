@@ -165,7 +165,7 @@ export function ProfissionaisPage() {
       ) : profissionais.length === 0 ? (
         <p>Nenhum profissional cadastrado ainda.</p>
       ) : (
-        <table className="admin-tabela">
+        <table className="admin-tabela admin-tabela-cartoes">
           <thead>
             <tr>
               <th>Nome</th>
@@ -177,7 +177,7 @@ export function ProfissionaisPage() {
           <tbody>
             {profissionais.map((profissional) => (
               <tr key={profissional.id}>
-                <td>
+                <td className="admin-tabela-titulo">
                   <span className="admin-tabela-nome">
                     <span className="admin-avatar pequeno">
                       {profissional.nome.charAt(0).toUpperCase()}
@@ -185,8 +185,8 @@ export function ProfissionaisPage() {
                     {profissional.nome}
                   </span>
                 </td>
-                <td>{profissional.telefone}</td>
-                <td>{profissional.especialidade}</td>
+                <td data-rotulo="Telefone">{profissional.telefone}</td>
+                <td data-rotulo="Especialidade">{profissional.especialidade}</td>
                 <td className="admin-tabela-acoes">
                   {confirmandoExclusaoId === profissional.id ? (
                     <>

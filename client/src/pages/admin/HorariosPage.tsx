@@ -154,6 +154,7 @@ export function HorariosPage() {
             </p>
           </div>
 
+          <div className="admin-grade-rolagem">
           <table className="admin-grade">
             <thead>
               <tr>
@@ -189,6 +190,7 @@ export function HorariosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </section>

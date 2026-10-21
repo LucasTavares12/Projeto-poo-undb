@@ -13,6 +13,7 @@ import {
   IconeAtualizar,
   IconeBrilho,
   IconeCalendario,
+  IconeConfirmado,
   IconeDinheiro,
   IconeMais,
   IconePessoas,
@@ -59,6 +60,12 @@ export function KanbanPage() {
   const [limpando, setLimpando] = useState(false);
   const [restaurando, setRestaurando] = useState(false);
 
+  // No celular aparece uma coluna por vez, escolhida pelas abas acima do quadro.
+  const [colunaVisivel, setColunaVisivel] = useState<StatusAgendamento>("AGENDADO");
+
+  // Botão "Atualizar": girando enquanto busca, depois um "Atualizado" rápido de confirmação.
+  const [atualizacao, setAtualizacao] = useState<"parado" | "atualizando" | "atualizado">("parado");
+
   const [modalAberto, setModalAberto] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
@@ -92,7 +99,8 @@ export function KanbanPage() {
     carregar();
   }, []);
 
-  async function atualizarLista(): Promise<void> {
+  /** Devolve se deu certo (o erro já fica na tela). */
+  async function atualizarLista(): Promise<boolean> {
     setErro(null);
     try {
       const [lista, ocultos, faturado] = await Promise.all([
@@ -103,9 +111,29 @@ export function KanbanPage() {
       setAgendamentos(lista);
       setQuantidadeOcultos(ocultos);
       setFaturadoHoje(faturado);
+      return true;
     } catch {
       setErro("Não foi possível carregar os agendamentos.");
+      return false;
     }
+  }
+
+  async function atualizarPeloBotao(): Promise<void> {
+    if (atualizacao === "atualizando") {
+      return;
+    }
+    setAtualizacao("atualizando");
+    // Tempo mínimo da animação: com o servidor rápido, o giro nem chegaria a aparecer.
+    const [deuCerto] = await Promise.all([
+      atualizarLista(),
+      new Promise((resolver) => setTimeout(resolver, 700)),
+    ]);
+    if (!deuCerto) {
+      setAtualizacao("parado");
+      return;
+    }
+    setAtualizacao("atualizado");
+    setTimeout(() => setAtualizacao((atual) => (atual === "atualizado" ? "parado" : atual)), 1500);
   }
 
   async function mover(id: number, novoStatus: StatusAgendamento): Promise<void> {
@@ -259,8 +287,23 @@ export function KanbanPage() {
         }
         acoes={
           <>
-            <button type="button" className="admin-botao" onClick={atualizarLista}>
-              <IconeAtualizar tamanho={16} /> Atualizar
+            <button
+              type="button"
+              className={`admin-botao botao-atualizar ${atualizacao}`}
+              onClick={atualizarPeloBotao}
+              disabled={atualizacao === "atualizando"}
+              aria-busy={atualizacao === "atualizando"}
+            >
+              {atualizacao === "atualizado" ? (
+                <>
+                  <IconeConfirmado tamanho={16} /> Atualizado
+                </>
+              ) : (
+                <>
+                  <IconeAtualizar tamanho={16} />
+                  {atualizacao === "atualizando" ? "Atualizando..." : "Atualizar"}
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -291,6 +334,10 @@ export function KanbanPage() {
         <p>Carregando...</p>
       ) : (
         <>
+          <div
+            className={`kanban-area ${atualizacao === "atualizando" ? "recarregando" : ""}`}
+            aria-busy={atualizacao === "atualizando"}
+          >
           <div className="admin-resumo">
             {resumo.map((item) => (
               <div key={item.rotulo} className="admin-resumo-cartao">
@@ -299,6 +346,25 @@ export function KanbanPage() {
                 <strong className="admin-resumo-valor">{item.valor}</strong>
                 <span className="admin-resumo-detalhe">{item.detalhe}</span>
               </div>
+            ))}
+          </div>
+
+          <div className="kanban-abas" role="tablist" aria-label="Etapas do atendimento">
+            {COLUNAS.map((coluna) => (
+              <button
+                key={coluna.status}
+                type="button"
+                role="tab"
+                className="kanban-aba"
+                data-status={coluna.status}
+                aria-selected={colunaVisivel === coluna.status}
+                onClick={() => setColunaVisivel(coluna.status)}
+              >
+                {coluna.titulo}
+                <span className="kanban-contador">
+                  {agendamentos.filter((agendamento) => agendamento.status === coluna.status).length}
+                </span>
+              </button>
             ))}
           </div>
 
@@ -320,7 +386,9 @@ export function KanbanPage() {
               return (
                 <div
                   key={coluna.status}
-                  className={`kanban-coluna ${colunaAlvo === coluna.status ? "alvo" : ""}`}
+                  className={`kanban-coluna ${colunaAlvo === coluna.status ? "alvo" : ""} ${
+                    colunaVisivel === coluna.status ? "visivel" : ""
+                  }`}
                   data-status={coluna.status}
                   onDragOver={(evento) => permitirSoltar(evento, coluna.status)}
                   onDrop={(evento) => soltar(evento, coluna.status)}
@@ -486,6 +554,7 @@ export function KanbanPage() {
                 </div>
               );
             })}
+          </div>
           </div>
         </>
       )}
