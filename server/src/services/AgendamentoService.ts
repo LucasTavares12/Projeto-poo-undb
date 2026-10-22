@@ -37,6 +37,13 @@ export class AgendamentoService {
   public async criar(dados: DadosNovoAgendamento): Promise<Agendamento> {
     const novo = await this.montarNovoAgendamento(dados);
 
+    // Mensagem própria para o dia fechado: "horário ocupado" confundiria o cliente.
+    if (await this.disponibilidadeService.estaBloqueado(dados.profissionalId, dados.data)) {
+      throw new Error(
+        `${novo.getProfissional().getNome()} não atende nessa data. Escolha outro dia.`
+      );
+    }
+
     const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
       dados.profissionalId,
       dados.data,

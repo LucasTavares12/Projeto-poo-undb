@@ -97,3 +97,19 @@ export interface UsuarioLogado {
   profissionalId: number | null;
   profissionalNome: string | null;
 }
+
+/** Folga/férias de um profissional ou feriado da clínica (profissionalId null). */
+export interface BloqueioAgenda {
+  id: number;
+  profissionalId: number | null;
+  dataInicio: string;
+  dataFim: string;
+  motivo: string;
+  quantidadeDias: number;
+}
+
+/** Período fechado como a página do cliente vê (sem o motivo). */
+export interface PeriodoBloqueado {
+  dataInicio: string;
+  dataFim: string;
+}

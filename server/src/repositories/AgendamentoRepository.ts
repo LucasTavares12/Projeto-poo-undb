@@ -180,6 +180,26 @@ export class AgendamentoRepository extends Repositorio {
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
+  /**
+   * Agendamentos ainda não atendidos entre duas datas, inclusive ("YYYY-MM-DD").
+   * `profissionalId` null = de todos os profissionais. Usado ao criar um bloqueio de agenda,
+   * para avisar quem já estava marcado no período.
+   */
+  public async listarAgendadosNoPeriodo(
+    profissionalId: number | null,
+    inicio: string,
+    fim: string
+  ): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${SELECT_BASE}
+       WHERE a.status = ? AND a.data BETWEEN ? AND ? AND (? IS NULL OR a.profissional_id = ?)
+       ORDER BY a.data, a.hora_inicio`,
+      [StatusAgendamento.AGENDADO, inicio, fim, profissionalId, profissionalId]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
   public async atualizarStatus(id: number, status: StatusAgendamento): Promise<void> {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
   }

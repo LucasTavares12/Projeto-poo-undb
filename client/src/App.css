@@ -2394,6 +2394,125 @@
   }
 }
 
+/* ---------- Folgas e feriados (bloqueios de agenda) ---------- */
+
+/* Aviso dos agendamentos que já existiam no período bloqueado. */
+.bloqueio-aviso {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: var(--raio);
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.bloqueio-aviso > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #b45309;
+  font-size: 15px;
+}
+
+.bloqueio-aviso ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.bloqueio-aviso li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.bloqueio-aviso-telefone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.bloqueios-lista-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bloqueios-lista-cabecalho h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bloqueios-filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-h);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.bloqueios-filtro .admin-interruptor {
+  margin: 0;
+}
+
+.bloqueios-vazio {
+  padding: 32px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--raio);
+  text-align: center;
+}
+
+.bloqueio-periodo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bloqueio-situacao {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bloqueio-situacao.agendado {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.bloqueio-situacao.andamento {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.bloqueio-situacao.encerrado {
+  background: var(--superficie-alt);
+  color: var(--text);
+}
+
+.bloqueio-encerrado td {
+  opacity: 0.6;
+}
+
 /* ---------- Janela de agendamento manual ---------- */
 
 .kanban-mensagem {
@@ -3186,6 +3305,33 @@
 
 .dia-rapido.selecionado strong {
   color: #fff;
+}
+
+/* Dia sem atendimento (folga, férias, feriado): riscado e sem clique. */
+.dia-rapido.fechado {
+  border-style: dashed;
+  background: #faf6f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dia-rapido.fechado:hover {
+  border-color: var(--cliente-borda);
+}
+
+.dia-rapido.fechado strong {
+  color: var(--cliente-texto);
+  text-decoration: line-through;
+}
+
+.data-fechada {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  border-radius: 10px;
+  background: rgba(194, 65, 12, 0.07);
+  color: #9a3412;
+  font-size: 15px;
 }
 
 .outra-data {

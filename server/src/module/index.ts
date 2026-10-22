@@ -6,6 +6,7 @@ export * from "./Cliente";
 export * from "./Profissional";
 export * from "./Tratamento";
 export * from "./HorarioDisponivel";
+export * from "./BloqueioAgenda";
 export * from "./Agendamento";
 export * from "./StatusAgendamento";
 export * from "./DiaSemana";

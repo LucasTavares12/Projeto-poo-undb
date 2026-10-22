@@ -9,6 +9,7 @@ import { AutenticacaoController } from "./controllers/AutenticacaoController";
 import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
 import { RelatorioController } from "./controllers/RelatorioController";
 import { UsuarioController } from "./controllers/UsuarioController";
+import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -28,6 +29,7 @@ export class App {
   private readonly configuracaoController = new ConfiguracaoController();
   private readonly relatorioController = new RelatorioController();
   private readonly usuarioController = new UsuarioController();
+  private readonly bloqueioAgendaController = new BloqueioAgendaController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -79,6 +81,7 @@ export class App {
     this.configurarRotasDeProfissionais();
     this.configurarRotasDeTratamentos();
     this.configurarRotasDeHorariosDisponiveis();
+    this.configurarRotasDeBloqueios();
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
     this.configurarRotasDeRelatorios();
@@ -120,6 +123,22 @@ export class App {
     );
     this.app.delete("/horarios/:id", this.exigirAdmin, (req, res) =>
       this.horarioDisponivelController.deletar(req, res)
+    );
+  }
+
+  private configurarRotasDeBloqueios(): void {
+    // Pública: a página do cliente marca os dias fechados (sem mostrar o motivo).
+    this.app.get("/bloqueios/publicos", (req, res) =>
+      this.bloqueioAgendaController.listarPublico(req, res)
+    );
+    this.app.get("/bloqueios", this.exigirAdmin, (req, res) =>
+      this.bloqueioAgendaController.listar(req, res)
+    );
+    this.app.post("/bloqueios", this.exigirAdmin, (req, res) =>
+      this.bloqueioAgendaController.criar(req, res)
+    );
+    this.app.delete("/bloqueios/:id", this.exigirAdmin, (req, res) =>
+      this.bloqueioAgendaController.deletar(req, res)
     );
   }
 

@@ -1,5 +1,6 @@
 import { HorarioDisponivelRepository } from "../repositories/HorarioDisponivelRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
+import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaRepository";
 import { Horario } from "../module/Horario";
 import { DiaSemana } from "../module/DiaSemana";
 
@@ -7,11 +8,13 @@ import { DiaSemana } from "../module/DiaSemana";
  * Calcula, para um profissional e uma data específica, quais horários
  * (slots de 30min) estão realmente disponíveis para o cliente escolher —
  * cruzando o que o admin liberou (HorarioDisponivel) com o que já está
- * ocupado por outros agendamentos naquele dia.
+ * ocupado por outros agendamentos naquele dia. Dias com folga do profissional
+ * ou feriado da clínica (BloqueioAgenda) não têm nenhum horário livre.
  */
 export class DisponibilidadeService {
   private readonly horarioRepo = new HorarioDisponivelRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
+  private readonly bloqueioRepo = new BloqueioAgendaRepository();
 
   /**
    * Retorna os horários em que o profissional pode COMEÇAR um atendimento
@@ -23,6 +26,10 @@ export class DisponibilidadeService {
     data: Date,
     quantidadeSlotsNecessarios: number
   ): Promise<Horario[]> {
+    if (await this.estaBloqueado(profissionalId, data)) {
+      return [];
+    }
+
     const diaSemana = data.getUTCDay() as DiaSemana;
 
     const horariosLiberados = await this.horarioRepo.listarPorProfissional(profissionalId);
@@ -37,6 +44,11 @@ export class DisponibilidadeService {
     return horariosDoDiaSemana.filter((candidato) =>
       this.todosOsSlotsCabem(candidato, quantidadeSlotsNecessarios, conjuntoLiberados, conjuntoOcupados)
     );
+  }
+
+  /** true se a agenda do profissional está fechada nesse dia (folga, férias ou feriado). */
+  public estaBloqueado(profissionalId: number, data: Date): Promise<boolean> {
+    return this.bloqueioRepo.existeNaData(profissionalId, data);
   }
 
   /** Todos os slots de 30min já ocupados por agendamentos do profissional nesse dia. */

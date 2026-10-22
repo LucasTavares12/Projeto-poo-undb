@@ -10,6 +10,7 @@ import { AutenticacaoService } from "../../services/AutenticacaoService";
 import { SessaoAdmin } from "../../services/SessaoAdmin";
 import type { UsuarioLogado } from "../../services/types";
 import {
+  IconeBloqueio,
   IconeBrilho,
   IconeCalendario,
   IconeEngrenagem,
@@ -149,6 +150,9 @@ export function AdminLayout() {
           )}
           <NavLink to="/admin/horarios">
             <IconeRelogio /> Horários
+          </NavLink>
+          <NavLink to="/admin/bloqueios">
+            <IconeBloqueio /> Folgas e feriados
           </NavLink>
           <NavLink to="/admin/relatorios">
             <IconeGrafico /> Relatórios

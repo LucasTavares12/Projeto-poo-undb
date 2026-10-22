@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import { TratamentoService } from "../../services/TratamentoService";
 import { AgendamentoService } from "../../services/AgendamentoService";
-import type { Agendamento, Profissional, Tratamento } from "../../services/types";
+import { BloqueioAgendaService } from "../../services/BloqueioAgendaService";
+import type {
+  Agendamento,
+  PeriodoBloqueado,
+  Profissional,
+  Tratamento,
+} from "../../services/types";
 import { SeletorProfissional } from "../../components/cliente/SeletorProfissional";
 import { SeletorTratamentos } from "../../components/cliente/SeletorTratamentos";
 import { SeletorHorario } from "../../components/cliente/SeletorHorario";
@@ -28,6 +34,7 @@ import {
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
 const agendamentoService = new AgendamentoService();
+const bloqueioService = new BloqueioAgendaService();
 
 type Modo = "inicio" | "ver" | "agendar" | "cancelar";
 type Etapa = "profissional" | "servico" | "data" | "horarios" | "dados";
@@ -67,6 +74,11 @@ export function AgendamentoPage() {
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [tratamentoIds, setTratamentoIds] = useState<number[]>([]);
   const [data, setData] = useState<string>(DataAgenda.hoje().toString());
+  // Folgas e feriados do profissional escolhido: esses dias aparecem fechados na escolha da data.
+  const [bloqueios, setBloqueios] = useState<{
+    profissionalId: number;
+    periodos: PeriodoBloqueado[];
+  } | null>(null);
 
   // Resposta da API e horário escolhido ficam marcados com a consulta (profissional + data +
   // serviços) a que pertencem: se a consulta muda, eles deixam de valer sozinhos.
@@ -107,6 +119,31 @@ export function AgendamentoPage() {
     }
     carregarCadastros();
   }, []);
+
+  useEffect(() => {
+    if (profissionalId === null) {
+      return;
+    }
+    let cancelado = false;
+    bloqueioService
+      .listarDoProfissional(profissionalId)
+      .then((periodos) => {
+        if (!cancelado) {
+          setBloqueios({ profissionalId, periodos });
+        }
+      })
+      // Sem a lista, nenhum dia aparece fechado; o servidor continua recusando os dias bloqueados.
+      .catch(() => undefined);
+    return () => {
+      cancelado = true;
+    };
+  }, [profissionalId]);
+
+  const periodosBloqueados =
+    bloqueios?.profissionalId === profissionalId ? bloqueios.periodos : [];
+  // "YYYY-MM-DD" compara certo como texto.
+  const dataEstaBloqueada = (dia: string) =>
+    periodosBloqueados.some((periodo) => periodo.dataInicio <= dia && dia <= periodo.dataFim);
 
   // No "Agendar" os horários dependem dos serviços escolhidos; no "Ver horários", não.
   const consultaHorarios =
@@ -214,7 +251,7 @@ export function AgendamentoPage() {
   const podeAvancar =
     (etapa === "profissional" && profissionalId !== null) ||
     (etapa === "servico" && tratamentoIds.length > 0) ||
-    (etapa === "data" && data !== "") ||
+    (etapa === "data" && data !== "" && !dataEstaBloqueada(data)) ||
     (etapa === "horarios" && horarioInicio !== null);
 
   function iniciarFluxo(novoModo: "ver" | "agendar"): void {
@@ -487,7 +524,7 @@ export function AgendamentoPage() {
               <h3>
                 Selecione a Data <span className="campo-obrigatorio">*</span>
               </h3>
-              <SeletorData data={data} onSelecionar={setData} />
+              <SeletorData data={data} onSelecionar={setData} estaBloqueada={dataEstaBloqueada} />
             </>
           )}
 

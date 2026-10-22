@@ -77,6 +77,22 @@ LOCK TABLES `agendamentos` WRITE;
 INSERT INTO `agendamentos` VALUES (7,7,6,'2026-10-05','09:30:00','FINALIZADO','2026-10-03 19:06:24',1),(11,11,6,'2026-10-06','09:30:00','FINALIZADO','2026-10-06 01:53:42',1),(18,18,9,'2026-10-07','10:00:00','AGENDADO','2026-10-06 13:07:42',0),(19,19,6,'2026-10-07','09:00:00','AGENDADO','2026-10-06 13:14:52',0),(20,20,9,'2026-10-07','11:30:00','AGENDADO','2026-10-06 13:15:26',0),(23,23,6,'2026-10-09','11:30:00','AGENDADO','2026-10-08 13:05:04',0);
 /*!40000 ALTER TABLE `agendamentos` ENABLE KEYS */;
 UNLOCK TABLES;
+DROP TABLE IF EXISTS `bloqueios_agenda`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bloqueios_agenda` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `profissional_id` int DEFAULT NULL,
+  `data_inicio` date NOT NULL,
+  `data_fim` date NOT NULL,
+  `motivo` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `criado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_bloqueio_periodo` (`data_inicio`,`data_fim`),
+  KEY `fk_bloqueio_profissional` (`profissional_id`),
+  CONSTRAINT `fk_bloqueio_profissional` FOREIGN KEY (`profissional_id`) REFERENCES `profissionais` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `clientes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;

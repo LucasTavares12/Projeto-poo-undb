@@ -152,6 +152,10 @@ export function HorariosPage() {
               Clique em um horário para liberá-lo ou bloqueá-lo. Os horários marcados se repetem
               toda semana e são os que aparecem para o cliente agendar.
             </p>
+            <p className="admin-dica">
+              Vai tirar folga, férias ou é feriado? Feche só aqueles dias em{" "}
+              <Link to="/admin/bloqueios">Folgas e feriados</Link>, sem mexer na grade.
+            </p>
           </div>
 
           <div className="admin-grade-rolagem">
