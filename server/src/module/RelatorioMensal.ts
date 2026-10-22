@@ -1,5 +1,6 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
+import { DataAgenda } from "./DataAgenda";
 
 interface FaturamentoDoDia {
   data: string; // "YYYY-MM-DD"
@@ -63,7 +64,7 @@ export class RelatorioMensal {
   }
 
   private static dataDe(agendamento: Agendamento): string {
-    return agendamento.getData().toISOString().slice(0, 10);
+    return DataAgenda.paraTexto(agendamento.getData());
   }
 
   public getFaturamentoTotal(): number {

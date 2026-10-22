@@ -8,15 +8,6 @@ interface Props {
   dias: FaturamentoDoDia[];
 }
 
-const VALOR_COMPACTO = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", { weekday: "short", timeZone: "UTC" });
-
 /** Colunas com o faturamento de cada dia do mês; passar o mouse (ou focar) mostra os detalhes. */
 export function GraficoFaturamentoDiario({ dias }: Props) {
   const [ativo, setAtivo] = useState<number | null>(null);
@@ -36,7 +27,7 @@ export function GraficoFaturamentoDiario({ dias }: Props) {
       <div className="grafico-eixo-y" aria-hidden="true">
         {escala.getMarcas().map((marca) => (
           <span key={marca} style={{ bottom: `${escala.percentual(marca)}%` }}>
-            {VALOR_COMPACTO.format(marca)}
+            {new Dinheiro(marca).formatarCompacto()}
           </span>
         ))}
       </div>
@@ -69,7 +60,7 @@ export function GraficoFaturamentoDiario({ dias }: Props) {
                 {dia.valor > 0 && <span className="grafico-coluna" style={{ height: `${altura}%` }} />}
                 {indice === indiceMelhorDia && (
                   <span className="grafico-rotulo" style={{ bottom: `${altura}%` }}>
-                    {VALOR_COMPACTO.format(dia.valor)}
+                    {new Dinheiro(dia.valor).formatarCompacto()}
                   </span>
                 )}
               </button>
@@ -87,7 +78,7 @@ export function GraficoFaturamentoDiario({ dias }: Props) {
             role="status"
           >
             <span className="grafico-dica-titulo">
-              {DIA_DA_SEMANA.format(new Date(`${diaAtivo.data}T00:00:00Z`)).replace(".", "")},{" "}
+              {new DataAgenda(diaAtivo.data).getDiaDaSemanaCurto()},{" "}
               {new DataAgenda(diaAtivo.data).formatar()}
             </span>
             <strong>{new Dinheiro(diaAtivo.valor).formatar()}</strong>

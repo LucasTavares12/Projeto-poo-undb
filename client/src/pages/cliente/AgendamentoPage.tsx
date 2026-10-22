@@ -30,6 +30,8 @@ import {
   IconeSetaDireita,
   IconeSetaEsquerda,
 } from "../../components/Icones";
+import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
+import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
@@ -139,11 +141,10 @@ export function AgendamentoPage() {
     };
   }, [profissionalId]);
 
-  const periodosBloqueados =
-    bloqueios?.profissionalId === profissionalId ? bloqueios.periodos : [];
-  // "YYYY-MM-DD" compara certo como texto.
-  const dataEstaBloqueada = (dia: string) =>
-    periodosBloqueados.some((periodo) => periodo.dataInicio <= dia && dia <= periodo.dataFim);
+  const diasSemAtendimento = new DiasSemAtendimento(
+    bloqueios?.profissionalId === profissionalId ? bloqueios.periodos : []
+  );
+  const dataEstaBloqueada = (dia: string) => diasSemAtendimento.estaFechado(dia);
 
   // No "Agendar" os horários dependem dos serviços escolhidos; no "Ver horários", não.
   const consultaHorarios =
@@ -206,20 +207,14 @@ export function AgendamentoPage() {
   );
 
   const tratamentosSelecionados = useMemo(
-    () => tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id)),
+    () =>
+      new SelecaoDeTratamentos(
+        tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id))
+      ),
     [tratamentos, tratamentoIds]
   );
-
-  const valorTotal = useMemo(
-    () => tratamentosSelecionados.reduce((total, tratamento) => total + tratamento.valor, 0),
-    [tratamentosSelecionados]
-  );
-
-  const duracaoTotal = useMemo(
-    () =>
-      tratamentosSelecionados.reduce((total, tratamento) => total + tratamento.duracaoMinutos, 0),
-    [tratamentosSelecionados]
-  );
+  const valorTotal = tratamentosSelecionados.getValorTotal();
+  const duracaoTotal = tratamentosSelecionados.getDuracaoTotalMinutos();
 
   // Campos obrigatórios do agendamento: nome, telefone, data e horário.
   const errosDosDados = {
@@ -238,7 +233,7 @@ export function AgendamentoPage() {
   const resumoEscolhido = {
     profissional:
       profissionais.find((profissional) => profissional.id === profissionalId)?.nome ?? "—",
-    tratamentos: tratamentosSelecionados.map((tratamento) => tratamento.nome),
+    tratamentos: tratamentosSelecionados.getNomes(),
     data,
     horario: horarioInicio,
     duracaoMinutos: duracaoTotal,
@@ -506,12 +501,12 @@ export function AgendamentoPage() {
                 selecionadosIds={tratamentoIds}
                 onAlternar={alternarTratamento}
               />
-              {tratamentosSelecionados.length > 0 && (
+              {tratamentosSelecionados.getQuantidade() > 0 && (
                 <p className="selecao-resumo" aria-live="polite">
                   <span>
-                    {tratamentosSelecionados.length === 1
+                    {tratamentosSelecionados.getQuantidade() === 1
                       ? "1 serviço"
-                      : `${tratamentosSelecionados.length} serviços`}{" "}
+                      : `${tratamentosSelecionados.getQuantidade()} serviços`}{" "}
                     · {new Duracao(duracaoTotal).formatar()}
                   </span>
                   <strong>{new Dinheiro(valorTotal).formatar()}</strong>

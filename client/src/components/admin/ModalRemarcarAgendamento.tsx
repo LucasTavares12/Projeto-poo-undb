@@ -6,6 +6,8 @@ import type { Agendamento, PeriodoBloqueado } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Duracao } from "../../models/Duracao";
 import { IconeFechar } from "../Icones";
+import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
+import { HorarioMarcado } from "../../models/HorarioMarcado";
 
 const agendamentoService = new AgendamentoService();
 const bloqueioService = new BloqueioAgendaService();
@@ -87,9 +89,7 @@ export function ModalRemarcarAgendamento({ agendamento, onFechar, onRemarcado }:
   const carregando = dataValida && livres?.data !== data;
   const horarios = livres?.data === data ? livres.horarios : [];
   const horario = escolha?.data === data ? escolha.horario : null;
-  const bloqueada = periodosBloqueados.some(
-    (periodo) => periodo.dataInicio <= data && data <= periodo.dataFim
-  );
+  const bloqueada = new DiasSemAtendimento(periodosBloqueados).estaFechado(data);
 
   async function remarcar(evento: FormEvent): Promise<void> {
     evento.preventDefault();
@@ -147,7 +147,7 @@ export function ModalRemarcarAgendamento({ agendamento, onFechar, onRemarcado }:
               <small>
                 Marcado para{" "}
                 <b>
-                  {new DataAgenda(agendamento.data).formatar()} às {agendamento.horarioInicio}
+                  {HorarioMarcado.de(agendamento).formatar()}
                 </b>
               </small>
             </span>
@@ -201,13 +201,9 @@ export function ModalRemarcarAgendamento({ agendamento, onFechar, onRemarcado }:
 
           {horario && (
             <p className="remarcar-resumo">
-              <s>
-                {new DataAgenda(agendamento.data).formatar()} às {agendamento.horarioInicio}
-              </s>
+              <s>{HorarioMarcado.de(agendamento).formatar()}</s>
               <span aria-hidden="true">→</span>
-              <strong>
-                {new DataAgenda(data).formatar()} às {horario}
-              </strong>
+              <strong>{new HorarioMarcado(data, horario).formatar()}</strong>
             </p>
           )}
         </div>

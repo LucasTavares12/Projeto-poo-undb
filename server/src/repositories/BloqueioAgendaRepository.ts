@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { Repositorio } from "./Repositorio";
 import { BloqueioAgenda } from "../module/BloqueioAgenda";
+import { DataAgenda } from "../module/DataAgenda";
 
 interface LinhaBloqueio extends RowDataPacket {
   id: number;
@@ -10,15 +11,15 @@ interface LinhaBloqueio extends RowDataPacket {
   motivo: string;
 }
 
-const SELECT_BASE = `
-  SELECT id, profissional_id,
-    DATE_FORMAT(data_inicio, '%Y-%m-%d') AS data_inicio,
-    DATE_FORMAT(data_fim, '%Y-%m-%d') AS data_fim,
-    motivo
-  FROM bloqueios_agenda
-`;
-
 export class BloqueioAgendaRepository extends Repositorio {
+  private static readonly SELECT_BASE = `
+    SELECT id, profissional_id,
+      DATE_FORMAT(data_inicio, '%Y-%m-%d') AS data_inicio,
+      DATE_FORMAT(data_fim, '%Y-%m-%d') AS data_fim,
+      motivo
+    FROM bloqueios_agenda
+  `;
+
   // Excluir o profissional apaga as folgas dele junto; os feriados (sem profissional) ficam.
   private static readonly CRIAR_TABELA = `
     CREATE TABLE IF NOT EXISTS bloqueios_agenda (
@@ -41,8 +42,8 @@ export class BloqueioAgendaRepository extends Repositorio {
        VALUES (?, ?, ?, ?)`,
       [
         bloqueio.getProfissionalId(),
-        BloqueioAgenda.paraTexto(bloqueio.getDataInicio()),
-        BloqueioAgenda.paraTexto(bloqueio.getDataFim()),
+        DataAgenda.paraTexto(bloqueio.getDataInicio()),
+        DataAgenda.paraTexto(bloqueio.getDataFim()),
         bloqueio.getMotivo(),
       ]
     );
@@ -57,7 +58,7 @@ export class BloqueioAgendaRepository extends Repositorio {
 
   public async buscarPorId(id: number): Promise<BloqueioAgenda | null> {
     await this.garantirTabela(BloqueioAgendaRepository.CRIAR_TABELA);
-    const [linhas] = await this.pool.query<LinhaBloqueio[]>(`${SELECT_BASE} WHERE id = ?`, [id]);
+    const [linhas] = await this.pool.query<LinhaBloqueio[]>(`${BloqueioAgendaRepository.SELECT_BASE} WHERE id = ?`, [id]);
     return linhas.length > 0 ? this.paraBloqueio(linhas[0]) : null;
   }
 
@@ -71,7 +72,7 @@ export class BloqueioAgendaRepository extends Repositorio {
   ): Promise<BloqueioAgenda[]> {
     await this.garantirTabela(BloqueioAgendaRepository.CRIAR_TABELA);
     const [linhas] = await this.pool.query<LinhaBloqueio[]>(
-      `${SELECT_BASE}
+      `${BloqueioAgendaRepository.SELECT_BASE}
        WHERE (? IS NULL OR profissional_id IS NULL OR profissional_id = ?)
          AND (? IS NULL OR data_fim >= ?)
        ORDER BY data_inicio, data_fim`,
@@ -83,7 +84,7 @@ export class BloqueioAgendaRepository extends Repositorio {
   /** true se a agenda do profissional está fechada na data (folga dele ou feriado da clínica). */
   public async existeNaData(profissionalId: number, data: Date): Promise<boolean> {
     await this.garantirTabela(BloqueioAgendaRepository.CRIAR_TABELA);
-    const dia = BloqueioAgenda.paraTexto(data);
+    const dia = DataAgenda.paraTexto(data);
     const [linhas] = await this.pool.query<RowDataPacket[]>(
       `SELECT 1 FROM bloqueios_agenda
        WHERE data_inicio <= ? AND data_fim >= ?
@@ -102,8 +103,8 @@ export class BloqueioAgendaRepository extends Repositorio {
   private paraBloqueio(linha: LinhaBloqueio): BloqueioAgenda {
     return new BloqueioAgenda(
       linha.profissional_id,
-      new Date(`${linha.data_inicio}T00:00:00Z`),
-      new Date(`${linha.data_fim}T00:00:00Z`),
+      DataAgenda.ler(linha.data_inicio),
+      DataAgenda.ler(linha.data_fim),
       linha.motivo,
       linha.id
     );

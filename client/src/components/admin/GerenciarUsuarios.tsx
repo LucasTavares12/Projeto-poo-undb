@@ -7,12 +7,11 @@ import { SessaoAdmin } from "../../services/SessaoAdmin";
 import type { Profissional, Usuario } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { IconeMais } from "../Icones";
+import { Senha } from "../../models/Senha";
+import { OpcaoProfissional } from "../../models/OpcaoProfissional";
 
 const usuarioService = new UsuarioService();
 const profissionalService = new ProfissionalService();
-
-// Mesma regra do servidor (Administrador.TAMANHO_MINIMO_SENHA); aqui só para avisar antes de enviar.
-const TAMANHO_MINIMO_SENHA = 6;
 
 /** Qual linha está sendo editada e o quê. */
 interface Edicao {
@@ -22,11 +21,6 @@ interface Edicao {
 
 // profissionalId fica como texto do <select>: "" = nenhum (acesso total).
 const CAMPOS_VAZIOS = { email: "", senha: "", confirmacao: "", senhaAtual: "", profissionalId: "" };
-
-/** "" do select vira null (acesso total); o resto vira o id do profissional. */
-function lerProfissional(valor: string): number | null {
-  return valor === "" ? null : Number(valor);
-}
 
 /** Aba "Configurações" > "Usuários do sistema": criar, editar e-mail, trocar senha e excluir. */
 export function GerenciarUsuarios() {
@@ -82,19 +76,13 @@ export function GerenciarUsuarios() {
       alterarCampo("email", usuario.email);
     }
     if (modo === "profissional") {
-      alterarCampo("profissionalId", usuario.profissionalId === null ? "" : String(usuario.profissionalId));
+      alterarCampo("profissionalId", OpcaoProfissional.paraValor(usuario.profissionalId));
     }
   }
 
   /** Confere senha e confirmação antes de enviar; devolve a mensagem de erro, se houver. */
   function validarSenhaNova(): string | null {
-    if (campos.senha.length < TAMANHO_MINIMO_SENHA) {
-      return `A senha precisa ter pelo menos ${TAMANHO_MINIMO_SENHA} caracteres.`;
-    }
-    if (campos.senha !== campos.confirmacao) {
-      return "As senhas não são iguais.";
-    }
-    return null;
+    return Senha.validarNova(campos.senha, campos.confirmacao);
   }
 
   async function executar(acao: () => Promise<void>, sucesso: string): Promise<void> {
@@ -123,7 +111,7 @@ export function GerenciarUsuarios() {
       const novo = await usuarioService.criar(
         campos.email.trim(),
         campos.senha,
-        lerProfissional(campos.profissionalId)
+        OpcaoProfissional.lerId(campos.profissionalId)
       );
       setUsuarios((lista) => [...lista, novo].sort((a, b) => a.email.localeCompare(b.email)));
     }, "Usuário criado.");
@@ -136,7 +124,7 @@ export function GerenciarUsuarios() {
     }
 
     if (edicao.modo === "profissional") {
-      const profissionalId = lerProfissional(campos.profissionalId);
+      const profissionalId = OpcaoProfissional.lerId(campos.profissionalId);
       await executar(async () => {
         const atualizado = await usuarioService.vincularProfissional(usuario.id, profissionalId);
         setUsuarios((lista) => lista.map((item) => (item.id === usuario.id ? atualizado : item)));
@@ -232,7 +220,7 @@ export function GerenciarUsuarios() {
               <input
                 type="password"
                 required
-                minLength={TAMANHO_MINIMO_SENHA}
+                minLength={Senha.TAMANHO_MINIMO}
                 autoComplete="new-password"
                 value={campos.senha}
                 onChange={(evento) => alterarCampo("senha", evento.target.value)}
@@ -243,7 +231,7 @@ export function GerenciarUsuarios() {
               <input
                 type="password"
                 required
-                minLength={TAMANHO_MINIMO_SENHA}
+                minLength={Senha.TAMANHO_MINIMO}
                 autoComplete="new-password"
                 value={campos.confirmacao}
                 onChange={(evento) => alterarCampo("confirmacao", evento.target.value)}
@@ -464,7 +452,7 @@ function UsuarioLinha({
                         type="password"
                         required
                         autoFocus={!ehVoce}
-                        minLength={TAMANHO_MINIMO_SENHA}
+                        minLength={Senha.TAMANHO_MINIMO}
                         autoComplete="new-password"
                         value={campos.senha}
                         onChange={(evento) => onAlterarCampo("senha", evento.target.value)}
@@ -475,7 +463,7 @@ function UsuarioLinha({
                       <input
                         type="password"
                         required
-                        minLength={TAMANHO_MINIMO_SENHA}
+                        minLength={Senha.TAMANHO_MINIMO}
                         autoComplete="new-password"
                         value={campos.confirmacao}
                         onChange={(evento) => onAlterarCampo("confirmacao", evento.target.value)}

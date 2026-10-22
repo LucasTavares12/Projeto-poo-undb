@@ -5,6 +5,7 @@ import type { DadosProfissional } from "../../services/ProfissionalService";
 import type { Profissional } from "../../services/types";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 
 const profissionalService = new ProfissionalService();
 
@@ -13,7 +14,7 @@ const FORMULARIO_VAZIO: DadosProfissional = { nome: "", telefone: "", especialid
 export function ProfissionaisPage() {
   // Conta ligada a um profissional: só o próprio cadastro, sem criar nem excluir.
   const { profissionalId: proprioId } = useUsuarioLogado();
-  const acessoTotal = proprioId === null;
+  const acessoTotal = new PerfilDeAcesso({ profissionalId: proprioId }).temAcessoTotal();
 
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -29,7 +30,9 @@ export function ProfissionaisPage() {
     async function carregar() {
       try {
         const lista = await profissionalService.listar();
-        setProfissionais(acessoTotal ? lista : lista.filter((item) => item.id === proprioId));
+        setProfissionais(
+          new PerfilDeAcesso({ profissionalId: proprioId }).filtrarProfissionais(lista)
+        );
       } catch {
         setErro("Não foi possível carregar os profissionais.");
       } finally {
@@ -37,7 +40,7 @@ export function ProfissionaisPage() {
       }
     }
     carregar();
-  }, [acessoTotal, proprioId]);
+  }, [proprioId]);
 
   function alterarCampo(campo: keyof DadosProfissional, valor: string): void {
     setFormulario((atual) => ({ ...atual, [campo]: valor }));

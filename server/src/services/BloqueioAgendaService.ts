@@ -4,6 +4,7 @@ import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaReposito
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { RelogioClinica } from "../module/RelogioClinica";
+import { DataAgenda } from "../module/DataAgenda";
 
 export interface DadosNovoBloqueio {
   /** null = clínica inteira (feriado, recesso). */
@@ -67,7 +68,7 @@ export class BloqueioAgendaService {
     );
 
     // Bloquear o passado não muda nada na agenda: provavelmente é erro na data.
-    if (BloqueioAgenda.paraTexto(bloqueio.getDataFim()) < RelogioClinica.hoje()) {
+    if (DataAgenda.paraTexto(bloqueio.getDataFim()) < RelogioClinica.hoje()) {
       throw new Error("O período do bloqueio já passou. Confira as datas.");
     }
     if (dados.profissionalId !== null) {
@@ -80,8 +81,8 @@ export class BloqueioAgendaService {
     const salvo = await this.bloqueioRepo.salvar(bloqueio);
     const agendamentosAfetados = await this.agendamentoRepo.listarAgendadosNoPeriodo(
       salvo.getProfissionalId(),
-      BloqueioAgenda.paraTexto(salvo.getDataInicio()),
-      BloqueioAgenda.paraTexto(salvo.getDataFim())
+      DataAgenda.paraTexto(salvo.getDataInicio()),
+      DataAgenda.paraTexto(salvo.getDataFim())
     );
     return { bloqueio: salvo, agendamentosAfetados };
   }

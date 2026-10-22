@@ -20,6 +20,8 @@ import { AutenticacaoService } from "./services/AutenticacaoService";
  * `configurarRotas()` à medida que forem criados.
  */
 export class App {
+  private static readonly PORTA_PADRAO = 3000;
+
   private readonly app: Express;
   private readonly healthController = new HealthController();
   private readonly profissionalController = new ProfissionalController();
@@ -218,6 +220,11 @@ export class App {
     this.app.delete("/usuarios/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
       this.usuarioController.excluir(req, res)
     );
+  }
+
+  /** Porta do .env (PORT); sem ela, a 3000. */
+  public static portaConfigurada(): number {
+    return Number(process.env.PORT) || App.PORTA_PADRAO;
   }
 
   public getExpressApp(): Express {

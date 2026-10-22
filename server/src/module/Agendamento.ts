@@ -3,6 +3,7 @@ import { Profissional } from "./Profissional";
 import { Tratamento } from "./Tratamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { Horario } from "./Horario";
+import { DataAgenda } from "./DataAgenda";
 
 export class Agendamento {
   /**
@@ -134,10 +135,7 @@ export class Agendamento {
 
   /** true se o agendamento já está exatamente nesse dia e horário. */
   public estaMarcadoEm(data: Date, horario: Horario): boolean {
-    return (
-      this.data.toISOString().slice(0, 10) === data.toISOString().slice(0, 10) &&
-      this.horarioInicio.equals(horario)
-    );
+    return DataAgenda.mesmoDia(this.data, data) && this.horarioInicio.equals(horario);
   }
 
   /**
@@ -193,7 +191,7 @@ export class Agendamento {
   public toJSON() {
     return {
       id: this.id,
-      data: this.data.toISOString().slice(0, 10),
+      data: DataAgenda.paraTexto(this.data),
       horarioInicio: this.horarioInicio,
       status: this.status,
       cliente: this.cliente,

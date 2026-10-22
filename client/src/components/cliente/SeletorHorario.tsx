@@ -1,16 +1,11 @@
+import { PeriodoDoDia } from "../../models/PeriodoDoDia";
+
 interface Props {
   horarios: string[];
   selecionado: string | null;
   onSelecionar: (horario: string) => void;
   carregando: boolean;
 }
-
-// Períodos do dia: separar os horários deixa a lista mais fácil de percorrer no celular.
-const PERIODOS = [
-  { nome: "Manhã", ate: "12:00" },
-  { nome: "Tarde", ate: "18:00" },
-  { nome: "Noite", ate: "24:00" },
-];
 
 export function SeletorHorario({ horarios, selecionado, onSelecionar, carregando }: Props) {
   if (carregando) {
@@ -29,13 +24,7 @@ export function SeletorHorario({ horarios, selecionado, onSelecionar, carregando
     );
   }
 
-  // "HH:MM" compara certo como texto.
-  const grupos = PERIODOS.map((periodo, indice) => ({
-    nome: periodo.nome,
-    horarios: horarios.filter(
-      (horario) => horario < periodo.ate && (indice === 0 || horario >= PERIODOS[indice - 1].ate)
-    ),
-  })).filter((grupo) => grupo.horarios.length > 0);
+  const grupos = PeriodoDoDia.agrupar(horarios);
 
   return (
     <div className="periodos-horarios">

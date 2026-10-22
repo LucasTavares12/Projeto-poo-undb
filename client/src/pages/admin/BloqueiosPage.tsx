@@ -8,12 +8,13 @@ import { DataAgenda } from "../../models/DataAgenda";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { IconeBloqueio, IconeTelefone } from "../../components/Icones";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
+import { OpcaoProfissional } from "../../models/OpcaoProfissional";
+import { PeriodoDeDatas } from "../../models/PeriodoDeDatas";
+import { HorarioMarcado } from "../../models/HorarioMarcado";
 
 const bloqueioService = new BloqueioAgendaService();
 const profissionalService = new ProfissionalService();
-
-// Valor do select "Agenda de" que representa a clínica inteira (o profissionalId fica null).
-const CLINICA_INTEIRA = "clinica";
 
 // Sugestões do campo "Motivo" (o usuário pode escrever qualquer outro).
 const MOTIVOS_SUGERIDOS = ["Férias", "Folga", "Feriado", "Curso ou evento", "Atestado médico"];
@@ -34,11 +35,13 @@ interface Aviso {
 export function BloqueiosPage() {
   // Conta ligada a profissional: só bloqueia a própria agenda (feriado da clínica é do acesso total).
   const { profissionalId: proprioId } = useUsuarioLogado();
-  const acessoTotal = proprioId === null;
+  const perfil = new PerfilDeAcesso({ profissionalId: proprioId });
+  const acessoTotal = perfil.temAcessoTotal();
   const hoje = DataAgenda.hoje().toString();
 
   const formularioVazio = (): Formulario => ({
-    agenda: acessoTotal ? CLINICA_INTEIRA : String(proprioId),
+    // Opção vazia do select = clínica inteira.
+    agenda: OpcaoProfissional.paraValor(proprioId),
     dataInicio: hoje,
     dataFim: hoje,
     motivo: "",
@@ -95,17 +98,8 @@ export function BloqueiosPage() {
     return profissionais.find((profissional) => profissional.id === profissionalId)?.nome ?? "—";
   }
 
-  /** "21/10/2026" para um dia só; "21/10 a 25/10/2026" para um período. */
-  function formatarPeriodo(inicio: string, fim: string): string {
-    const dataInicio = new DataAgenda(inicio).formatar();
-    const dataFim = new DataAgenda(fim).formatar();
-    if (inicio === fim) {
-      return dataInicio;
-    }
-    // Mesmo ano: o ano aparece só no fim.
-    return inicio.slice(0, 4) === fim.slice(0, 4)
-      ? `${dataInicio.slice(0, 5)} a ${dataFim}`
-      : `${dataInicio} a ${dataFim}`;
+  function periodoDe(bloqueio: BloqueioAgenda): PeriodoDeDatas {
+    return new PeriodoDeDatas(bloqueio.dataInicio, bloqueio.dataFim);
   }
 
   function alterarInicio(dataInicio: string): void {
@@ -125,16 +119,16 @@ export function BloqueiosPage() {
     setAviso(null);
     try {
       const { bloqueio, agendamentosAfetados } = await bloqueioService.criar({
-        profissionalId: formulario.agenda === CLINICA_INTEIRA ? null : Number(formulario.agenda),
+        profissionalId: OpcaoProfissional.lerId(formulario.agenda),
         dataInicio: formulario.dataInicio,
         dataFim: formulario.dataFim,
         motivo: formulario.motivo.trim(),
       });
 
       setBloqueios((lista) =>
-        [...lista, bloqueio].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio))
+        [...lista, bloqueio].sort((a, b) => periodoDe(a).compararCom(periodoDe(b)))
       );
-      const periodo = formatarPeriodo(bloqueio.dataInicio, bloqueio.dataFim);
+      const periodo = periodoDe(bloqueio).formatar();
       setMensagem(
         `Agenda ${bloqueio.profissionalId === null ? "da clínica" : `de ${nomeDaAgenda(bloqueio.profissionalId)}`} ` +
           `bloqueada em ${periodo}. Os clientes não conseguem mais agendar nesse período.`
@@ -192,7 +186,7 @@ export function BloqueiosPage() {
             {aviso.agendamentos.map((agendamento) => (
               <li key={agendamento.id}>
                 <span>
-                  {new DataAgenda(agendamento.data).formatar()} às {agendamento.horarioInicio} ·{" "}
+                  {HorarioMarcado.de(agendamento).formatar()} ·{" "}
                   <b>{agendamento.cliente.nome}</b>
                   {acessoTotal && ` com ${agendamento.profissional.nome}`}
                 </span>
@@ -218,7 +212,7 @@ export function BloqueiosPage() {
                 value={formulario.agenda}
                 onChange={(evento) => setFormulario({ ...formulario, agenda: evento.target.value })}
               >
-                <option value={CLINICA_INTEIRA}>Clínica inteira (feriado, recesso)</option>
+                <option value={OpcaoProfissional.NENHUM}>Clínica inteira (feriado, recesso)</option>
                 {profissionais.map((profissional) => (
                   <option key={profissional.id} value={profissional.id}>
                     {profissional.nome}
@@ -313,15 +307,16 @@ export function BloqueiosPage() {
           </thead>
           <tbody>
             {bloqueios.map((bloqueio) => {
-              const encerrado = bloqueio.dataFim < hoje;
-              const emAndamento = !encerrado && bloqueio.dataInicio <= hoje;
+              const periodo = periodoDe(bloqueio);
+              const encerrado = periodo.jaTerminou(hoje);
+              const emAndamento = periodo.estaEmAndamento(hoje);
               // Conta de profissional não remove o feriado da clínica.
-              const podeRemover = acessoTotal || bloqueio.profissionalId === proprioId;
+              const podeRemover = perfil.podeGerenciar(bloqueio.profissionalId);
               return (
                 <tr key={bloqueio.id} className={encerrado ? "bloqueio-encerrado" : ""}>
                   <td className="admin-tabela-titulo">
                     <span className="bloqueio-periodo">
-                      {formatarPeriodo(bloqueio.dataInicio, bloqueio.dataFim)}
+                      {periodo.formatar()}
                       <span className="admin-etiqueta">
                         {bloqueio.quantidadeDias === 1 ? "1 dia" : `${bloqueio.quantidadeDias} dias`}
                       </span>

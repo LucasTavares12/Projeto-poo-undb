@@ -1,3 +1,5 @@
+import { DataAgenda } from "./DataAgenda";
+
 /**
  * Período de dias inteiros em que a agenda fica fechada: folga ou férias de um
  * profissional, ou feriado/recesso da clínica inteira (sem profissional).
@@ -49,11 +51,6 @@ export class BloqueioAgenda {
     }
   }
 
-  /** "YYYY-MM-DD" da data (as datas da agenda ficam à meia-noite UTC). */
-  public static paraTexto(data: Date): string {
-    return data.toISOString().slice(0, 10);
-  }
-
   public getId(): number | undefined {
     return this.id;
   }
@@ -85,10 +82,10 @@ export class BloqueioAgenda {
 
   /** true se a data (dia inteiro) está dentro do período, contando o primeiro e o último dia. */
   public abrange(data: Date): boolean {
-    const dia = BloqueioAgenda.paraTexto(data);
+    const dia = DataAgenda.paraTexto(data);
     return (
-      dia >= BloqueioAgenda.paraTexto(this.dataInicio) &&
-      dia <= BloqueioAgenda.paraTexto(this.dataFim)
+      dia >= DataAgenda.paraTexto(this.dataInicio) &&
+      dia <= DataAgenda.paraTexto(this.dataFim)
     );
   }
 
@@ -105,8 +102,8 @@ export class BloqueioAgenda {
     return {
       id: this.id,
       profissionalId: this.profissionalId,
-      dataInicio: BloqueioAgenda.paraTexto(this.dataInicio),
-      dataFim: BloqueioAgenda.paraTexto(this.dataFim),
+      dataInicio: DataAgenda.paraTexto(this.dataInicio),
+      dataFim: DataAgenda.paraTexto(this.dataFim),
       motivo: this.motivo,
       quantidadeDias: this.getQuantidadeDias(),
     };
@@ -115,8 +112,8 @@ export class BloqueioAgenda {
   /** O que a página do cliente pode ver: só o período, sem o motivo (que é interno). */
   public paraPublico() {
     return {
-      dataInicio: BloqueioAgenda.paraTexto(this.dataInicio),
-      dataFim: BloqueioAgenda.paraTexto(this.dataFim),
+      dataInicio: DataAgenda.paraTexto(this.dataInicio),
+      dataFim: DataAgenda.paraTexto(this.dataFim),
     };
   }
 }

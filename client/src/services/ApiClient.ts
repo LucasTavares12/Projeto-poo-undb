@@ -1,13 +1,13 @@
 import { SessaoAdmin } from "./SessaoAdmin";
 
-const URL_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
 /**
  * Classe base para os serviços de acesso à API. Cada serviço de recurso
  * (ProfissionalService, TratamentoService...) estende esta classe e ganha
  * os verbos HTTP já prontos, sem repetir a lógica de fetch/erro.
  */
 export abstract class ApiClient {
+  private static readonly URL_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   protected async get<T>(caminho: string): Promise<T> {
     return this.requisitar<T>(caminho, { method: "GET" });
   }
@@ -47,7 +47,7 @@ export abstract class ApiClient {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
-    const resposta = await fetch(`${URL_BASE}${caminho}`, { ...opcoes, headers });
+    const resposta = await fetch(`${ApiClient.URL_BASE}${caminho}`, { ...opcoes, headers });
 
     // Token recusado (expirou ou o servidor trocou o segredo): volta para o login.
     if (resposta.status === 401 && token) {

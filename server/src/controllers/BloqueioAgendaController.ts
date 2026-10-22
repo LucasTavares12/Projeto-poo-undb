@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { BloqueioAgendaService } from "../services/BloqueioAgendaService";
 import type { DadosNovoBloqueio } from "../services/BloqueioAgendaService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
+import { DataAgenda } from "../module/DataAgenda";
 
 export class BloqueioAgendaController {
   private readonly servico = new BloqueioAgendaService();
@@ -67,9 +68,9 @@ export class BloqueioAgendaController {
   private lerDadosNovoBloqueio(req: Request): DadosNovoBloqueio {
     const { profissionalId, dataInicio, dataFim, motivo } = req.body ?? {};
 
-    const inicio = this.lerData(dataInicio, "Informe a data de início do bloqueio.");
+    const inicio = DataAgenda.ler(dataInicio, "Informe a data de início do bloqueio.");
     // Sem data final: bloqueio de um dia só.
-    const fim = dataFim ? this.lerData(dataFim, "Data final inválida.") : inicio;
+    const fim = dataFim ? DataAgenda.ler(dataFim, "Data final inválida.") : inicio;
 
     return {
       profissionalId:
@@ -80,15 +81,5 @@ export class BloqueioAgendaController {
       dataFim: fim,
       motivo: String(motivo ?? ""),
     };
-  }
-
-  /** "YYYY-MM-DD" → meia-noite UTC, como as outras datas da agenda. */
-  private lerData(valor: unknown, mensagemDeErro: string): Date {
-    const texto = String(valor ?? "");
-    const data = new Date(`${texto}T00:00:00Z`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto) || Number.isNaN(data.getTime())) {
-      throw new Error(mensagemDeErro);
-    }
-    return data;
   }
 }

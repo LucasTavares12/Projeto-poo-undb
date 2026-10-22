@@ -6,6 +6,7 @@ import type { HorarioDisponivel, Profissional } from "../../services/types";
 import { GradeSemanal } from "../../models/GradeSemanal";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 
 const profissionalService = new ProfissionalService();
 const horarioService = new HorarioDisponivelService();
@@ -36,7 +37,7 @@ export function HorariosPage() {
         const lista = await profissionalService.listar();
         // Conta ligada a um profissional: só a agenda dele.
         const visiveis =
-          proprioId === null ? lista : lista.filter((profissional) => profissional.id === proprioId);
+          new PerfilDeAcesso({ profissionalId: proprioId }).filtrarProfissionais(lista);
         setProfissionais(visiveis);
         if (visiveis.length > 0) {
           setProfissionalId(visiveis[0].id);

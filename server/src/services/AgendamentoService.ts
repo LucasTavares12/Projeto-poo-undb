@@ -9,6 +9,7 @@ import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { TratamentoRepository } from "../repositories/TratamentoRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { DisponibilidadeService } from "./DisponibilidadeService";
+import { DataAgenda } from "../module/DataAgenda";
 
 export interface DadosNovoAgendamento {
   clienteNome: string;
@@ -298,11 +299,7 @@ export class AgendamentoService {
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser remarcado."
       );
     }
-    if (Number.isNaN(data.getTime())) {
-      throw new Error("Data inválida.");
-    }
-    const dia = data.toISOString().slice(0, 10);
-    if (dia < RelogioClinica.hoje()) {
+    if (DataAgenda.paraTexto(data) < RelogioClinica.hoje()) {
       throw new Error("Escolha uma data a partir de hoje.");
     }
 

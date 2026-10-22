@@ -5,6 +5,8 @@ import type { Agendamento, PeriodoBloqueado } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { SeletorData } from "./SeletorData";
 import { SeletorHorario } from "./SeletorHorario";
+import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
+import { HorarioMarcado } from "../../models/HorarioMarcado";
 
 const agendamentoService = new AgendamentoService();
 const bloqueioService = new BloqueioAgendaService();
@@ -51,8 +53,8 @@ export function RemarcarAgendamento({ agendamento, telefone, onRemarcado, onDesi
       .catch(() => undefined);
   }, [profissionalId]);
 
-  const dataEstaBloqueada = (dia: string) =>
-    periodosBloqueados.some((periodo) => periodo.dataInicio <= dia && dia <= periodo.dataFim);
+  const diasSemAtendimento = new DiasSemAtendimento(periodosBloqueados);
+  const dataEstaBloqueada = (dia: string) => diasSemAtendimento.estaFechado(dia);
   const bloqueada = dataEstaBloqueada(data);
 
   useEffect(() => {
@@ -110,8 +112,8 @@ export function RemarcarAgendamento({ agendamento, telefone, onRemarcado, onDesi
     }
   }
 
-  const deQuando = `${new DataAgenda(agendamento.data).formatarPorExtenso()} às ${agendamento.horarioInicio}`;
-  const paraQuando = horario ? `${new DataAgenda(data).formatarPorExtenso()} às ${horario}` : "";
+  const deQuando = HorarioMarcado.de(agendamento).formatarPorExtenso();
+  const paraQuando = horario ? new HorarioMarcado(data, horario).formatarPorExtenso() : "";
 
   return (
     <div className="remarcar">

@@ -68,6 +68,16 @@ export class DataAgenda {
     return new Date(`${this.valor}T00:00:00Z`);
   }
 
+  /** "DD/MM", sem o ano (gráficos, períodos no mesmo ano). */
+  public formatarDiaMes(): string {
+    return this.formatar().slice(0, 5);
+  }
+
+  /** "AAAA-MM" do mês desta data, no formato dos relatórios. */
+  public getMes(): string {
+    return this.valor.slice(0, 7);
+  }
+
   public toString(): string {
     return this.valor;
   }

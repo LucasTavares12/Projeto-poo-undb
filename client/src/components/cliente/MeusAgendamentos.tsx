@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
 import type { Agendamento } from "../../services/types";
-import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
@@ -14,6 +13,7 @@ import {
   IconeRelogio,
   IconeSetaEsquerda,
 } from "../Icones";
+import { HorarioMarcado } from "../../models/HorarioMarcado";
 
 const agendamentoService = new AgendamentoService();
 
@@ -83,8 +83,8 @@ export function MeusAgendamentos({ onVoltar }: Props) {
         agendamentos: busca.agendamentos.filter((item) => item.id !== agendamento.id),
       });
       setMensagem(
-        `Agendamento de ${new DataAgenda(agendamento.data).formatar()} às ` +
-          `${agendamento.horarioInicio} cancelado. O horário foi liberado.`
+        `Agendamento de ${HorarioMarcado.de(agendamento).formatar()} cancelado. ` +
+          "O horário foi liberado."
       );
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
@@ -103,15 +103,12 @@ export function MeusAgendamentos({ onVoltar }: Props) {
       // Continua em ordem de data/horário depois da mudança.
       agendamentos: busca.agendamentos
         .map((item) => (item.id === atualizado.id ? atualizado : item))
-        .sort((a, b) =>
-          `${a.data} ${a.horarioInicio}`.localeCompare(`${b.data} ${b.horarioInicio}`)
-        ),
+        .sort((a, b) => HorarioMarcado.de(a).compararCom(HorarioMarcado.de(b))),
     });
     setRemarcandoId(null);
     setMensagem(
-      `Pronto! Seu agendamento de ${new DataAgenda(anterior.data).formatar()} às ` +
-        `${anterior.horarioInicio} foi remarcado para ` +
-        `${new DataAgenda(atualizado.data).formatar()} às ${atualizado.horarioInicio}.`
+      `Pronto! Seu agendamento de ${HorarioMarcado.de(anterior).formatar()} ` +
+        `foi remarcado para ${HorarioMarcado.de(atualizado).formatar()}.`
     );
   }
 
@@ -170,7 +167,7 @@ export function MeusAgendamentos({ onVoltar }: Props) {
                     <li>
                       <IconeCalendario tamanho={16} />
                       <strong>
-                        {new DataAgenda(agendamento.data).formatar()} às {agendamento.horarioInicio}
+                        {HorarioMarcado.de(agendamento).formatar()}
                       </strong>
                     </li>
                     <li>

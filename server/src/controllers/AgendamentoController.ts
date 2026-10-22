@@ -4,6 +4,7 @@ import type { DadosNovoAgendamento } from "../services/AgendamentoService";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
+import { DataAgenda } from "../module/DataAgenda";
 
 export class AgendamentoController {
   private readonly servico = new AgendamentoService();
@@ -30,13 +31,9 @@ export class AgendamentoController {
   }
 
   private lerConsultaDeHorarios(req: Request) {
-    const data = new Date(String(req.query.data));
-    if (Number.isNaN(data.getTime())) {
-      throw new Error("Data inválida.");
-    }
     return {
       profissionalId: Number(req.query.profissionalId),
-      data,
+      data: DataAgenda.ler(req.query.data),
       tratamentoIds: String(req.query.tratamentoIds || "")
         .split(",")
         .filter((valor) => valor.length > 0)
@@ -70,7 +67,7 @@ export class AgendamentoController {
       clienteTelefone,
       profissionalId: Number(profissionalId),
       tratamentoIds: Array.isArray(tratamentoIds) ? tratamentoIds.map(Number) : [],
-      data: new Date(data),
+      data: DataAgenda.ler(data),
       horarioInicio: new Horario(String(horarioInicio ?? "")),
     };
   }
@@ -102,7 +99,7 @@ export class AgendamentoController {
     try {
       const horarios = await this.servico.horariosParaRemarcar(
         Number(req.params.id),
-        this.lerData(req.query.data),
+        DataAgenda.ler(req.query.data, "Escolha uma data válida."),
         SessaoDaRequisicao.profissionalId(res)
       );
       res.json(horarios);
@@ -133,7 +130,7 @@ export class AgendamentoController {
       const horarios = await this.servico.horariosParaRemarcarDoCliente(
         Number(req.params.id),
         String(req.query.telefone ?? ""),
-        this.lerData(req.query.data)
+        DataAgenda.ler(req.query.data, "Escolha uma data válida.")
       );
       res.json(horarios);
     } catch (erro) {
@@ -162,17 +159,10 @@ export class AgendamentoController {
     if (!horarioInicio) {
       throw new Error("Escolha o novo horário.");
     }
-    return { data: this.lerData(data), horarioInicio: new Horario(String(horarioInicio)) };
-  }
-
-  /** "YYYY-MM-DD" → meia-noite UTC, como as outras datas da agenda. */
-  private lerData(valor: unknown): Date {
-    const texto = String(valor ?? "");
-    const data = new Date(texto);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto) || Number.isNaN(data.getTime())) {
-      throw new Error("Escolha uma data válida.");
-    }
-    return data;
+    return {
+      data: DataAgenda.ler(data, "Escolha uma data válida."),
+      horarioInicio: new Horario(String(horarioInicio)),
+    };
   }
 
   /** Botão "Cancelar" dos cards da coluna "Agendados" no Kanban. */

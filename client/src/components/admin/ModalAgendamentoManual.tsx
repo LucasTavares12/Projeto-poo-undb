@@ -9,6 +9,8 @@ import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
 import { IconeFechar } from "../Icones";
+import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
+import { OpcaoProfissional } from "../../models/OpcaoProfissional";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
@@ -117,9 +119,9 @@ export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCr
     (tratamento) =>
       tratamento.profissionalId === null || tratamento.profissionalId === profissionalId
   );
-  const selecionados = tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id));
-  const duracaoTotal = selecionados.reduce((total, tratamento) => total + tratamento.duracaoMinutos, 0);
-  const valorTotal = selecionados.reduce((total, tratamento) => total + tratamento.valor, 0);
+  const selecionados = new SelecaoDeTratamentos(
+    tratamentos.filter((tratamento) => tratamentoIds.includes(tratamento.id))
+  );
 
   const erros = {
     nome: clienteNome.trim() === "" ? "Informe o nome do cliente." : null,
@@ -242,12 +244,10 @@ export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCr
               <select
                 required
                 aria-invalid={Boolean(mostrarErro("profissional"))}
-                value={profissionalId ?? ""}
+                value={OpcaoProfissional.paraValor(profissionalId)}
                 disabled={profissionalFixo !== null}
                 onChange={(evento) =>
-                  selecionarProfissional(
-                    evento.target.value === "" ? null : Number(evento.target.value)
-                  )
+                  selecionarProfissional(OpcaoProfissional.lerId(evento.target.value))
                 }
               >
                 <option value="" disabled>
@@ -296,10 +296,11 @@ export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCr
             {mostrarErro("tratamentos") && (
               <span className="campo-erro">{erros.tratamentos}</span>
             )}
-            {selecionados.length > 0 && (
+            {selecionados.getQuantidade() > 0 && (
               <p className="modal-total">
-                Total: <strong>{new Duracao(duracaoTotal).formatar()}</strong> ·{" "}
-                <strong>{new Dinheiro(valorTotal).formatar()}</strong>
+                Total:{" "}
+                <strong>{new Duracao(selecionados.getDuracaoTotalMinutos()).formatar()}</strong> ·{" "}
+                <strong>{new Dinheiro(selecionados.getValorTotal()).formatar()}</strong>
               </p>
             )}
           </fieldset>

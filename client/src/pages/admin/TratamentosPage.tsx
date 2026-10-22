@@ -6,6 +6,7 @@ import type { Profissional, Tratamento } from "../../services/types";
 import { Duracao } from "../../models/Duracao";
 import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
+import { OpcaoProfissional } from "../../models/OpcaoProfissional";
 
 const tratamentoService = new TratamentoService();
 const profissionalService = new ProfissionalService();
@@ -177,11 +178,11 @@ export function TratamentosPage() {
           <label>
             Profissional
             <select
-              value={formulario.profissionalId ?? ""}
+              value={OpcaoProfissional.paraValor(formulario.profissionalId)}
               onChange={(evento) =>
                 setFormulario({
                   ...formulario,
-                  profissionalId: evento.target.value === "" ? null : Number(evento.target.value),
+                  profissionalId: OpcaoProfissional.lerId(evento.target.value),
                 })
               }
             >

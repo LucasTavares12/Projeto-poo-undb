@@ -22,11 +22,9 @@ import {
   IconeRelogio,
   IconeSair,
 } from "../../components/Icones";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 
 const autenticacaoService = new AutenticacaoService();
-
-// Áreas da clínica inteira: só para usuários com acesso total (sem profissional vinculado).
-const AREAS_DE_ACESSO_TOTAL = ["/admin/tratamentos", "/admin/configuracoes"];
 
 export function AdminLayout() {
   const navegar = useNavigate();
@@ -84,8 +82,9 @@ export function AdminLayout() {
     );
   }
 
-  const acessoTotal = usuario.profissionalId === null;
-  if (!acessoTotal && AREAS_DE_ACESSO_TOTAL.some((area) => pathname.startsWith(area))) {
+  const perfil = new PerfilDeAcesso(usuario);
+  const acessoTotal = perfil.temAcessoTotal();
+  if (!perfil.podeAbrir(pathname)) {
     return <Navigate to="/admin" replace />;
   }
 

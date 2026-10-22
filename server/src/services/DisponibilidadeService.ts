@@ -4,6 +4,7 @@ import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaReposito
 import { Horario } from "../module/Horario";
 import { DiaSemana } from "../module/DiaSemana";
 import { RelogioClinica } from "../module/RelogioClinica";
+import { DataAgenda } from "../module/DataAgenda";
 
 /**
  * Calcula, para um profissional e uma data específica, quais horários
@@ -32,7 +33,7 @@ export class DisponibilidadeService {
     quantidadeSlotsNecessarios: number,
     ignorarAgendamentoId?: number
   ): Promise<Horario[]> {
-    const dia = data.toISOString().slice(0, 10);
+    const dia = DataAgenda.paraTexto(data);
     const hoje = RelogioClinica.hoje();
     if (dia < hoje || (await this.estaBloqueado(profissionalId, data))) {
       return [];

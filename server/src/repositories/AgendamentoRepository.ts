@@ -6,6 +6,7 @@ import { Profissional } from "../module/Profissional";
 import { Tratamento } from "../module/Tratamento";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
+import { DataAgenda } from "../module/DataAgenda";
 
 interface LinhaAgendamentoBase extends RowDataPacket {
   id: number;
@@ -35,24 +36,24 @@ interface LinhaTratamento extends RowDataPacket {
   profissional_id?: number | null;
 }
 
-const SELECT_BASE = `
-  SELECT
-    a.id, a.data, a.hora_inicio, a.status, a.arquivado,
-    c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
-    p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
-  FROM agendamentos a
-  JOIN clientes c ON c.id = a.cliente_id
-  JOIN profissionais p ON p.id = a.profissional_id
-`;
-
-const SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
-  SELECT t.*
-  FROM tratamentos t
-  JOIN agendamento_tratamentos at ON at.tratamento_id = t.id
-  WHERE at.agendamento_id = ?
-`;
-
 export class AgendamentoRepository extends Repositorio {
+  private static readonly SELECT_BASE = `
+    SELECT
+      a.id, a.data, a.hora_inicio, a.status, a.arquivado,
+      c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
+      p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
+    FROM agendamentos a
+    JOIN clientes c ON c.id = a.cliente_id
+    JOIN profissionais p ON p.id = a.profissional_id
+`;
+
+  private static readonly SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
+    SELECT t.*
+    FROM tratamentos t
+    JOIN agendamento_tratamentos at ON at.tratamento_id = t.id
+    WHERE at.agendamento_id = ?
+`;
+
   // Bancos criados antes de existir o "Limpar finalizados": acrescenta a coluna.
   private static readonly ADICIONAR_ARQUIVADO = `
     ALTER TABLE agendamentos
@@ -67,7 +68,7 @@ export class AgendamentoRepository extends Repositorio {
       [
         agendamento.getCliente().getId(),
         agendamento.getProfissional().getId(),
-        this.formatarData(agendamento.getData()),
+        DataAgenda.paraTexto(agendamento.getData()),
         agendamento.getHorarioInicio().toString(),
         agendamento.getStatus(),
       ]
@@ -86,7 +87,7 @@ export class AgendamentoRepository extends Repositorio {
   public async buscarPorId(id: number): Promise<Agendamento | null> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.id = ?`,
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.id = ?`,
       [id]
     );
     return linhas.length > 0 ? await this.montarAgendamento(linhas[0]) : null;
@@ -96,7 +97,7 @@ export class AgendamentoRepository extends Repositorio {
   public async listarNoQuadro(): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.arquivado = 0 ORDER BY a.data, a.hora_inicio`
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.arquivado = 0 ORDER BY a.data, a.hora_inicio`
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
@@ -105,7 +106,7 @@ export class AgendamentoRepository extends Repositorio {
   public async listarNoQuadroPorProfissional(profissionalId: number): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.arquivado = 0 AND a.profissional_id = ?
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.arquivado = 0 AND a.profissional_id = ?
        ORDER BY a.data, a.hora_inicio`,
       [profissionalId]
     );
@@ -119,7 +120,7 @@ export class AgendamentoRepository extends Repositorio {
   public async listarArquivados(profissionalId: number | null): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.arquivado = 1 AND (? IS NULL OR a.profissional_id = ?)
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.arquivado = 1 AND (? IS NULL OR a.profissional_id = ?)
        ORDER BY a.data, a.hora_inicio`,
       [profissionalId, profissionalId]
     );
@@ -145,7 +146,7 @@ export class AgendamentoRepository extends Repositorio {
   public async listarAgendadosPorTelefone(digitos: string): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE}
+      `${AgendamentoRepository.SELECT_BASE}
        WHERE a.status = ? AND a.arquivado = 0 AND a.data >= CURDATE()
          AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '') = ?
        ORDER BY a.data, a.hora_inicio`,
@@ -161,8 +162,8 @@ export class AgendamentoRepository extends Repositorio {
   ): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.profissional_id = ? AND a.data = ? ORDER BY a.hora_inicio`,
-      [profissionalId, this.formatarData(data)]
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.profissional_id = ? AND a.data = ? ORDER BY a.hora_inicio`,
+      [profissionalId, DataAgenda.paraTexto(data)]
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
@@ -174,7 +175,7 @@ export class AgendamentoRepository extends Repositorio {
   public async listarPorPeriodo(inicio: string, fim: string): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE} WHERE a.data BETWEEN ? AND ? ORDER BY a.data, a.hora_inicio`,
+      `${AgendamentoRepository.SELECT_BASE} WHERE a.data BETWEEN ? AND ? ORDER BY a.data, a.hora_inicio`,
       [inicio, fim]
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
@@ -192,7 +193,7 @@ export class AgendamentoRepository extends Repositorio {
   ): Promise<Agendamento[]> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
-      `${SELECT_BASE}
+      `${AgendamentoRepository.SELECT_BASE}
        WHERE a.status = ? AND a.data BETWEEN ? AND ? AND (? IS NULL OR a.profissional_id = ?)
        ORDER BY a.data, a.hora_inicio`,
       [StatusAgendamento.AGENDADO, inicio, fim, profissionalId, profissionalId]
@@ -203,7 +204,7 @@ export class AgendamentoRepository extends Repositorio {
   /** Remarcação: grava o novo dia e horário (o resto do agendamento não muda). */
   public async atualizarDataHorario(agendamento: Agendamento): Promise<void> {
     await this.pool.query("UPDATE agendamentos SET data = ?, hora_inicio = ? WHERE id = ?", [
-      this.formatarData(agendamento.getData()),
+      DataAgenda.paraTexto(agendamento.getData()),
       agendamento.getHorarioInicio().toString(),
       agendamento.getId(),
     ]);
@@ -268,7 +269,7 @@ export class AgendamentoRepository extends Repositorio {
 
   private async buscarTratamentosDoAgendamento(agendamentoId: number): Promise<Tratamento[]> {
     const [linhas] = await this.pool.query<LinhaTratamento[]>(
-      SELECT_TRATAMENTOS_DO_AGENDAMENTO,
+      AgendamentoRepository.SELECT_TRATAMENTOS_DO_AGENDAMENTO,
       [agendamentoId]
     );
     return linhas.map(
@@ -290,10 +291,6 @@ export class AgendamentoRepository extends Repositorio {
       "arquivado",
       AgendamentoRepository.ADICIONAR_ARQUIVADO
     );
-  }
-
-  private formatarData(data: Date): string {
-    return data.toISOString().slice(0, 10);
   }
 
   private async montarAgendamento(linha: LinhaAgendamentoBase): Promise<Agendamento> {

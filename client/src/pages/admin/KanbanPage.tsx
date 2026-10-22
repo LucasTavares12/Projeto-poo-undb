@@ -21,19 +21,11 @@ import {
   IconeRelogio,
   IconeTelefone,
 } from "../../components/Icones";
+import { HorarioMarcado } from "../../models/HorarioMarcado";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 
 const agendamentoService = new AgendamentoService();
 const relatorioService = new RelatorioService();
-
-/**
- * Soma dos atendimentos finalizados com data de hoje. Vem do relatório do mês, e não dos
- * cards da tela, para continuar contando os finalizados que foram limpos do quadro.
- */
-async function buscarFaturadoHoje(): Promise<number> {
-  const hoje = DataAgenda.hoje().toString();
-  const relatorio = await relatorioService.mensal(hoje.slice(0, 7));
-  return relatorio.faturamentoPorDia.find((dia) => dia.data === hoje)?.valor ?? 0;
-}
 
 // A ordem das colunas é também a ordem em que o atendimento avança.
 // Agendados e em atendimento: o mais próximo de acontecer fica no topo.
@@ -79,7 +71,7 @@ export function KanbanPage() {
     setModalAberto(false);
     setMensagem(
       `Agendamento de ${criado.cliente.nome} criado para ` +
-        `${new DataAgenda(criado.data).formatar()} às ${criado.horarioInicio}.`
+        `${HorarioMarcado.de(criado).formatar()}.`
     );
   }
 
@@ -91,8 +83,7 @@ export function KanbanPage() {
     setRemarcando(null);
     setMensagem(
       `Agendamento de ${atualizado.cliente.nome} remarcado: ` +
-        `${new DataAgenda(anterior.data).formatar()} às ${anterior.horarioInicio} → ` +
-        `${new DataAgenda(atualizado.data).formatar()} às ${atualizado.horarioInicio}.`
+        `${HorarioMarcado.de(anterior).formatar()} → ${HorarioMarcado.de(atualizado).formatar()}.`
     );
   }
 
@@ -102,7 +93,7 @@ export function KanbanPage() {
         const [lista, ocultos, faturado] = await Promise.all([
           agendamentoService.listar(),
           agendamentoService.contarArquivados(),
-          buscarFaturadoHoje(),
+          relatorioService.faturadoNoDia(DataAgenda.hoje()),
         ]);
         setAgendamentos(lista);
         setQuantidadeOcultos(ocultos);
@@ -123,7 +114,7 @@ export function KanbanPage() {
       const [lista, ocultos, faturado] = await Promise.all([
         agendamentoService.listar(),
         agendamentoService.contarArquivados(),
-        buscarFaturadoHoje(),
+        relatorioService.faturadoNoDia(DataAgenda.hoje()),
       ]);
       setAgendamentos(lista);
       setQuantidadeOcultos(ocultos);
@@ -173,7 +164,10 @@ export function KanbanPage() {
       // Entrar ou sair de "Finalizados" muda o faturado do dia.
       if (statusAnterior === "FINALIZADO" || novoStatus === "FINALIZADO") {
         // Falha aqui não desfaz o movimento: o card já mudou de etapa no servidor.
-        buscarFaturadoHoje().then(setFaturadoHoje).catch(() => undefined);
+        relatorioService
+          .faturadoNoDia(DataAgenda.hoje())
+          .then(setFaturadoHoje)
+          .catch(() => undefined);
       }
     } catch (erroRequisicao) {
       aplicarStatus(statusAnterior);
@@ -298,7 +292,7 @@ export function KanbanPage() {
       <CabecalhoPagina
         titulo="Agendamentos"
         descricao={
-          usuario.profissionalId === null
+          new PerfilDeAcesso(usuario).temAcessoTotal()
             ? "Acompanhe os atendimentos e arraste os cards para mudar de etapa."
             : "Seus atendimentos. Arraste os cards para mudar de etapa."
         }
@@ -395,15 +389,12 @@ export function KanbanPage() {
 
           <div className="kanban">
             {COLUNAS.map((coluna, indice) => {
-              // "AAAA-MM-DD HH:MM" ordena certo como texto: data primeiro, depois o horário.
-              const momento = (agendamento: Agendamento) =>
-                `${agendamento.data.slice(0, 10)} ${agendamento.horarioInicio}`;
               const cartoes = agendamentos
                 .filter((agendamento) => agendamento.status === coluna.status)
                 .sort((a, b) =>
                   coluna.maisRecentePrimeiro
-                    ? momento(b).localeCompare(momento(a))
-                    : momento(a).localeCompare(momento(b))
+                    ? HorarioMarcado.de(b).compararCom(HorarioMarcado.de(a))
+                    : HorarioMarcado.de(a).compararCom(HorarioMarcado.de(b))
                 );
               const anterior = COLUNAS[indice - 1];
               const proxima = COLUNAS[indice + 1];

@@ -4,11 +4,9 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { AutenticacaoService } from "../../services/AutenticacaoService";
 import { SessaoAdmin } from "../../services/SessaoAdmin";
 import { useConfiguracoes } from "../../hooks/useConfiguracoes";
+import { Senha } from "../../models/Senha";
 
 const autenticacaoService = new AutenticacaoService();
-
-// Mesma regra do backend (Administrador.TAMANHO_MINIMO_SENHA); aqui só para avisar antes de enviar.
-const TAMANHO_MINIMO_SENHA = 6;
 
 export function CadastroPage() {
   const navegar = useNavigate();
@@ -45,8 +43,9 @@ export function CadastroPage() {
   async function cadastrar(evento: FormEvent): Promise<void> {
     evento.preventDefault();
 
-    if (senha !== confirmacao) {
-      setErro("As senhas não são iguais.");
+    const problemaNaSenha = Senha.validarNova(senha, confirmacao);
+    if (problemaNaSenha) {
+      setErro(problemaNaSenha);
       return;
     }
 
@@ -90,7 +89,7 @@ export function CadastroPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={TAMANHO_MINIMO_SENHA}
+              minLength={Senha.TAMANHO_MINIMO}
               value={senha}
               onChange={(evento) => setSenha(evento.target.value)}
             />
@@ -101,7 +100,7 @@ export function CadastroPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={TAMANHO_MINIMO_SENHA}
+              minLength={Senha.TAMANHO_MINIMO}
               value={confirmacao}
               onChange={(evento) => setConfirmacao(evento.target.value)}
             />

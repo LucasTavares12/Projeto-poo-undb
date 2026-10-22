@@ -17,6 +17,8 @@ import {
   IconeSetaEsquerda,
   IconeTendencia,
 } from "../../components/Icones";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
+import { OpcaoProfissional } from "../../models/OpcaoProfissional";
 
 const relatorioService = new RelatorioService();
 const profissionalService = new ProfissionalService();
@@ -89,13 +91,13 @@ export function RelatoriosPage() {
 
   const filtros = (
     <div className="relatorio-filtros">
-      {proprioId === null && (
+      {new PerfilDeAcesso({ profissionalId: proprioId }).temAcessoTotal() && (
       <label className="filtro-profissional">
         <span>Profissional</span>
         <select
-          value={profissionalId ?? ""}
+          value={OpcaoProfissional.paraValor(profissionalId)}
           onChange={(evento) =>
-            setProfissionalId(evento.target.value === "" ? null : Number(evento.target.value))
+            setProfissionalId(OpcaoProfissional.lerId(evento.target.value))
           }
         >
           <option value="">Todos os profissionais</option>
@@ -278,7 +280,7 @@ function ResumoDoMes({ atual, anterior }: { atual: RelatorioMensal; anterior: Re
         </span>
         <span className="admin-resumo-rotulo">Melhor dia</span>
         <strong className="admin-resumo-valor">
-          {melhorDia ? new DataAgenda(melhorDia.data).formatar().slice(0, 5) : "—"}
+          {melhorDia ? new DataAgenda(melhorDia.data).formatarDiaMes() : "—"}
         </strong>
         <span className="admin-resumo-detalhe">
           {melhorDia ? new Dinheiro(melhorDia.valor).formatar() : "sem atendimentos"}
