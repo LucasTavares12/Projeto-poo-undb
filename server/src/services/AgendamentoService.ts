@@ -3,6 +3,7 @@ import { Cliente } from "../module/Cliente";
 import { Tratamento } from "../module/Tratamento";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
+import { RelogioClinica } from "../module/RelogioClinica";
 import { ClienteRepository } from "../repositories/ClienteRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { TratamentoRepository } from "../repositories/TratamentoRepository";
@@ -230,13 +231,7 @@ export class AgendamentoService {
    * informado e que ainda não começou a ser atendido. O horário volta a ficar livre.
    */
   public async cancelarPeloCliente(id: number, telefone: string): Promise<void> {
-    const digitos = this.lerTelefone(telefone);
-    const agendamento = await this.agendamentoRepo.buscarPorId(id);
-
-    // Agendamento de outro telefone é tratado como inexistente.
-    if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
-      throw new Error("Agendamento não encontrado para este telefone.");
-    }
+    const agendamento = await this.buscarDoCliente(id, telefone);
     if (!agendamento.podeSerCancelado()) {
       throw new Error(
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser cancelado."
@@ -244,6 +239,118 @@ export class AgendamentoService {
     }
 
     await this.agendamentoRepo.deletar(id);
+  }
+
+  /** Painel: horários livres para mudar o agendamento para a `data` escolhida. */
+  public async horariosParaRemarcar(
+    id: number,
+    data: Date,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Horario[]> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
+    return this.horariosLivresParaRemarcar(agendamento, data);
+  }
+
+  /** Página do cliente: o mesmo, confirmando pelo telefone usado ao agendar. */
+  public async horariosParaRemarcarDoCliente(
+    id: number,
+    telefone: string,
+    data: Date
+  ): Promise<Horario[]> {
+    return this.horariosLivresParaRemarcar(await this.buscarDoCliente(id, telefone), data);
+  }
+
+  /** Painel: muda o dia/horário de um agendamento (botão "Remarcar" do Kanban). */
+  public async remarcar(
+    id: number,
+    data: Date,
+    horario: Horario,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Agendamento> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
+    return this.aplicarRemarcacao(agendamento, data, horario);
+  }
+
+  /**
+   * Página do cliente: a pessoa remarca o próprio agendamento, confirmando pelo telefone,
+   * sem precisar cancelar e agendar de novo (e sem correr o risco de perder a vaga).
+   */
+  public async remarcarPeloCliente(
+    id: number,
+    telefone: string,
+    data: Date,
+    horario: Horario
+  ): Promise<Agendamento> {
+    return this.aplicarRemarcacao(await this.buscarDoCliente(id, telefone), data, horario);
+  }
+
+  /**
+   * Horários em que o agendamento pode passar a começar na `data`: a agenda liberada do
+   * profissional, sem folga/feriado, sem esbarrar em outros agendamentos e com espaço para
+   * todos os tratamentos. O horário que ele já ocupa conta como livre para ele mesmo.
+   */
+  private async horariosLivresParaRemarcar(
+    agendamento: Agendamento,
+    data: Date
+  ): Promise<Horario[]> {
+    if (!agendamento.podeSerRemarcado()) {
+      throw new Error(
+        "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser remarcado."
+      );
+    }
+    if (Number.isNaN(data.getTime())) {
+      throw new Error("Data inválida.");
+    }
+    const dia = data.toISOString().slice(0, 10);
+    if (dia < RelogioClinica.hoje()) {
+      throw new Error("Escolha uma data a partir de hoje.");
+    }
+
+    const horarios = await this.disponibilidadeService.listarHorariosDisponiveis(
+      agendamento.getProfissional().getId()!,
+      data,
+      agendamento.getQuantidadeSlots(),
+      agendamento.getId()
+    );
+    // O horário atual não é opção: remarcar para ele não mudaria nada.
+    return horarios.filter((horario) => !agendamento.estaMarcadoEm(data, horario));
+  }
+
+  private async aplicarRemarcacao(
+    agendamento: Agendamento,
+    data: Date,
+    horario: Horario
+  ): Promise<Agendamento> {
+    if (agendamento.estaMarcadoEm(data, horario)) {
+      throw new Error("O agendamento já está marcado nesse dia e horário.");
+    }
+
+    const profissional = agendamento.getProfissional();
+    if (await this.disponibilidadeService.estaBloqueado(profissional.getId()!, data)) {
+      throw new Error(`${profissional.getNome()} não atende nessa data. Escolha outro dia.`);
+    }
+
+    const livres = await this.horariosLivresParaRemarcar(agendamento, data);
+    if (!livres.some((livre) => livre.equals(horario))) {
+      throw new Error("Esse horário não está disponível. Escolha outro horário.");
+    }
+
+    agendamento.remarcar(data, horario);
+    await this.agendamentoRepo.atualizarDataHorario(agendamento);
+    return agendamento;
+  }
+
+  /**
+   * Agendamento procurado pela página do cliente: só vale se foi feito com este telefone.
+   * Agendamento de outro telefone é tratado como inexistente.
+   */
+  private async buscarDoCliente(id: number, telefone: string): Promise<Agendamento> {
+    const digitos = this.lerTelefone(telefone);
+    const agendamento = await this.agendamentoRepo.buscarPorId(id);
+    if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
+      throw new Error("Agendamento não encontrado para este telefone.");
+    }
+    return agendamento;
   }
 
   /** Só os números do telefone, com DDD: 10 dígitos (fixo) ou 11 (celular). */

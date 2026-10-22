@@ -6,6 +6,7 @@ import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
+import { RemarcarAgendamento } from "./RemarcarAgendamento";
 import {
   IconeBrilho,
   IconeCalendario,
@@ -20,22 +21,24 @@ interface Props {
   onVoltar: () => void;
 }
 
-/** Agendamentos achados para um telefone: o cancelamento usa o mesmo telefone da busca. */
+/** Agendamentos achados para um telefone: remarcar e cancelar usam o mesmo telefone da busca. */
 interface Busca {
   telefone: string;
   agendamentos: Agendamento[];
 }
 
 /**
- * "Cancelar agendamento" da página do cliente: a pessoa informa o telefone usado ao agendar,
- * vê os agendamentos que ainda não foram atendidos e cancela o que não vai poder comparecer.
+ * "Meus agendamentos" da página do cliente: a pessoa informa o telefone usado ao agendar,
+ * vê os agendamentos que ainda não foram atendidos e pode remarcar para outro horário livre
+ * ou cancelar o que não vai poder comparecer.
  */
-export function CancelarAgendamento({ onVoltar }: Props) {
+export function MeusAgendamentos({ onVoltar }: Props) {
   const [telefone, setTelefone] = useState("");
   const [busca, setBusca] = useState<Busca | null>(null);
   const [buscando, setBuscando] = useState(false);
 
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
+  const [remarcandoId, setRemarcandoId] = useState<number | null>(null);
   const [cancelandoId, setCancelandoId] = useState<number | null>(null);
 
   const [erro, setErro] = useState<string | null>(null);
@@ -53,6 +56,7 @@ export function CancelarAgendamento({ onVoltar }: Props) {
     setErro(null);
     setMensagem(null);
     setConfirmandoId(null);
+    setRemarcandoId(null);
     try {
       const agendamentos = await agendamentoService.listarDoCliente(telefone);
       setBusca({ telefone, agendamentos });
@@ -90,16 +94,37 @@ export function CancelarAgendamento({ onVoltar }: Props) {
     }
   }
 
+  function aoRemarcar(anterior: Agendamento, atualizado: Agendamento): void {
+    if (busca === null) {
+      return;
+    }
+    setBusca({
+      telefone: busca.telefone,
+      // Continua em ordem de data/horário depois da mudança.
+      agendamentos: busca.agendamentos
+        .map((item) => (item.id === atualizado.id ? atualizado : item))
+        .sort((a, b) =>
+          `${a.data} ${a.horarioInicio}`.localeCompare(`${b.data} ${b.horarioInicio}`)
+        ),
+    });
+    setRemarcandoId(null);
+    setMensagem(
+      `Pronto! Seu agendamento de ${new DataAgenda(anterior.data).formatar()} às ` +
+        `${anterior.horarioInicio} foi remarcado para ` +
+        `${new DataAgenda(atualizado.data).formatar()} às ${atualizado.horarioInicio}.`
+    );
+  }
+
   return (
     <section className="passo">
       <header className="passo-cabecalho">
-        <h2>Cancelar Agendamento</h2>
+        <h2>Meus Agendamentos</h2>
       </header>
 
       <div className="passo-corpo">
         <p className="passo-dica">
-          Não vai poder comparecer? Informe o telefone usado no agendamento para encontrá-lo e
-          cancelar. Assim o horário fica livre para outra pessoa.
+          Precisa mudar o dia ou não vai poder comparecer? Informe o telefone usado no agendamento
+          para encontrá-lo. Você pode remarcar para outro horário livre ou cancelar.
         </p>
 
         <form className="busca-agendamento" onSubmit={buscar}>
@@ -162,7 +187,14 @@ export function CancelarAgendamento({ onVoltar }: Props) {
                     </li>
                   </ul>
 
-                  {confirmandoId === agendamento.id ? (
+                  {remarcandoId === agendamento.id ? (
+                    <RemarcarAgendamento
+                      agendamento={agendamento}
+                      telefone={busca.telefone}
+                      onRemarcado={(atualizado) => aoRemarcar(agendamento, atualizado)}
+                      onDesistir={() => setRemarcandoId(null)}
+                    />
+                  ) : confirmandoId === agendamento.id ? (
                     <div className="agendamento-cliente-confirmacao">
                       <p>
                         <strong>Tem certeza que deseja cancelar?</strong> O horário será liberado
@@ -196,10 +228,24 @@ export function CancelarAgendamento({ onVoltar }: Props) {
                         disabled={cancelandoId !== null}
                         onClick={() => {
                           setMensagem(null);
+                          setRemarcandoId(null);
                           setConfirmandoId(agendamento.id);
                         }}
                       >
-                        Cancelar este agendamento
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        className="botao-primario"
+                        disabled={cancelandoId !== null}
+                        onClick={() => {
+                          setMensagem(null);
+                          setErro(null);
+                          setConfirmandoId(null);
+                          setRemarcandoId(agendamento.id);
+                        }}
+                      >
+                        <IconeCalendario tamanho={16} /> Remarcar
                       </button>
                     </div>
                   )}

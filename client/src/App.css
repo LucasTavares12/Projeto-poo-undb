@@ -1386,6 +1386,11 @@
   margin-left: auto;
 }
 
+/* Botão de avançar etapa: se não couber na linha (card estreito), ocupa a linha de baixo inteira. */
+.kanban-cartao-acoes .admin-botao.principal {
+  flex-grow: 1;
+}
+
 .kanban-cartao-confirmacao {
   margin-top: 12px;
   padding-top: 12px;
@@ -2513,6 +2518,57 @@
   opacity: 0.6;
 }
 
+/* Janela "Remarcar" do Kanban. */
+.remarcar-atual {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--raio);
+  background: var(--fundo);
+}
+
+.remarcar-atual > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.remarcar-atual strong {
+  color: var(--text-h);
+  font-size: 15px;
+}
+
+.remarcar-atual small {
+  font-size: 13px;
+}
+
+.remarcar-atual b {
+  color: var(--text-h);
+}
+
+.remarcar-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  background: var(--accent-bg);
+  font-size: 14px;
+}
+
+.remarcar-resumo s {
+  opacity: 0.75;
+}
+
+.remarcar-resumo strong {
+  color: var(--accent-forte);
+}
+
 /* ---------- Janela de agendamento manual ---------- */
 
 .kanban-mensagem {
@@ -3552,6 +3608,77 @@
   .confirmacao-fundo {
     animation: none;
   }
+}
+
+/* Remarcar pela página do cliente: abre dentro do cartão do agendamento. */
+.remarcar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--cliente-borda);
+  animation: aparecer 0.2s ease-out;
+}
+
+.remarcar h4 {
+  margin: 8px 0 8px;
+  color: var(--principal);
+  font-size: 15px;
+}
+
+/* A faixa de dias vai até a borda do cartão (16px de respiro menos 1px da borda). */
+.remarcar .faixa-dias {
+  margin: 0 -15px;
+  padding: 2px 15px 10px;
+  scroll-padding: 0 15px;
+}
+
+.remarcar .periodos-horarios {
+  margin-bottom: 12px;
+}
+
+.remarcar-erro {
+  margin: 8px 0;
+}
+
+.remarcar-confirmacao {
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--principal-claro);
+}
+
+.remarcar-confirmacao > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.remarcar-de-para {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remarcar-de-para > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.remarcar-de-para small {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.remarcar-de-para s {
+  opacity: 0.7;
+}
+
+.remarcar-de-para strong {
+  color: var(--principal-escuro);
+  font-size: 16px;
 }
 
 /* Tela de sucesso. */

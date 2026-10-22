@@ -153,6 +153,12 @@ export class App {
     this.app.delete("/meus-agendamentos/:id", (req, res) =>
       this.agendamentoController.cancelarDoCliente(req, res)
     );
+    this.app.get("/meus-agendamentos/:id/horarios-remarcacao", (req, res) =>
+      this.agendamentoController.horariosParaRemarcarDoCliente(req, res)
+    );
+    this.app.patch("/meus-agendamentos/:id/remarcar", (req, res) =>
+      this.agendamentoController.remarcarDoCliente(req, res)
+    );
     this.app.get("/agendamentos", this.exigirAdmin, (req, res) =>
       this.agendamentoController.listar(req, res)
     );
@@ -171,6 +177,12 @@ export class App {
     );
     this.app.patch("/agendamentos/:id/status", this.exigirAdmin, (req, res) =>
       this.agendamentoController.atualizarStatus(req, res)
+    );
+    this.app.get("/agendamentos/:id/horarios-remarcacao", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.horariosParaRemarcar(req, res)
+    );
+    this.app.patch("/agendamentos/:id/remarcar", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.remarcar(req, res)
     );
   }
 

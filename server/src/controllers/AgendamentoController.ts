@@ -97,6 +97,84 @@ export class AgendamentoController {
     }
   }
 
+  /** Painel, janela "Remarcar": horários livres para o agendamento na data (?data=YYYY-MM-DD). */
+  public async horariosParaRemarcar(req: Request, res: Response): Promise<void> {
+    try {
+      const horarios = await this.servico.horariosParaRemarcar(
+        Number(req.params.id),
+        this.lerData(req.query.data),
+        SessaoDaRequisicao.profissionalId(res)
+      );
+      res.json(horarios);
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Painel: grava o novo dia e horário ({ data, horarioInicio }). */
+  public async remarcar(req: Request, res: Response): Promise<void> {
+    try {
+      const { data, horarioInicio } = this.lerNovoHorario(req);
+      const agendamento = await this.servico.remarcar(
+        Number(req.params.id),
+        data,
+        horarioInicio,
+        SessaoDaRequisicao.profissionalId(res)
+      );
+      res.json(agendamento);
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Página do cliente: horários livres para remarcar (?telefone=...&data=YYYY-MM-DD). */
+  public async horariosParaRemarcarDoCliente(req: Request, res: Response): Promise<void> {
+    try {
+      const horarios = await this.servico.horariosParaRemarcarDoCliente(
+        Number(req.params.id),
+        String(req.query.telefone ?? ""),
+        this.lerData(req.query.data)
+      );
+      res.json(horarios);
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Página do cliente: remarca o próprio agendamento, confirmando pelo telefone (?telefone=...). */
+  public async remarcarDoCliente(req: Request, res: Response): Promise<void> {
+    try {
+      const { data, horarioInicio } = this.lerNovoHorario(req);
+      const agendamento = await this.servico.remarcarPeloCliente(
+        Number(req.params.id),
+        String(req.query.telefone ?? ""),
+        data,
+        horarioInicio
+      );
+      res.json(agendamento);
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  private lerNovoHorario(req: Request) {
+    const { data, horarioInicio } = req.body ?? {};
+    if (!horarioInicio) {
+      throw new Error("Escolha o novo horário.");
+    }
+    return { data: this.lerData(data), horarioInicio: new Horario(String(horarioInicio)) };
+  }
+
+  /** "YYYY-MM-DD" → meia-noite UTC, como as outras datas da agenda. */
+  private lerData(valor: unknown): Date {
+    const texto = String(valor ?? "");
+    const data = new Date(texto);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto) || Number.isNaN(data.getTime())) {
+      throw new Error("Escolha uma data válida.");
+    }
+    return data;
+  }
+
   /** Botão "Cancelar" dos cards da coluna "Agendados" no Kanban. */
   public async cancelar(req: Request, res: Response): Promise<void> {
     try {

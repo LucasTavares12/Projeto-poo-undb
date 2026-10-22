@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
 import { RelatorioService } from "../../services/RelatorioService";
@@ -8,6 +8,7 @@ import { Duracao } from "../../models/Duracao";
 import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { ModalAgendamentoManual } from "../../components/admin/ModalAgendamentoManual";
+import { ModalRemarcarAgendamento } from "../../components/admin/ModalRemarcarAgendamento";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import {
   IconeAtualizar,
@@ -67,6 +68,9 @@ export function KanbanPage() {
   const [atualizacao, setAtualizacao] = useState<"parado" | "atualizando" | "atualizado">("parado");
 
   const [modalAberto, setModalAberto] = useState(false);
+  // Agendamento aberto na janela "Remarcar" (null = janela fechada).
+  const [remarcando, setRemarcando] = useState<Agendamento | null>(null);
+  const fecharRemarcacao = useCallback(() => setRemarcando(null), []);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
   /** O card novo entra direto na coluna "Agendados", já na posição do seu horário. */
@@ -76,6 +80,19 @@ export function KanbanPage() {
     setMensagem(
       `Agendamento de ${criado.cliente.nome} criado para ` +
         `${new DataAgenda(criado.data).formatar()} às ${criado.horarioInicio}.`
+    );
+  }
+
+  /** O card fica na mesma coluna, já no lugar do novo dia/horário. */
+  function aoRemarcar(anterior: Agendamento, atualizado: Agendamento): void {
+    setAgendamentos((lista) =>
+      lista.map((agendamento) => (agendamento.id === atualizado.id ? atualizado : agendamento))
+    );
+    setRemarcando(null);
+    setMensagem(
+      `Agendamento de ${atualizado.cliente.nome} remarcado: ` +
+        `${new DataAgenda(anterior.data).formatar()} às ${anterior.horarioInicio} → ` +
+        `${new DataAgenda(atualizado.data).formatar()} às ${atualizado.horarioInicio}.`
     );
   }
 
@@ -330,6 +347,14 @@ export function KanbanPage() {
         />
       )}
 
+      {remarcando && (
+        <ModalRemarcarAgendamento
+          agendamento={remarcando}
+          onFechar={fecharRemarcacao}
+          onRemarcado={(atualizado) => aoRemarcar(remarcando, atualizado)}
+        />
+      )}
+
       {carregando ? (
         <p>Carregando...</p>
       ) : (
@@ -521,13 +546,26 @@ export function KanbanPage() {
                       ) : (
                         <div className="kanban-cartao-acoes">
                           {agendamento.status === "AGENDADO" && (
-                            <button
-                              type="button"
-                              className="admin-botao perigo"
-                              onClick={() => setConfirmandoCancelamentoId(agendamento.id)}
-                            >
-                              Cancelar
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="admin-botao perigo"
+                                onClick={() => setConfirmandoCancelamentoId(agendamento.id)}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-botao"
+                                title="Mudar o dia ou o horário"
+                                onClick={() => {
+                                  setMensagem(null);
+                                  setRemarcando(agendamento);
+                                }}
+                              >
+                                <IconeCalendario tamanho={13} /> Remarcar
+                              </button>
+                            </>
                           )}
                           {anterior && (
                             <button

@@ -3,13 +3,15 @@ import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaRepository";
 import { Horario } from "../module/Horario";
 import { DiaSemana } from "../module/DiaSemana";
+import { RelogioClinica } from "../module/RelogioClinica";
 
 /**
  * Calcula, para um profissional e uma data específica, quais horários
  * (slots de 30min) estão realmente disponíveis para o cliente escolher —
  * cruzando o que o admin liberou (HorarioDisponivel) com o que já está
  * ocupado por outros agendamentos naquele dia. Dias com folga do profissional
- * ou feriado da clínica (BloqueioAgenda) não têm nenhum horário livre.
+ * ou feriado da clínica (BloqueioAgenda) não têm nenhum horário livre, e
+ * horários que já passaram (dias anteriores ou mais cedo hoje) nunca aparecem.
  */
 export class DisponibilidadeService {
   private readonly horarioRepo = new HorarioDisponivelRepository();
@@ -20,13 +22,19 @@ export class DisponibilidadeService {
    * Retorna os horários em que o profissional pode COMEÇAR um atendimento
    * que ocupa `quantidadeSlotsNecessarios` slots consecutivos (a soma dos
    * tratamentos escolhidos pelo cliente).
+   *
+   * Ao remarcar, `ignorarAgendamentoId` é o próprio agendamento: os horários que ele ocupa hoje
+   * contam como livres (dá para empurrar o atendimento 30min sem "esbarrar" nele mesmo).
    */
   public async listarHorariosDisponiveis(
     profissionalId: number,
     data: Date,
-    quantidadeSlotsNecessarios: number
+    quantidadeSlotsNecessarios: number,
+    ignorarAgendamentoId?: number
   ): Promise<Horario[]> {
-    if (await this.estaBloqueado(profissionalId, data)) {
+    const dia = data.toISOString().slice(0, 10);
+    const hoje = RelogioClinica.hoje();
+    if (dia < hoje || (await this.estaBloqueado(profissionalId, data))) {
       return [];
     }
 
@@ -39,10 +47,19 @@ export class DisponibilidadeService {
 
     const conjuntoLiberados = new Set(horariosDoDiaSemana.map((horario) => horario.toString()));
 
-    const conjuntoOcupados = await this.horariosOcupados(profissionalId, data);
+    const conjuntoOcupados = await this.horariosOcupados(profissionalId, data, ignorarAgendamentoId);
 
-    return horariosDoDiaSemana.filter((candidato) =>
-      this.todosOsSlotsCabem(candidato, quantidadeSlotsNecessarios, conjuntoLiberados, conjuntoOcupados)
+    // Hoje, só dá para começar um atendimento num horário que ainda não chegou.
+    const ehHoje = dia === hoje;
+    return horariosDoDiaSemana.filter(
+      (candidato) =>
+        !(ehHoje && RelogioClinica.jaPassouHoje(candidato)) &&
+        this.todosOsSlotsCabem(
+          candidato,
+          quantidadeSlotsNecessarios,
+          conjuntoLiberados,
+          conjuntoOcupados
+        )
     );
   }
 
@@ -52,15 +69,21 @@ export class DisponibilidadeService {
   }
 
   /** Todos os slots de 30min já ocupados por agendamentos do profissional nesse dia. */
-  private async horariosOcupados(profissionalId: number, data: Date): Promise<Set<string>> {
+  private async horariosOcupados(
+    profissionalId: number,
+    data: Date,
+    ignorarAgendamentoId?: number
+  ): Promise<Set<string>> {
     const agendamentosDoDia = await this.agendamentoRepo.listarPorProfissionalEData(
       profissionalId,
       data
     );
     return new Set(
-      agendamentosDoDia.flatMap((agendamento) =>
-        agendamento.getHorariosOcupados().map((horario) => horario.toString())
-      )
+      agendamentosDoDia
+        .filter((agendamento) => agendamento.getId() !== ignorarAgendamentoId)
+        .flatMap((agendamento) =>
+          agendamento.getHorariosOcupados().map((horario) => horario.toString())
+        )
     );
   }
 

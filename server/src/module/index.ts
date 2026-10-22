@@ -11,3 +11,4 @@ export * from "./Agendamento";
 export * from "./StatusAgendamento";
 export * from "./DiaSemana";
 export * from "./Horario";
+export * from "./RelogioClinica";

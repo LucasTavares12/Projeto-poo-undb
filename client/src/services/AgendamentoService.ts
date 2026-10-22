@@ -78,6 +78,41 @@ export class AgendamentoService extends ApiClient {
     return this.excluir(`/meus-agendamentos/${id}?${query.toString()}`);
   }
 
+  /** Painel: horários livres para remarcar o agendamento na data ("YYYY-MM-DD"). */
+  public horariosParaRemarcar(id: number, data: string): Promise<string[]> {
+    const query = new URLSearchParams({ data });
+    return this.get<string[]>(`/agendamentos/${id}/horarios-remarcacao?${query.toString()}`);
+  }
+
+  /** Painel: muda o dia e o horário, mantendo cliente, tratamentos e valor. */
+  public remarcar(id: number, data: string, horarioInicio: string): Promise<Agendamento> {
+    return this.patch<Agendamento>(`/agendamentos/${id}/remarcar`, { data, horarioInicio });
+  }
+
+  /** Página do cliente: horários livres para remarcar, confirmando pelo telefone. */
+  public horariosParaRemarcarDoCliente(
+    id: number,
+    telefone: string,
+    data: string
+  ): Promise<string[]> {
+    const query = new URLSearchParams({ telefone, data });
+    return this.get<string[]>(`/meus-agendamentos/${id}/horarios-remarcacao?${query.toString()}`);
+  }
+
+  /** Página do cliente: remarca o próprio agendamento, confirmando pelo telefone. */
+  public remarcarDoCliente(
+    id: number,
+    telefone: string,
+    data: string,
+    horarioInicio: string
+  ): Promise<Agendamento> {
+    const query = new URLSearchParams({ telefone });
+    return this.patch<Agendamento>(`/meus-agendamentos/${id}/remarcar?${query.toString()}`, {
+      data,
+      horarioInicio,
+    });
+  }
+
   public atualizarStatus(id: number, status: StatusAgendamento): Promise<Agendamento> {
     return this.patch<Agendamento>(`/agendamentos/${id}/status`, { status });
   }

@@ -16,7 +16,7 @@ import { SeletorData } from "../../components/cliente/SeletorData";
 import { ResumoAgendamento } from "../../components/cliente/ResumoAgendamento";
 import { ConfirmacaoAgendamento } from "../../components/cliente/ConfirmacaoAgendamento";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
-import { CancelarAgendamento } from "../../components/cliente/CancelarAgendamento";
+import { MeusAgendamentos } from "../../components/cliente/MeusAgendamentos";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
@@ -36,7 +36,7 @@ const tratamentoService = new TratamentoService();
 const agendamentoService = new AgendamentoService();
 const bloqueioService = new BloqueioAgendaService();
 
-type Modo = "inicio" | "ver" | "agendar" | "cancelar";
+type Modo = "inicio" | "ver" | "agendar" | "meus-agendamentos";
 type Etapa = "profissional" | "servico" | "data" | "horarios" | "dados";
 
 // "Ver horários" só consulta a agenda; o serviço e os dados do cliente entram ao agendar.
@@ -379,7 +379,8 @@ export function AgendamentoPage() {
               valor={agendamentoConfirmado.valorTotal}
             />
             <p className="sucesso-dica">
-              Se não puder comparecer, cancele pela página inicial com o telefone informado.
+              Precisa mudar o horário ou cancelar? Use "Remarque ou cancele" na página inicial,
+              com o telefone informado.
             </p>
           </div>
           <footer className="passo-rodape">
@@ -411,16 +412,16 @@ export function AgendamentoPage() {
             </button>
           </div>
           <p className="inicio-cancelar">
-            Já agendou e não vai poder comparecer?{" "}
+            Já agendou e precisa mudar o horário ou cancelar?{" "}
             <button
               type="button"
               className="botao-link"
               onClick={() => {
                 setErro(null);
-                setModo("cancelar");
+                setModo("meus-agendamentos");
               }}
             >
-              Cancele seu agendamento
+              Remarque ou cancele
             </button>
           </p>
         </section>
@@ -462,10 +463,10 @@ export function AgendamentoPage() {
     );
   }
 
-  if (modo === "cancelar") {
+  if (modo === "meus-agendamentos") {
     return (
       <LayoutCliente>
-        <CancelarAgendamento onVoltar={voltarAoInicio} />
+        <MeusAgendamentos onVoltar={voltarAoInicio} />
       </LayoutCliente>
     );
   }

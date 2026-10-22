@@ -127,6 +127,36 @@ export class Agendamento {
     return this.status === StatusAgendamento.AGENDADO;
   }
 
+  /** Remarcar segue a mesma regra do cancelamento: só o que ainda não começou a ser atendido. */
+  public podeSerRemarcado(): boolean {
+    return this.status === StatusAgendamento.AGENDADO;
+  }
+
+  /** true se o agendamento já está exatamente nesse dia e horário. */
+  public estaMarcadoEm(data: Date, horario: Horario): boolean {
+    return (
+      this.data.toISOString().slice(0, 10) === data.toISOString().slice(0, 10) &&
+      this.horarioInicio.equals(horario)
+    );
+  }
+
+  /**
+   * Muda o dia e o horário mantendo todo o resto (cliente, profissional, tratamentos e valor).
+   * Quem chama confere antes se o novo horário está livre na agenda do profissional.
+   */
+  public remarcar(data: Date, horario: Horario): void {
+    if (!this.podeSerRemarcado()) {
+      throw new Error(
+        "Só é possível remarcar agendamentos que ainda não começaram a ser atendidos."
+      );
+    }
+    if (this.estaMarcadoEm(data, horario)) {
+      throw new Error("O agendamento já está marcado nesse dia e horário.");
+    }
+    this.data = data;
+    this.horarioInicio = horario;
+  }
+
   public estaArquivado(): boolean {
     return this.arquivado;
   }

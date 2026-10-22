@@ -200,6 +200,15 @@ export class AgendamentoRepository extends Repositorio {
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
+  /** Remarcação: grava o novo dia e horário (o resto do agendamento não muda). */
+  public async atualizarDataHorario(agendamento: Agendamento): Promise<void> {
+    await this.pool.query("UPDATE agendamentos SET data = ?, hora_inicio = ? WHERE id = ?", [
+      this.formatarData(agendamento.getData()),
+      agendamento.getHorarioInicio().toString(),
+      agendamento.getId(),
+    ]);
+  }
+
   public async atualizarStatus(id: number, status: StatusAgendamento): Promise<void> {
     await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
   }

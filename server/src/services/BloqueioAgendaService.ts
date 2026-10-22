@@ -3,6 +3,7 @@ import { Agendamento } from "../module/Agendamento";
 import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
+import { RelogioClinica } from "../module/RelogioClinica";
 
 export interface DadosNovoBloqueio {
   /** null = clínica inteira (feriado, recesso). */
@@ -35,8 +36,14 @@ export class BloqueioAgendaService {
    * com valor, os desse profissional e os da clínica inteira. Sem `incluirPassados`,
    * só os que ainda não terminaram.
    */
-  public listar(profissionalDoUsuario: number | null, incluirPassados: boolean): Promise<BloqueioAgenda[]> {
-    return this.bloqueioRepo.listar(profissionalDoUsuario, incluirPassados ? null : this.hoje());
+  public listar(
+    profissionalDoUsuario: number | null,
+    incluirPassados: boolean
+  ): Promise<BloqueioAgenda[]> {
+    return this.bloqueioRepo.listar(
+      profissionalDoUsuario,
+      incluirPassados ? null : RelogioClinica.hoje()
+    );
   }
 
   /** Página do cliente: períodos fechados (a partir de hoje) na agenda do profissional. */
@@ -44,7 +51,7 @@ export class BloqueioAgendaService {
     if (!Number.isInteger(profissionalId) || profissionalId <= 0) {
       throw new Error("Profissional inválido.");
     }
-    return this.bloqueioRepo.listar(profissionalId, this.hoje());
+    return this.bloqueioRepo.listar(profissionalId, RelogioClinica.hoje());
   }
 
   public buscarPorId(id: number): Promise<BloqueioAgenda | null> {
@@ -60,7 +67,7 @@ export class BloqueioAgendaService {
     );
 
     // Bloquear o passado não muda nada na agenda: provavelmente é erro na data.
-    if (BloqueioAgenda.paraTexto(bloqueio.getDataFim()) < this.hoje()) {
+    if (BloqueioAgenda.paraTexto(bloqueio.getDataFim()) < RelogioClinica.hoje()) {
       throw new Error("O período do bloqueio já passou. Confira as datas.");
     }
     if (dados.profissionalId !== null) {
@@ -81,13 +88,5 @@ export class BloqueioAgendaService {
 
   public remover(id: number): Promise<void> {
     return this.bloqueioRepo.deletar(id);
-  }
-
-  /** Dia de hoje ("YYYY-MM-DD") no fuso do servidor: é o "hoje" da clínica. */
-  private hoje(): string {
-    const agora = new Date();
-    const mes = String(agora.getMonth() + 1).padStart(2, "0");
-    const dia = String(agora.getDate()).padStart(2, "0");
-    return `${agora.getFullYear()}-${mes}-${dia}`;
   }
 }
