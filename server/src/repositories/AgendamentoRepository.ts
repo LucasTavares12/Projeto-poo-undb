@@ -47,6 +47,10 @@ export class AgendamentoRepository extends Repositorio {
     JOIN profissionais p ON p.id = a.profissional_id
 `;
 
+  // Telefone do cliente só com os números: "(98) 98877-6655" e "98988776655" são o mesmo.
+  private static readonly TELEFONE_SO_DIGITOS =
+    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')";
+
   private static readonly SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
     SELECT t.*
     FROM tratamentos t
@@ -148,9 +152,29 @@ export class AgendamentoRepository extends Repositorio {
     const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
       `${AgendamentoRepository.SELECT_BASE}
        WHERE a.status = ? AND a.arquivado = 0 AND a.data >= CURDATE()
-         AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '') = ?
+         AND ${AgendamentoRepository.TELEFONE_SO_DIGITOS} = ?
        ORDER BY a.data, a.hora_inicio`,
       [StatusAgendamento.AGENDADO, digitos]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
+  /**
+   * Histórico dos clientes: todos os agendamentos, em qualquer etapa e também os limpos do
+   * Kanban. `profissionalId` null = de todos os profissionais; `telefone` (só números) null =
+   * de todos os clientes.
+   */
+  public async listarHistorico(
+    profissionalId: number | null,
+    telefone: string | null
+  ): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${AgendamentoRepository.SELECT_BASE}
+       WHERE (? IS NULL OR a.profissional_id = ?)
+         AND (? IS NULL OR ${AgendamentoRepository.TELEFONE_SO_DIGITOS} = ?)
+       ORDER BY a.data DESC, a.hora_inicio DESC`,
+      [profissionalId, profissionalId, telefone, telefone]
     );
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }

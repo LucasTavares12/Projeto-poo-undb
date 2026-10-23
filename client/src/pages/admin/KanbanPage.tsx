@@ -23,6 +23,8 @@ import {
 } from "../../components/Icones";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
+import { Link } from "react-router-dom";
+import { Telefone } from "../../models/Telefone";
 
 const agendamentoService = new AgendamentoService();
 const relatorioService = new RelatorioService();
@@ -494,7 +496,16 @@ export function KanbanPage() {
                           {agendamento.cliente.nome.charAt(0).toUpperCase()}
                         </span>
                         <span>
-                          <strong>{agendamento.cliente.nome}</strong>
+                          <strong>
+                            <Link
+                              to={`/admin/clientes/${new Telefone(agendamento.cliente.telefone).getDigitos()}`}
+                              className="kanban-cartao-nome"
+                              title="Abrir a ficha do cliente"
+                              draggable={false}
+                            >
+                              {agendamento.cliente.nome}
+                            </Link>
+                          </strong>
                           <span className="kanban-cartao-telefone">
                             <IconeTelefone tamanho={12} /> {agendamento.cliente.telefone}
                           </span>

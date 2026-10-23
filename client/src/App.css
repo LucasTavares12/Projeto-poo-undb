@@ -2399,6 +2399,365 @@
   }
 }
 
+/* ---------- Clientes: lista e ficha ---------- */
+
+.clientes-busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.clientes-busca:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.clientes-busca input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  border: none;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+
+.clientes-contagem {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.clientes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: opacity 0.2s;
+}
+
+.clientes-lista.atualizando {
+  opacity: 0.55;
+}
+
+.cliente-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "avatar texto numeros seta" "avatar proximo numeros seta";
+  align-items: center;
+  column-gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.admin-conteudo .cliente-item {
+  color: var(--text);
+}
+
+.cliente-item:hover {
+  border-color: var(--accent);
+  box-shadow: var(--sombra-elevada);
+}
+
+.cliente-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cliente-item .admin-avatar {
+  grid-area: avatar;
+  width: 42px;
+  height: 42px;
+  font-size: 16px;
+}
+
+.cliente-item-texto {
+  display: flex;
+  flex-direction: column;
+  grid-area: texto;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.cliente-item-texto strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--text-h);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cliente-item-numeros {
+  display: flex;
+  grid-area: numeros;
+  gap: 22px;
+  text-align: right;
+}
+
+.cliente-item-numeros > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.cliente-item-numeros small {
+  font-size: 11px;
+}
+
+.cliente-item-numeros b {
+  color: var(--text-h);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cliente-item-proximo {
+  display: inline-flex;
+  align-items: center;
+  grid-area: proximo;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cliente-item-seta {
+  display: inline-flex;
+  grid-area: seta;
+  color: var(--text);
+  opacity: 0.5;
+}
+
+/* Nome do cliente no card do Kanban: abre a ficha. */
+.admin-conteudo .kanban-cartao-nome {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-conteudo .kanban-cartao-nome:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.ficha-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ficha-cabecalho {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ficha-cabecalho > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ficha-cabecalho h1 {
+  overflow-wrap: anywhere;
+}
+
+.ficha-avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+.admin-conteudo .ficha-whatsapp {
+  border-color: rgba(22, 163, 74, 0.35);
+  color: #15803d;
+  text-decoration: none;
+}
+
+.ficha-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+/* O espaço entre os cartões vem do gap da grade. */
+.ficha-grade .admin-formulario {
+  margin-bottom: 0;
+}
+
+.ficha-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha-chips li {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent-forte);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ficha-titulo-historico {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ficha-titulo-historico .kanban-contador {
+  background: var(--superficie-alt);
+}
+
+/* Histórico em linha do tempo: um marcador por agendamento, ligado por uma linha. */
+.ficha-historico {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 22px;
+  border-left: 2px solid var(--border);
+  list-style: none;
+}
+
+.ficha-historico-item {
+  --cor-status: var(--accent);
+
+  position: relative;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  font-size: 13px;
+}
+
+.ficha-historico-item.em-atendimento {
+  --cor-status: #d97706;
+}
+
+.ficha-historico-item.finalizado {
+  --cor-status: #16a34a;
+}
+
+.ficha-historico-item::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: -30px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--fundo);
+  border-radius: 50%;
+  background: var(--cor-status);
+}
+
+.ficha-historico-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ficha-historico-topo strong {
+  color: var(--text-h);
+  font-size: 15px;
+}
+
+.ficha-etapa {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cor-status) 12%, transparent);
+  color: var(--cor-status);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ficha-historico .kanban-cartao-detalhes {
+  padding-top: 0;
+  border-top: none;
+}
+
+@media (max-width: 860px) {
+  .ficha-grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Celular: números do cliente vão para uma linha embaixo do nome. */
+  .cliente-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "avatar texto seta" "numeros numeros numeros" "proximo proximo proximo";
+    row-gap: 10px;
+    padding: 14px;
+  }
+
+  .cliente-item-numeros {
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    text-align: left;
+  }
+
+  .cliente-item-proximo {
+    margin-top: 0;
+  }
+
+  .ficha-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 19px;
+  }
+
+  .ficha-whatsapp {
+    flex: 1 1 100%;
+  }
+
+  .ficha-historico {
+    padding-left: 18px;
+  }
+
+  .ficha-historico-item::before {
+    left: -26px;
+  }
+}
+
 /* ---------- Folgas e feriados (bloqueios de agenda) ---------- */
 
 /* Aviso dos agendamentos que já existiam no período bloqueado. */

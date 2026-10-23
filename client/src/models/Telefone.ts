@@ -14,6 +14,16 @@ export class Telefone {
     return this.digitos.length === 10 || this.digitos.length === 11;
   }
 
+  /** Só os números ("98988776655"): é o que identifica o cliente nas fichas. */
+  public getDigitos(): string {
+    return this.digitos;
+  }
+
+  /** Link para abrir uma conversa no WhatsApp com este número (código do Brasil: 55). */
+  public linkWhatsApp(): string {
+    return `https://wa.me/55${this.digitos}`;
+  }
+
   /** Máscara aplicada enquanto a pessoa digita: "(98) 98877-6655" ou "(98) 3232-1234". */
   public formatar(): string {
     const d = this.digitos;

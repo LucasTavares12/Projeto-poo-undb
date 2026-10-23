@@ -13,6 +13,7 @@ import {
   IconeBloqueio,
   IconeBrilho,
   IconeCalendario,
+  IconeCliente,
   IconeEngrenagem,
   IconeFechar,
   IconeGrafico,
@@ -138,6 +139,9 @@ export function AdminLayout() {
         <nav className="admin-nav">
           <NavLink to="/admin" end>
             <IconeQuadro /> Agendamentos
+          </NavLink>
+          <NavLink to="/admin/clientes">
+            <IconeCliente /> Clientes
           </NavLink>
           <NavLink to="/admin/profissionais">
             <IconePessoas /> {acessoTotal ? "Profissionais" : "Meu cadastro"}

@@ -26,10 +26,15 @@ export abstract class Pessoa {
   /** Compara só os números: "(98) 98877-6655" e "98988776655" são o mesmo telefone. */
   public temTelefone(telefone: string): boolean {
     const digitos = Pessoa.somenteDigitos(telefone);
-    return digitos.length > 0 && Pessoa.somenteDigitos(this.telefone) === digitos;
+    return digitos.length > 0 && this.getTelefoneDigitos() === digitos;
   }
 
-  private static somenteDigitos(telefone: string): string {
+  /** Só os números do telefone ("98988776655"): é o que identifica a pessoa. */
+  public getTelefoneDigitos(): string {
+    return Pessoa.somenteDigitos(this.telefone);
+  }
+
+  public static somenteDigitos(telefone: string): string {
     return String(telefone ?? "").replace(/\D/g, "");
   }
 

@@ -8,6 +8,8 @@ import { ProfissionaisPage } from "./pages/admin/ProfissionaisPage";
 import { TratamentosPage } from "./pages/admin/TratamentosPage";
 import { HorariosPage } from "./pages/admin/HorariosPage";
 import { BloqueiosPage } from "./pages/admin/BloqueiosPage";
+import { ClientesPage } from "./pages/admin/ClientesPage";
+import { FichaClientePage } from "./pages/admin/FichaClientePage";
 import { ConfiguracoesPage } from "./pages/admin/ConfiguracoesPage";
 import { RelatoriosPage } from "./pages/admin/RelatoriosPage";
 import "./App.css";
@@ -21,6 +23,8 @@ function App() {
       <Route path="/admin/cadastro" element={<CadastroPage />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<KanbanPage />} />
+        <Route path="clientes" element={<ClientesPage />} />
+        <Route path="clientes/:telefone" element={<FichaClientePage />} />
         <Route path="profissionais" element={<ProfissionaisPage />} />
         <Route path="tratamentos" element={<TratamentosPage />} />
         <Route path="horarios" element={<HorariosPage />} />

@@ -10,6 +10,7 @@ import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
 import { RelatorioController } from "./controllers/RelatorioController";
 import { UsuarioController } from "./controllers/UsuarioController";
 import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
+import { ClienteController } from "./controllers/ClienteController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -32,6 +33,7 @@ export class App {
   private readonly relatorioController = new RelatorioController();
   private readonly usuarioController = new UsuarioController();
   private readonly bloqueioAgendaController = new BloqueioAgendaController();
+  private readonly clienteController = new ClienteController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -84,6 +86,7 @@ export class App {
     this.configurarRotasDeTratamentos();
     this.configurarRotasDeHorariosDisponiveis();
     this.configurarRotasDeBloqueios();
+    this.configurarRotasDeClientes();
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
     this.configurarRotasDeRelatorios();
@@ -141,6 +144,15 @@ export class App {
     );
     this.app.delete("/bloqueios/:id", this.exigirAdmin, (req, res) =>
       this.bloqueioAgendaController.deletar(req, res)
+    );
+  }
+
+  private configurarRotasDeClientes(): void {
+    this.app.get("/clientes", this.exigirAdmin, (req, res) =>
+      this.clienteController.listar(req, res)
+    );
+    this.app.get("/clientes/:telefone", this.exigirAdmin, (req, res) =>
+      this.clienteController.ficha(req, res)
     );
   }
 

@@ -113,3 +113,24 @@ export interface PeriodoBloqueado {
   dataInicio: string;
   dataFim: string;
 }
+
+/** Linha da lista de clientes (o telefone, só números, identifica o cliente). */
+export interface ClienteResumo {
+  telefone: string;
+  nome: string;
+  /** Atendimentos finalizados. */
+  atendimentos: number;
+  totalGasto: number;
+  ultimoAtendimento: string | null;
+  proximoAgendamento: { data: string; horarioInicio: string } | null;
+}
+
+/** Ficha completa do cliente, com o histórico de agendamentos (mais recente primeiro). */
+export interface FichaDoCliente extends Omit<ClienteResumo, "proximoAgendamento"> {
+  ticketMedio: number;
+  primeiroAtendimento: string | null;
+  proximoAgendamento: Agendamento | null;
+  tratamentosMaisFeitos: { nome: string; quantidade: number }[];
+  profissionais: string[];
+  agendamentos: Agendamento[];
+}

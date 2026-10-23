@@ -200,3 +200,22 @@ export function IconeBloqueio(props: Props) {
     </Icone>
   );
 }
+
+export function IconeCliente(props: Props) {
+  return (
+    <Icone {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 20.7a6 6 0 0 1 10 0" />
+    </Icone>
+  );
+}
+
+export function IconeBusca(props: Props) {
+  return (
+    <Icone {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </Icone>
+  );
+}
