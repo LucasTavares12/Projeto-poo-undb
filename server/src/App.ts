@@ -192,6 +192,9 @@ export class App {
     this.app.patch("/agendamentos/:id/status", this.exigirAdmin, (req, res) =>
       this.agendamentoController.atualizarStatus(req, res)
     );
+    this.app.post("/agendamentos/:id/mensagens", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.registrarMensagem(req, res)
+    );
     this.app.get("/agendamentos/:id/horarios-remarcacao", this.exigirAdmin, (req, res) =>
       this.agendamentoController.horariosParaRemarcar(req, res)
     );

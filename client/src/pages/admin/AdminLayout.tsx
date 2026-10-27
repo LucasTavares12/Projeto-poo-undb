@@ -140,19 +140,19 @@ export function AdminLayout() {
           <NavLink to="/admin" end>
             <IconeQuadro /> Agendamentos
           </NavLink>
-          <NavLink to="/admin/clientes">
-            <IconeCliente /> Clientes
-          </NavLink>
-          <NavLink to="/admin/profissionais">
-            <IconePessoas /> {acessoTotal ? "Profissionais" : "Meu cadastro"}
-          </NavLink>
           {acessoTotal && (
             <NavLink to="/admin/tratamentos">
               <IconeBrilho /> Tratamentos
             </NavLink>
           )}
+          <NavLink to="/admin/profissionais">
+            <IconePessoas /> {acessoTotal ? "Profissionais" : "Meu cadastro"}
+          </NavLink>
           <NavLink to="/admin/horarios">
             <IconeRelogio /> Horários
+          </NavLink>
+          <NavLink to="/admin/clientes">
+            <IconeCliente /> Clientes
           </NavLink>
           <NavLink to="/admin/bloqueios">
             <IconeBloqueio /> Folgas e feriados

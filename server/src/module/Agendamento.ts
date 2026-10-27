@@ -4,6 +4,7 @@ import { Tratamento } from "./Tratamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { Horario } from "./Horario";
 import { DataAgenda } from "./DataAgenda";
+import { TipoMensagem } from "./TipoMensagem";
 
 export class Agendamento {
   /**
@@ -11,6 +12,12 @@ export class Agendamento {
    * "Agendado" ou "Em atendimento" passa sozinho para "Finalizado".
    */
   public static readonly DIAS_PARA_FINALIZAR_SOZINHO = 2;
+
+  /**
+   * Quantos dias um atendimento fica na coluna "Finalizados" do Kanban antes de sair
+   * sozinho para os ocultos (continua nos relatórios e no histórico do cliente).
+   */
+  public static readonly DIAS_PARA_OCULTAR_FINALIZADO = 2;
 
   private id?: number;
   private cliente: Cliente;
@@ -24,6 +31,15 @@ export class Agendamento {
    * os relatórios seguem contando o atendimento e o valor dele.
    */
   private arquivado: boolean;
+  /** Quando a clínica mandou cada mensagem de WhatsApp (null = ainda não mandou). */
+  private lembreteEnviadoEm: Date | null;
+  private agradecimentoEnviadoEm: Date | null;
+  /**
+   * Desde quando o atendimento está em "Finalizados" no quadro: quando foi finalizado ou,
+   * se foi trazido de volta dos ocultos, quando voltou. null = não está finalizado (ou foi
+   * finalizado antes de o sistema guardar essa data; aí vale a data do agendamento).
+   */
+  private finalizadoEm: Date | null;
 
   constructor(
     cliente: Cliente,
@@ -33,7 +49,10 @@ export class Agendamento {
     horarioInicio: Horario,
     status: StatusAgendamento = StatusAgendamento.AGENDADO,
     id?: number,
-    arquivado = false
+    arquivado = false,
+    lembreteEnviadoEm: Date | null = null,
+    agradecimentoEnviadoEm: Date | null = null,
+    finalizadoEm: Date | null = null
   ) {
     if (tratamentos.length === 0) {
       throw new Error("O agendamento precisa ter ao menos um tratamento.");
@@ -47,6 +66,9 @@ export class Agendamento {
     this.status = status;
     this.id = id;
     this.arquivado = arquivado;
+    this.lembreteEnviadoEm = lembreteEnviadoEm;
+    this.agradecimentoEnviadoEm = agradecimentoEnviadoEm;
+    this.finalizadoEm = finalizadoEm;
   }
 
   public getId(): number | undefined {
@@ -117,9 +139,9 @@ export class Agendamento {
   /** Move o agendamento para a próxima etapa do Kanban (Agendado -> Em atendimento -> Finalizado). */
   public avancarStatus(): void {
     if (this.status === StatusAgendamento.AGENDADO) {
-      this.status = StatusAgendamento.EM_ATENDIMENTO;
+      this.moverPara(StatusAgendamento.EM_ATENDIMENTO);
     } else if (this.status === StatusAgendamento.EM_ATENDIMENTO) {
-      this.status = StatusAgendamento.FINALIZADO;
+      this.moverPara(StatusAgendamento.FINALIZADO);
     }
   }
 
@@ -153,6 +175,36 @@ export class Agendamento {
     }
     this.data = data;
     this.horarioInicio = horario;
+    // O lembrete enviado falava do horário antigo: precisa mandar de novo.
+    this.lembreteEnviadoEm = null;
+  }
+
+  /**
+   * Anota que a mensagem foi mandada ao cliente. Lembrete só faz sentido antes do
+   * atendimento; agradecimento, só depois dele.
+   */
+  public registrarMensagem(tipo: TipoMensagem, quando: Date = new Date()): void {
+    if (tipo === TipoMensagem.LEMBRETE) {
+      if (this.status !== StatusAgendamento.AGENDADO) {
+        throw new Error("O lembrete é só para agendamentos que ainda não foram atendidos.");
+      }
+      this.lembreteEnviadoEm = quando;
+    } else if (tipo === TipoMensagem.AGRADECIMENTO) {
+      if (this.status !== StatusAgendamento.FINALIZADO) {
+        throw new Error("O agradecimento é só para atendimentos finalizados.");
+      }
+      this.agradecimentoEnviadoEm = quando;
+    } else {
+      throw new Error(`Tipo de mensagem inválido: ${tipo}.`);
+    }
+  }
+
+  public getLembreteEnviadoEm(): Date | null {
+    return this.lembreteEnviadoEm;
+  }
+
+  public getAgradecimentoEnviadoEm(): Date | null {
+    return this.agradecimentoEnviadoEm;
   }
 
   public estaArquivado(): boolean {
@@ -178,6 +230,12 @@ export class Agendamento {
       throw new Error("Este agendamento já está no quadro.");
     }
     this.arquivado = false;
+    // Trazido de volta: fica mais DIAS_PARA_OCULTAR_FINALIZADO dias no quadro antes de sair de novo.
+    this.finalizadoEm = new Date();
+  }
+
+  public getFinalizadoEm(): Date | null {
+    return this.finalizadoEm;
   }
 
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
@@ -185,7 +243,12 @@ export class Agendamento {
     if (!Object.values(StatusAgendamento).includes(novoStatus)) {
       throw new Error(`Status de agendamento inválido: ${novoStatus}.`);
     }
+    if (novoStatus === this.status) {
+      return;
+    }
     this.status = novoStatus;
+    // Começa (ou zera) a contagem para sair sozinho da coluna "Finalizados".
+    this.finalizadoEm = novoStatus === StatusAgendamento.FINALIZADO ? new Date() : null;
   }
 
   public toJSON() {
@@ -199,6 +262,8 @@ export class Agendamento {
       tratamentos: this.tratamentos,
       valorTotal: this.getValorTotal(),
       duracaoTotalMinutos: this.getDuracaoTotalMinutos(),
+      lembreteEnviadoEm: this.lembreteEnviadoEm?.toISOString() ?? null,
+      agradecimentoEnviadoEm: this.agradecimentoEnviadoEm?.toISOString() ?? null,
     };
   }
 }

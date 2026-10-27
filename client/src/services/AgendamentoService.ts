@@ -1,5 +1,6 @@
 import { ApiClient } from "./ApiClient";
 import type { Agendamento, StatusAgendamento } from "./types";
+import type { TipoMensagem } from "../models/MensagemWhatsApp";
 
 export interface DadosNovoAgendamento {
   clienteNome: string;
@@ -111,6 +112,11 @@ export class AgendamentoService extends ApiClient {
       data,
       horarioInicio,
     });
+  }
+
+  /** Kanban: anota que o lembrete ou o agradecimento foi mandado pelo WhatsApp. */
+  public registrarMensagem(id: number, tipo: TipoMensagem): Promise<Agendamento> {
+    return this.post<Agendamento>(`/agendamentos/${id}/mensagens`, { tipo });
   }
 
   public atualizarStatus(id: number, status: StatusAgendamento): Promise<Agendamento> {

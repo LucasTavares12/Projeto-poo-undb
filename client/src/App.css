@@ -1267,6 +1267,15 @@
   text-align: center;
 }
 
+/* Aviso de que os finalizados saem sozinhos do quadro. */
+.kanban-dica {
+  margin: -2px 4px 2px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
 .kanban-vazio {
   padding: 24px 0;
   font-size: 13px;
@@ -1399,6 +1408,78 @@
 
 .kanban-cartao-confirmacao .kanban-cartao-acoes {
   margin-top: 8px;
+}
+
+/* Logo do WhatsApp sempre no verde da marca (o texto ao lado fica num verde mais escuro, legível). */
+.icone-whatsapp {
+  flex-shrink: 0;
+  color: #25d366;
+}
+
+/* Lembrete / agradecimento pelo WhatsApp, dentro do card. */
+.whatsapp-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.admin-conteudo .whatsapp-acao {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  border-radius: 8px;
+  background: rgba(22, 163, 74, 0.06);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.admin-conteudo .whatsapp-acao:hover {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.whatsapp-enviada {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.admin-conteudo .whatsapp-reenviar {
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.admin-conteudo .whatsapp-reenviar:hover {
+  color: #15803d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-conteudo .whatsapp-acao,
+  .whatsapp-enviada,
+  .admin-conteudo .whatsapp-reenviar:hover {
+    color: #4ade80;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-conteudo .whatsapp-acao {
+    min-height: 38px;
+    font-size: 13px;
+  }
 }
 
 /* Botão "Atualizar": o ícone gira enquanto busca; ao terminar, fica verde por um instante. */

@@ -15,8 +15,8 @@ import {
   IconeDinheiro,
   IconePessoas,
   IconeSetaEsquerda,
-  IconeTelefone,
   IconeTendencia,
+  IconeWhatsApp,
 } from "../../components/Icones";
 
 const clienteService = new ClienteService();
@@ -83,7 +83,7 @@ export function FichaClientePage() {
           target="_blank"
           rel="noreferrer"
         >
-          <IconeTelefone tamanho={16} /> WhatsApp
+          <IconeWhatsApp tamanho={17} /> WhatsApp
         </a>
       </header>
 

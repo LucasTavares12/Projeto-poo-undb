@@ -43,6 +43,9 @@ export interface Agendamento {
   tratamentos: Tratamento[];
   valorTotal: number;
   duracaoTotalMinutos: number;
+  /** Quando a clínica mandou o lembrete / o agradecimento pelo WhatsApp (null = não mandou). */
+  lembreteEnviadoEm: string | null;
+  agradecimentoEnviadoEm: string | null;
 }
 
 export interface Configuracoes {

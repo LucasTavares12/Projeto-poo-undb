@@ -4,6 +4,7 @@ import { Tratamento } from "../module/Tratamento";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
 import { RelogioClinica } from "../module/RelogioClinica";
+import { TipoMensagem } from "../module/TipoMensagem";
 import { ClienteRepository } from "../repositories/ClienteRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { TratamentoRepository } from "../repositories/TratamentoRepository";
@@ -126,7 +127,7 @@ export class AgendamentoService {
    * `profissionalId` null = todos (acesso total); com valor, só os daquele profissional.
    */
   public async listarTodos(profissionalId: number | null = null): Promise<Agendamento[]> {
-    await this.finalizarAtrasados();
+    await this.arrumarQuadro();
     return profissionalId === null
       ? this.agendamentoRepo.listarNoQuadro()
       : this.agendamentoRepo.listarNoQuadroPorProfissional(profissionalId);
@@ -139,6 +140,17 @@ export class AgendamentoService {
    */
   public finalizarAtrasados(): Promise<number> {
     return this.agendamentoRepo.finalizarAtrasados(Agendamento.DIAS_PARA_FINALIZAR_SOZINHO);
+  }
+
+  /**
+   * Manutenção que roda toda vez que o Kanban carrega: finaliza o que ficou esquecido e
+   * tira do quadro os finalizados há `Agendamento.DIAS_PARA_OCULTAR_FINALIZADO` dias ou mais
+   * (vão para "Mostrar ocultos" e continuam nos relatórios). Nessa ordem: quem acabou de ser
+   * finalizado sozinho ainda aparece em "Finalizados" pelos próximos dias.
+   */
+  private async arrumarQuadro(): Promise<void> {
+    await this.finalizarAtrasados();
+    await this.agendamentoRepo.ocultarFinalizadosAntigos(Agendamento.DIAS_PARA_OCULTAR_FINALIZADO);
   }
 
   /**
@@ -155,7 +167,9 @@ export class AgendamentoService {
   }
 
   /** Quantos agendamentos o usuário tem fora do Kanban (para mostrar o botão de trazer de volta). */
-  public contarArquivados(profissionalDoUsuario: number | null = null): Promise<number> {
+  public async contarArquivados(profissionalDoUsuario: number | null = null): Promise<number> {
+    // O Kanban pede a lista e a contagem juntas: a contagem já considera os que saíram sozinhos.
+    await this.arrumarQuadro();
     return this.agendamentoRepo.contarArquivados(profissionalDoUsuario);
   }
 
@@ -196,7 +210,7 @@ export class AgendamentoService {
     const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
 
     agendamento.moverPara(novoStatus);
-    await this.agendamentoRepo.atualizarStatus(id, agendamento.getStatus());
+    await this.agendamentoRepo.salvarStatus(agendamento);
     return agendamento;
   }
 
@@ -240,6 +254,21 @@ export class AgendamentoService {
     }
 
     await this.agendamentoRepo.deletar(id);
+  }
+
+  /**
+   * Botões de WhatsApp do Kanban: anota que o lembrete (agendados) ou o agradecimento
+   * (finalizados) foi mandado, para a equipe saber o que já foi feito.
+   */
+  public async registrarMensagem(
+    id: number,
+    tipo: TipoMensagem,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Agendamento> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
+    agendamento.registrarMensagem(tipo);
+    await this.agendamentoRepo.salvarMensagensEnviadas(agendamento);
+    return agendamento;
   }
 
   /** Painel: horários livres para mudar o agendamento para a `data` escolhida. */

@@ -14,6 +14,9 @@ interface LinhaAgendamentoBase extends RowDataPacket {
   hora_inicio: string;
   status: StatusAgendamento;
   arquivado: number; // TINYINT: 0 ou 1
+  lembrete_enviado_em: Date | null;
+  agradecimento_enviado_em: Date | null;
+  finalizado_em: Date | null;
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
@@ -40,6 +43,7 @@ export class AgendamentoRepository extends Repositorio {
   private static readonly SELECT_BASE = `
     SELECT
       a.id, a.data, a.hora_inicio, a.status, a.arquivado,
+      a.lembrete_enviado_em, a.agradecimento_enviado_em, a.finalizado_em,
       c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
       p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
     FROM agendamentos a
@@ -62,6 +66,20 @@ export class AgendamentoRepository extends Repositorio {
   private static readonly ADICIONAR_ARQUIVADO = `
     ALTER TABLE agendamentos
       ADD COLUMN arquivado TINYINT(1) NOT NULL DEFAULT 0
+  `;
+
+  // Lembretes e agradecimentos de WhatsApp: quando cada um foi mandado ao cliente.
+  private static readonly ADICIONAR_LEMBRETE = `
+    ALTER TABLE agendamentos ADD COLUMN lembrete_enviado_em DATETIME NULL
+  `;
+
+  private static readonly ADICIONAR_AGRADECIMENTO = `
+    ALTER TABLE agendamentos ADD COLUMN agradecimento_enviado_em DATETIME NULL
+  `;
+
+  // Desde quando o atendimento está finalizado no quadro (para sair sozinho depois de uns dias).
+  private static readonly ADICIONAR_FINALIZADO_EM = `
+    ALTER TABLE agendamentos ADD COLUMN finalizado_em DATETIME NULL
   `;
 
   public async salvar(agendamento: Agendamento): Promise<Agendamento> {
@@ -227,15 +245,39 @@ export class AgendamentoRepository extends Repositorio {
 
   /** Remarcação: grava o novo dia e horário (o resto do agendamento não muda). */
   public async atualizarDataHorario(agendamento: Agendamento): Promise<void> {
-    await this.pool.query("UPDATE agendamentos SET data = ?, hora_inicio = ? WHERE id = ?", [
-      DataAgenda.paraTexto(agendamento.getData()),
-      agendamento.getHorarioInicio().toString(),
-      agendamento.getId(),
-    ]);
+    await this.garantirEstrutura();
+    await this.pool.query(
+      "UPDATE agendamentos SET data = ?, hora_inicio = ?, lembrete_enviado_em = ? WHERE id = ?",
+      [
+        DataAgenda.paraTexto(agendamento.getData()),
+        agendamento.getHorarioInicio().toString(),
+        agendamento.getLembreteEnviadoEm(),
+        agendamento.getId(),
+      ]
+    );
   }
 
-  public async atualizarStatus(id: number, status: StatusAgendamento): Promise<void> {
-    await this.pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
+  /** Grava quando o lembrete e o agradecimento de WhatsApp foram mandados. */
+  public async salvarMensagensEnviadas(agendamento: Agendamento): Promise<void> {
+    await this.garantirEstrutura();
+    await this.pool.query(
+      "UPDATE agendamentos SET lembrete_enviado_em = ?, agradecimento_enviado_em = ? WHERE id = ?",
+      [
+        agendamento.getLembreteEnviadoEm(),
+        agendamento.getAgradecimentoEnviadoEm(),
+        agendamento.getId(),
+      ]
+    );
+  }
+
+  /** Grava a etapa do Kanban e desde quando está finalizado (a entidade cuida dessa data). */
+  public async salvarStatus(agendamento: Agendamento): Promise<void> {
+    await this.garantirEstrutura();
+    await this.pool.query("UPDATE agendamentos SET status = ?, finalizado_em = ? WHERE id = ?", [
+      agendamento.getStatus(),
+      agendamento.getFinalizadoEm(),
+      agendamento.getId(),
+    ]);
   }
 
   /**
@@ -243,8 +285,9 @@ export class AgendamentoRepository extends Repositorio {
    * já ficou `dias` dias (ou mais) para trás. Devolve quantos foram finalizados.
    */
   public async finalizarAtrasados(dias: number): Promise<number> {
+    await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
-      `UPDATE agendamentos SET status = ?
+      `UPDATE agendamentos SET status = ?, finalizado_em = NOW()
        WHERE status <> ? AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY)`,
       [StatusAgendamento.FINALIZADO, StatusAgendamento.FINALIZADO, dias]
     );
@@ -252,18 +295,32 @@ export class AgendamentoRepository extends Repositorio {
   }
 
   /** Grava se cada um destes agendamentos está dentro ou fora do Kanban (nada é apagado). */
+  /**
+   * Tira do Kanban, sozinhos, os finalizados há `dias` dias ou mais (vão para os ocultos e
+   * continuam nos relatórios). Os finalizados antes de existir a coluna `finalizado_em` contam
+   * pela data do agendamento. Devolve quantos saíram do quadro.
+   */
+  public async ocultarFinalizadosAntigos(dias: number): Promise<number> {
+    await this.garantirEstrutura();
+    const [resultado] = await this.pool.query<ResultSetHeader>(
+      `UPDATE agendamentos SET arquivado = 1
+       WHERE status = ? AND arquivado = 0
+         AND (
+           (finalizado_em IS NOT NULL AND finalizado_em <= NOW() - INTERVAL ? DAY)
+           OR (finalizado_em IS NULL AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY))
+         )`,
+      [StatusAgendamento.FINALIZADO, dias, dias]
+    );
+    return resultado.affectedRows;
+  }
+
   public async salvarArquivamento(agendamentos: Agendamento[]): Promise<void> {
     await this.garantirEstrutura();
-    for (const arquivado of [true, false]) {
-      const ids = agendamentos
-        .filter((agendamento) => agendamento.estaArquivado() === arquivado)
-        .map((agendamento) => agendamento.getId());
-      if (ids.length > 0) {
-        await this.pool.query("UPDATE agendamentos SET arquivado = ? WHERE id IN (?)", [
-          arquivado,
-          ids,
-        ]);
-      }
+    for (const agendamento of agendamentos) {
+      await this.pool.query(
+        "UPDATE agendamentos SET arquivado = ?, finalizado_em = ? WHERE id = ?",
+        [agendamento.estaArquivado(), agendamento.getFinalizadoEm(), agendamento.getId()]
+      );
     }
   }
 
@@ -309,12 +366,25 @@ export class AgendamentoRepository extends Repositorio {
     );
   }
 
-  private garantirEstrutura(): Promise<void> {
-    return this.garantirColuna(
-      "agendamentos",
-      "arquivado",
-      AgendamentoRepository.ADICIONAR_ARQUIVADO
-    );
+  private async garantirEstrutura(): Promise<void> {
+    await Promise.all([
+      this.garantirColuna("agendamentos", "arquivado", AgendamentoRepository.ADICIONAR_ARQUIVADO),
+      this.garantirColuna(
+        "agendamentos",
+        "lembrete_enviado_em",
+        AgendamentoRepository.ADICIONAR_LEMBRETE
+      ),
+      this.garantirColuna(
+        "agendamentos",
+        "agradecimento_enviado_em",
+        AgendamentoRepository.ADICIONAR_AGRADECIMENTO
+      ),
+      this.garantirColuna(
+        "agendamentos",
+        "finalizado_em",
+        AgendamentoRepository.ADICIONAR_FINALIZADO_EM
+      ),
+    ]);
   }
 
   private async montarAgendamento(linha: LinhaAgendamentoBase): Promise<Agendamento> {
@@ -335,7 +405,10 @@ export class AgendamentoRepository extends Repositorio {
       new Horario(linha.hora_inicio.slice(0, 5)),
       linha.status,
       linha.id,
-      Boolean(linha.arquivado)
+      Boolean(linha.arquivado),
+      linha.lembrete_enviado_em,
+      linha.agradecimento_enviado_em,
+      linha.finalizado_em
     );
   }
 }

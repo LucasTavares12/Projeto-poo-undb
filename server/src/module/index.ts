@@ -10,6 +10,7 @@ export * from "./HorarioDisponivel";
 export * from "./BloqueioAgenda";
 export * from "./Agendamento";
 export * from "./StatusAgendamento";
+export * from "./TipoMensagem";
 export * from "./DiaSemana";
 export * from "./Horario";
 export * from "./DataAgenda";

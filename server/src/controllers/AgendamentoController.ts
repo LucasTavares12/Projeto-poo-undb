@@ -3,6 +3,7 @@ import { AgendamentoService } from "../services/AgendamentoService";
 import type { DadosNovoAgendamento } from "../services/AgendamentoService";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
+import { TipoMensagem } from "../module/TipoMensagem";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { DataAgenda } from "../module/DataAgenda";
 
@@ -89,6 +90,20 @@ export class AgendamentoController {
         String(req.query.telefone ?? "")
       );
       res.status(204).send();
+    } catch (erro) {
+      res.status(400).json({ erro: (erro as Error).message });
+    }
+  }
+
+  /** Kanban: anota que o lembrete ou o agradecimento foi mandado pelo WhatsApp ({ tipo }). */
+  public async registrarMensagem(req: Request, res: Response): Promise<void> {
+    try {
+      const agendamento = await this.servico.registrarMensagem(
+        Number(req.params.id),
+        req.body?.tipo as TipoMensagem,
+        SessaoDaRequisicao.profissionalId(res)
+      );
+      res.json(agendamento);
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });
     }

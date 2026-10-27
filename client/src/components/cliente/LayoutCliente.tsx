@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import { IconeCalendario } from "../Icones";
 import { SessaoAdmin } from "../../services/SessaoAdmin";
 import { useConfiguracoes } from "../../hooks/useConfiguracoes";
-
-const NOME_CLINICA = "Clínica de Estética";
+import { Clinica } from "../../models/Clinica";
 
 interface Props {
   children: ReactNode;
@@ -21,7 +20,7 @@ export function LayoutCliente({ children }: Props) {
       <header className="cliente-cabecalho">
         <span className="cliente-marca">
           <IconeCalendario tamanho={24} />
-          <span>{NOME_CLINICA}</span>
+          <span>{Clinica.NOME}</span>
         </span>
         <nav className="cliente-cabecalho-acoes">
           {logado ? (
@@ -44,7 +43,7 @@ export function LayoutCliente({ children }: Props) {
       </header>
       <main className="cliente-conteudo">{children}</main>
       <footer className="cliente-rodape">
-        © {new Date().getFullYear()} {NOME_CLINICA} - Todos os direitos reservados
+        © {new Date().getFullYear()} {Clinica.NOME} - Todos os direitos reservados
       </footer>
     </div>
   );

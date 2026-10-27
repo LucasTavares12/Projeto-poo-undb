@@ -25,6 +25,8 @@ import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 import { Link } from "react-router-dom";
 import { Telefone } from "../../models/Telefone";
+import { BotaoWhatsApp } from "../../components/admin/BotaoWhatsApp";
+import { EtapaAgendamento } from "../../models/EtapaAgendamento";
 
 const agendamentoService = new AgendamentoService();
 const relatorioService = new RelatorioService();
@@ -74,6 +76,13 @@ export function KanbanPage() {
     setMensagem(
       `Agendamento de ${criado.cliente.nome} criado para ` +
         `${HorarioMarcado.de(criado).formatar()}.`
+    );
+  }
+
+  /** Troca o card pelo agendamento que voltou do servidor (ex: lembrete anotado). */
+  function atualizarCartao(atualizado: Agendamento): void {
+    setAgendamentos((lista) =>
+      lista.map((agendamento) => (agendamento.id === atualizado.id ? atualizado : agendamento))
     );
   }
 
@@ -442,6 +451,13 @@ export function KanbanPage() {
                     </span>
                   </header>
 
+                  {coluna.status === "FINALIZADO" && (
+                    <p className="kanban-dica">
+                      Saem do quadro sozinhos {EtapaAgendamento.DIAS_PARA_OCULTAR_FINALIZADO} dias depois de
+                      finalizados e ficam em "Mostrar ocultos". Os relatórios continuam contando.
+                    </p>
+                  )}
+
                   {coluna.status === "FINALIZADO" && confirmandoLimpeza && cartoes.length > 0 && (
                     <div className="kanban-limpeza">
                       <p>
@@ -525,6 +541,14 @@ export function KanbanPage() {
                           {new Duracao(agendamento.duracaoTotalMinutos).formatar()}
                         </li>
                       </ul>
+                      {(agendamento.status === "AGENDADO" || agendamento.status === "FINALIZADO") && (
+                        <BotaoWhatsApp
+                          agendamento={agendamento}
+                          tipo={agendamento.status === "AGENDADO" ? "LEMBRETE" : "AGRADECIMENTO"}
+                          onRegistrado={atualizarCartao}
+                          onErro={setErro}
+                        />
+                      )}
                       {confirmandoCancelamentoId === agendamento.id ? (
                         <div className="kanban-cartao-confirmacao">
                           <p>Cancelar este agendamento? O horário volta a ficar livre.</p>
