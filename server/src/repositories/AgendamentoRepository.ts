@@ -197,6 +197,25 @@ export class AgendamentoRepository extends Repositorio {
     return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
   }
 
+  /**
+   * Visão de agenda: os agendamentos de um profissional entre duas datas ("YYYY-MM-DD",
+   * inclusive), em qualquer etapa e também os limpos do Kanban (continuam ocupando o horário).
+   */
+  public async listarPorProfissionalEPeriodo(
+    profissionalId: number,
+    inicio: string,
+    fim: string
+  ): Promise<Agendamento[]> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaAgendamentoBase[]>(
+      `${AgendamentoRepository.SELECT_BASE}
+       WHERE a.profissional_id = ? AND a.data BETWEEN ? AND ?
+       ORDER BY a.data, a.hora_inicio`,
+      [profissionalId, inicio, fim]
+    );
+    return Promise.all(linhas.map((linha) => this.montarAgendamento(linha)));
+  }
+
   /** Usado para calcular a disponibilidade: todos os agendamentos de um profissional em uma data. */
   public async listarPorProfissionalEData(
     profissionalId: number,

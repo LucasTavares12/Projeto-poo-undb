@@ -11,6 +11,7 @@ import { RelatorioController } from "./controllers/RelatorioController";
 import { UsuarioController } from "./controllers/UsuarioController";
 import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
 import { ClienteController } from "./controllers/ClienteController";
+import { AgendaController } from "./controllers/AgendaController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -34,6 +35,7 @@ export class App {
   private readonly usuarioController = new UsuarioController();
   private readonly bloqueioAgendaController = new BloqueioAgendaController();
   private readonly clienteController = new ClienteController();
+  private readonly agendaController = new AgendaController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -44,6 +46,10 @@ export class App {
   /** Colocado antes do handler nas rotas que só o administrador pode usar. */
   private readonly exigirAdmin: express.RequestHandler = (req, res, next) =>
     this.autenticacaoMiddleware.verificar(req, res, next);
+
+  /** Rotas públicas que o painel também usa: anota se é a equipe, mas não barra o cliente. */
+  private readonly identificarEquipe: express.RequestHandler = (req, res, next) =>
+    this.autenticacaoMiddleware.identificar(req, res, next);
 
   /**
    * Depois de `exigirAdmin`, nas áreas da clínica inteira (usuários, configurações,
@@ -87,6 +93,7 @@ export class App {
     this.configurarRotasDeHorariosDisponiveis();
     this.configurarRotasDeBloqueios();
     this.configurarRotasDeClientes();
+    this.app.get("/agenda", this.exigirAdmin, (req, res) => this.agendaController.semana(req, res));
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
     this.configurarRotasDeRelatorios();
@@ -157,7 +164,7 @@ export class App {
   }
 
   private configurarRotasDeAgendamentos(): void {
-    this.app.get("/disponibilidade", (req, res) =>
+    this.app.get("/disponibilidade", this.identificarEquipe, (req, res) =>
       this.agendamentoController.disponibilidade(req, res)
     );
     // Públicas: o cliente acha e cancela o próprio agendamento pelo telefone.
@@ -176,7 +183,9 @@ export class App {
     this.app.get("/agendamentos", this.exigirAdmin, (req, res) =>
       this.agendamentoController.listar(req, res)
     );
-    this.app.post("/agendamentos", (req, res) => this.agendamentoController.criar(req, res));
+    this.app.post("/agendamentos", this.identificarEquipe, (req, res) =>
+      this.agendamentoController.criar(req, res)
+    );
     this.app.post("/agendamentos/finalizados/arquivar", this.exigirAdmin, (req, res) =>
       this.agendamentoController.arquivarFinalizados(req, res)
     );

@@ -31,6 +31,26 @@ export class AutenticacaoMiddleware {
   }
 
   /**
+   * Rotas públicas usadas também pelo painel (ver horários, agendar): nunca barra.
+   * Se vier um login válido, anota quem é, como o `verificar`; sem login, segue como cliente.
+   */
+  public async identificar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const cabecalho = req.headers.authorization ?? "";
+    const token = cabecalho.startsWith("Bearer ") ? cabecalho.slice("Bearer ".length) : "";
+    try {
+      const usuario = token ? await this.servico.usuarioDaSessao(token) : null;
+      if (usuario) {
+        res.locals.adminId = usuario.getId();
+        res.locals.profissionalId = usuario.getProfissionalId();
+      }
+      next();
+    } catch {
+      // Token inválido numa rota pública: segue como cliente.
+      next();
+    }
+  }
+
+  /**
    * Depois de `verificar`: só deixa passar quem tem acesso total (conta sem profissional).
    * Usado no que é da clínica inteira: usuários, configurações, tratamentos, cadastro de profissionais.
    */

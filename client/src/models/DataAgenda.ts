@@ -30,6 +30,13 @@ export class DataAgenda {
     return new DataAgenda(data.toISOString());
   }
 
+  /** Segunda-feira da semana desta data (a agenda mostra a semana de segunda a domingo). */
+  public inicioDaSemana(): DataAgenda {
+    // getUTCDay: 0 = domingo ... 6 = sábado; quantos dias voltar até a segunda.
+    const diasDesdeSegunda = (this.paraDate().getUTCDay() + 6) % 7;
+    return this.somarDias(-diasDesdeSegunda);
+  }
+
   /** Dia do mês, sem zero à esquerda (ex: 5). */
   public getDia(): number {
     return this.paraDate().getUTCDate();

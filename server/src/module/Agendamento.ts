@@ -5,6 +5,7 @@ import { StatusAgendamento } from "./StatusAgendamento";
 import { Horario } from "./Horario";
 import { DataAgenda } from "./DataAgenda";
 import { TipoMensagem } from "./TipoMensagem";
+import { AntecedenciaMinima } from "./AntecedenciaMinima";
 
 export class Agendamento {
   /**
@@ -148,6 +149,17 @@ export class Agendamento {
   /** Só dá para cancelar o que ainda não começou a ser atendido. */
   public podeSerCancelado(): boolean {
     return this.status === StatusAgendamento.AGENDADO;
+  }
+
+  /**
+   * Pela página do cliente, remarcar e cancelar só valem até `AntecedenciaMinima.HORAS`
+   * horas antes do horário (a equipe, pelo painel, pode a qualquer momento).
+   */
+  public podeSerAlteradoPeloCliente(agora: Date = new Date()): boolean {
+    return (
+      this.podeSerCancelado() &&
+      AntecedenciaMinima.permite(this.data, this.horarioInicio, agora)
+    );
   }
 
   /** Remarcar segue a mesma regra do cancelamento: só o que ainda não começou a ser atendido. */

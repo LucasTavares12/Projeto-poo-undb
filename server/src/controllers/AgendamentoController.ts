@@ -23,7 +23,8 @@ export class AgendamentoController {
       const horarios = await this.servico.listarHorariosDisponiveis(
         profissionalId,
         data,
-        tratamentoIds
+        tratamentoIds,
+        !SessaoDaRequisicao.ehDaEquipe(res)
       );
       res.json(horarios);
     } catch (erro) {
@@ -45,7 +46,10 @@ export class AgendamentoController {
   /** Cliente finaliza o agendamento (escolheu profissional, tratamentos, data, horário, nome e telefone). */
   public async criar(req: Request, res: Response): Promise<void> {
     try {
-      const agendamento = await this.servico.criar(this.lerDadosNovoAgendamento(req));
+      const agendamento = await this.servico.criar(
+        this.lerDadosNovoAgendamento(req),
+        !SessaoDaRequisicao.ehDaEquipe(res)
+      );
       res.status(201).json(agendamento);
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });
@@ -76,7 +80,14 @@ export class AgendamentoController {
   /** Página do cliente: agendamentos em aberto do telefone informado (?telefone=...). */
   public async listarDoCliente(req: Request, res: Response): Promise<void> {
     try {
-      res.json(await this.servico.listarDoCliente(String(req.query.telefone ?? "")));
+      const agendamentos = await this.servico.listarDoCliente(String(req.query.telefone ?? ""));
+      // Avisa a página se ainda dá para remarcar/cancelar pelo site (antecedência mínima).
+      res.json(
+        agendamentos.map((agendamento) => ({
+          ...agendamento.toJSON(),
+          podeAlterarPeloSite: agendamento.podeSerAlteradoPeloCliente(),
+        }))
+      );
     } catch (erro) {
       res.status(400).json({ erro: (erro as Error).message });
     }

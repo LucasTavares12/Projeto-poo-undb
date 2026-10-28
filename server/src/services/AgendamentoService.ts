@@ -11,6 +11,7 @@ import { TratamentoRepository } from "../repositories/TratamentoRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { DisponibilidadeService } from "./DisponibilidadeService";
 import { DataAgenda } from "../module/DataAgenda";
+import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
 
 export interface DadosNovoAgendamento {
   clienteNome: string;
@@ -37,8 +38,15 @@ export class AgendamentoService {
    * Cria um agendamento (pela página do cliente ou pelo "Novo agendamento" do painel):
    * só aceita horários livres na agenda liberada do profissional.
    */
-  public async criar(dados: DadosNovoAgendamento): Promise<Agendamento> {
+  public async criar(
+    dados: DadosNovoAgendamento,
+    peloCliente = false
+  ): Promise<Agendamento> {
     const novo = await this.montarNovoAgendamento(dados);
+
+    if (peloCliente && !AntecedenciaMinima.permite(dados.data, dados.horarioInicio)) {
+      throw new Error(AntecedenciaMinima.mensagemParaAgendar());
+    }
 
     // Mensagem própria para o dia fechado: "horário ocupado" confundiria o cliente.
     if (await this.disponibilidadeService.estaBloqueado(dados.profissionalId, dados.data)) {
@@ -50,7 +58,8 @@ export class AgendamentoService {
     const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
       dados.profissionalId,
       dados.data,
-      novo.getQuantidadeSlots()
+      novo.getQuantidadeSlots(),
+      { exigirAntecedencia: peloCliente }
     );
     const horarioAindaDisponivel = horariosDisponiveis.some((horario) =>
       horario.equals(dados.horarioInicio)
@@ -189,7 +198,8 @@ export class AgendamentoService {
   public async listarHorariosDisponiveis(
     profissionalId: number,
     data: Date,
-    tratamentoIds: number[]
+    tratamentoIds: number[],
+    peloCliente = false
   ): Promise<Horario[]> {
     const tratamentos = await this.buscarTratamentos(tratamentoIds);
     // Sem tratamento escolhido ("Ver horários" da página inicial), mostra os horários de 30min livres.
@@ -197,7 +207,8 @@ export class AgendamentoService {
     return this.disponibilidadeService.listarHorariosDisponiveis(
       profissionalId,
       data,
-      quantidadeSlots
+      quantidadeSlots,
+      { exigirAntecedencia: peloCliente }
     );
   }
 
@@ -252,6 +263,9 @@ export class AgendamentoService {
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser cancelado."
       );
     }
+    if (!agendamento.podeSerAlteradoPeloCliente()) {
+      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
+    }
 
     await this.agendamentoRepo.deletar(id);
   }
@@ -278,7 +292,7 @@ export class AgendamentoService {
     profissionalDoUsuario: number | null = null
   ): Promise<Horario[]> {
     const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
-    return this.horariosLivresParaRemarcar(agendamento, data);
+    return this.horariosLivresParaRemarcar(agendamento, data, false);
   }
 
   /** Página do cliente: o mesmo, confirmando pelo telefone usado ao agendar. */
@@ -287,7 +301,8 @@ export class AgendamentoService {
     telefone: string,
     data: Date
   ): Promise<Horario[]> {
-    return this.horariosLivresParaRemarcar(await this.buscarDoCliente(id, telefone), data);
+    const agendamento = await this.buscarDoCliente(id, telefone);
+    return this.horariosLivresParaRemarcar(agendamento, data, true);
   }
 
   /** Painel: muda o dia/horário de um agendamento (botão "Remarcar" do Kanban). */
@@ -298,7 +313,7 @@ export class AgendamentoService {
     profissionalDoUsuario: number | null = null
   ): Promise<Agendamento> {
     const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
-    return this.aplicarRemarcacao(agendamento, data, horario);
+    return this.aplicarRemarcacao(agendamento, data, horario, false);
   }
 
   /**
@@ -311,7 +326,8 @@ export class AgendamentoService {
     data: Date,
     horario: Horario
   ): Promise<Agendamento> {
-    return this.aplicarRemarcacao(await this.buscarDoCliente(id, telefone), data, horario);
+    const agendamento = await this.buscarDoCliente(id, telefone);
+    return this.aplicarRemarcacao(agendamento, data, horario, true);
   }
 
   /**
@@ -321,12 +337,17 @@ export class AgendamentoService {
    */
   private async horariosLivresParaRemarcar(
     agendamento: Agendamento,
-    data: Date
+    data: Date,
+    peloCliente: boolean
   ): Promise<Horario[]> {
     if (!agendamento.podeSerRemarcado()) {
       throw new Error(
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser remarcado."
       );
+    }
+    // Pelo site, o horário atual também precisa estar a mais de 2h para poder mudar.
+    if (peloCliente && !agendamento.podeSerAlteradoPeloCliente()) {
+      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
     }
     if (DataAgenda.paraTexto(data) < RelogioClinica.hoje()) {
       throw new Error("Escolha uma data a partir de hoje.");
@@ -336,7 +357,7 @@ export class AgendamentoService {
       agendamento.getProfissional().getId()!,
       data,
       agendamento.getQuantidadeSlots(),
-      agendamento.getId()
+      { ignorarAgendamentoId: agendamento.getId(), exigirAntecedencia: peloCliente }
     );
     // O horário atual não é opção: remarcar para ele não mudaria nada.
     return horarios.filter((horario) => !agendamento.estaMarcadoEm(data, horario));
@@ -345,10 +366,17 @@ export class AgendamentoService {
   private async aplicarRemarcacao(
     agendamento: Agendamento,
     data: Date,
-    horario: Horario
+    horario: Horario,
+    peloCliente: boolean
   ): Promise<Agendamento> {
     if (agendamento.estaMarcadoEm(data, horario)) {
       throw new Error("O agendamento já está marcado nesse dia e horário.");
+    }
+    if (peloCliente && !agendamento.podeSerAlteradoPeloCliente()) {
+      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
+    }
+    if (peloCliente && !AntecedenciaMinima.permite(data, horario)) {
+      throw new Error(AntecedenciaMinima.mensagemParaAgendar());
     }
 
     const profissional = agendamento.getProfissional();
@@ -356,7 +384,7 @@ export class AgendamentoService {
       throw new Error(`${profissional.getNome()} não atende nessa data. Escolha outro dia.`);
     }
 
-    const livres = await this.horariosLivresParaRemarcar(agendamento, data);
+    const livres = await this.horariosLivresParaRemarcar(agendamento, data, peloCliente);
     if (!livres.some((livre) => livre.equals(horario))) {
       throw new Error("Esse horário não está disponível. Escolha outro horário.");
     }

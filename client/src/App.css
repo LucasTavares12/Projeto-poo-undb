@@ -2480,6 +2480,442 @@
   }
 }
 
+/* ---------- Agenda (visão da semana) ---------- */
+
+.agenda-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.agenda-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.agenda-legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agenda-legenda li::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.agenda-legenda .livre::before {
+  border: 1px dashed var(--accent);
+  background: var(--superficie);
+}
+
+.agenda-legenda .agendado::before {
+  background: var(--accent);
+}
+
+.agenda-legenda .em-atendimento::before {
+  background: #d97706;
+}
+
+.agenda-legenda .finalizado::before {
+  background: #16a34a;
+}
+
+.agenda-legenda .fechado::before,
+.agenda-legenda .passado::before {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--superficie-alt) 0 3px,
+    var(--border) 3px 6px
+  );
+}
+
+.agenda {
+  transition: opacity 0.2s;
+}
+
+.agenda.atualizando {
+  opacity: 0.55;
+}
+
+.agenda-grade {
+  --agenda-linha: 52px;
+
+  display: grid;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.agenda-canto,
+.agenda-cabecalho-dia {
+  background: var(--superficie-alt);
+}
+
+.agenda-cabecalho-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 6px;
+  border-left: 1px solid var(--border);
+  color: var(--text-h);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.agenda-cabecalho-dia strong {
+  font-size: 15px;
+}
+
+.agenda-cabecalho-dia.hoje strong {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.agenda-cabecalho-dia small {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.agenda-cabecalho-dia.fechado small {
+  color: var(--perigo);
+}
+
+.agenda-hora {
+  padding: 4px 8px 0 0;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.agenda-celula {
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+.agenda-celula.hoje {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+/* Cada bloco fica por cima das células, ocupando as linhas da sua duração. */
+.agenda-posicao {
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  padding: 3px;
+}
+
+.agenda-bloco {
+  flex: 1;
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.agenda-bloco.livre {
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.agenda-bloco.livre:hover,
+.agenda-bloco.livre:focus-visible {
+  background: var(--accent-bg);
+  opacity: 1;
+  outline: none;
+}
+
+.agenda-bloco.passado,
+.agenda-bloco.fechado {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--border) 70%, transparent) 5px 10px
+  );
+}
+
+.agenda-bloco.fechado {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    var(--perigo-bg) 5px 10px
+  );
+}
+
+/* Atendimento marcado na agenda: cartão clicável com a cor da etapa. */
+.agenda-bloco.agendamento {
+  --cor-status: var(--accent);
+  --cor-texto: var(--accent-forte);
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  overflow: hidden;
+  padding: 6px 9px 7px;
+  border: 1px solid color-mix(in srgb, var(--cor-status) 30%, transparent);
+  border-left: 4px solid var(--cor-status);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--cor-status) 16%, var(--superficie));
+  box-shadow: 0 1px 2px rgba(42, 33, 36, 0.08);
+  color: var(--text-h);
+  font: inherit;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.agenda-bloco.agendamento.em-atendimento {
+  --cor-status: #d97706;
+  --cor-texto: #b45309;
+}
+
+.agenda-bloco.agendamento.finalizado {
+  --cor-status: #16a34a;
+  --cor-texto: #15803d;
+}
+
+.agenda-bloco.agendamento:hover {
+  background: color-mix(in srgb, var(--cor-status) 24%, var(--superficie));
+  box-shadow: var(--sombra-elevada);
+  transform: translateY(-1px);
+}
+
+.agenda-bloco.agendamento:focus-visible {
+  outline: 2px solid var(--cor-status);
+  outline-offset: 1px;
+}
+
+.agenda-bloco-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.agenda-bloco-hora {
+  color: var(--cor-texto);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Bolinha com a cor da etapa (o nome da etapa aparece no resumo e na legenda). */
+.agenda-bloco-etapa {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-status);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cor-status) 25%, transparent);
+}
+
+/* Nome e serviços quebram em até duas linhas, em vez de cortar com "...". */
+.agenda-bloco-cliente,
+.agenda-bloco-servicos {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.agenda-bloco-cliente {
+  color: var(--text-h);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.agenda-bloco-servicos {
+  color: var(--text);
+  font-size: 12px;
+}
+
+/* Atendimento de 30min: horário e nome lado a lado, numa linha só. */
+.agenda-bloco.agendamento.curto {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.agenda-bloco.agendamento.curto .agenda-bloco-cliente {
+  -webkit-line-clamp: 1;
+  font-size: 12.5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .agenda-bloco.agendamento,
+  .agenda-bloco.agendamento.em-atendimento,
+  .agenda-bloco.agendamento.finalizado {
+    --cor-texto: var(--cor-status);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agenda-bloco.agendamento:hover {
+    transform: none;
+  }
+}
+
+/* No computador aparece a grade; a versão de um dia por vez é do celular. */
+.agenda-celular {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .agenda-grade {
+    display: none;
+  }
+
+  .agenda-celular {
+    display: block;
+  }
+
+  .agenda-filtros {
+    flex: 1 1 100%;
+  }
+
+  .agenda-filtros .filtro-profissional,
+  .agenda-filtros .seletor-mes {
+    flex: 1 1 100%;
+  }
+
+  .agenda-filtros .seletor-mes {
+    justify-content: space-between;
+  }
+
+  .agenda-filtros > .admin-botao {
+    flex: 1;
+  }
+}
+
+.agenda-dias {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.agenda-dia-aba {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 7px 2px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.agenda-dia-aba strong {
+  color: var(--text-h);
+  font-size: 16px;
+}
+
+.agenda-dia-aba small {
+  font-size: 10px;
+  text-transform: none;
+}
+
+.agenda-dia-aba.hoje strong {
+  color: var(--accent);
+}
+
+.agenda-dia-aba.fechado small {
+  color: var(--perigo);
+}
+
+.agenda-dia-aba[aria-selected="true"] {
+  background: var(--accent);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.agenda-dia-aba[aria-selected="true"] strong,
+.agenda-dia-aba[aria-selected="true"] small {
+  color: #fff;
+}
+
+.agenda-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-lista-aviso {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--perigo-bg);
+  color: var(--perigo);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.agenda-lista-linha {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.agenda-lista-linha .agenda-hora {
+  padding: 10px 0 0;
+  border-top: none;
+}
+
+.agenda-lista-linha .agenda-bloco {
+  min-height: 42px;
+}
+
+.agenda-lista-linha .agenda-bloco.agendamento {
+  padding: 9px 12px;
+  border-radius: 10px;
+}
+
 /* ---------- Clientes: lista e ficha ---------- */
 
 .clientes-busca {
@@ -4568,4 +5004,199 @@
 .botao-perigo:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Meus agendamentos: aviso quando já não dá para mudar pelo site (antecedência mínima). */
+.agendamento-cliente-aviso {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 10px;
+  background: rgba(217, 119, 6, 0.08);
+  color: #92400e;
+  font-size: 14px;
+}
+
+/* ---------- Resumo do agendamento (clicado na agenda) ---------- */
+
+.resumo-agendamento {
+  --cor-status: var(--accent);
+
+  max-width: 480px;
+}
+
+.resumo-agendamento.em-atendimento {
+  --cor-status: #d97706;
+}
+
+.resumo-agendamento.finalizado {
+  --cor-status: #16a34a;
+}
+
+.resumo-agendamento-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 0;
+}
+
+.resumo-agendamento-topo > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.resumo-agendamento-topo h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.resumo-agendamento-topo .admin-avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 18px;
+}
+
+.resumo-agendamento-quando {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--cor-status) 28%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cor-status) 10%, var(--superficie));
+  color: var(--cor-status);
+}
+
+.resumo-agendamento-quando strong {
+  display: block;
+  color: var(--text-h);
+  font-size: 15px;
+}
+
+.resumo-agendamento-quando span {
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumo-agendamento-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resumo-agendamento-dados li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.resumo-agendamento-dados svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.resumo-agendamento-dados small {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.resumo-agendamento-servicos {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.resumo-agendamento-servicos h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--superficie-alt);
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.resumo-agendamento-servicos ul {
+  margin: 0;
+  padding: 2px 14px;
+  list-style: none;
+}
+
+.resumo-agendamento-servicos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.resumo-agendamento-servicos li:last-child {
+  border-bottom: none;
+}
+
+.resumo-agendamento-servicos li small {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.resumo-agendamento-servicos b,
+.resumo-agendamento-total strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.resumo-agendamento-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 11px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--superficie-alt);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.resumo-agendamento-total strong {
+  font-size: 17px;
+}
+
+.resumo-agendamento-acoes {
+  justify-content: space-between;
+}
+
+.admin-conteudo .resumo-agendamento-acoes a.admin-botao {
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .resumo-agendamento-topo {
+    padding: 12px 18px 0;
+  }
+
+  .resumo-agendamento-acoes > * {
+    flex: 1 1 140px;
+    min-height: 44px;
+  }
 }

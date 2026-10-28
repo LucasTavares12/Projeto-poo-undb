@@ -19,6 +19,8 @@ const agendamentoService = new AgendamentoService();
 interface Props {
   /** Conta ligada a um profissional: o agendamento é sempre para ele (select travado). */
   profissionalFixo?: number | null;
+  /** Já abre com estes valores (ex: clicando num horário livre da agenda). */
+  inicial?: { profissionalId?: number; data?: string; horario?: string };
   onFechar: () => void;
   onCriado: (agendamento: Agendamento) => void;
 }
@@ -29,16 +31,25 @@ interface HorariosDisponiveis {
   horarios: string[];
 }
 
-export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCriado }: Props) {
+export function ModalAgendamentoManual({
+  profissionalFixo = null,
+  inicial = {},
+  onFechar,
+  onCriado,
+}: Props) {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
-  const [profissionalId, setProfissionalId] = useState<number | null>(profissionalFixo);
+  const profissionalInicial = inicial.profissionalId;
+  const [profissionalId, setProfissionalId] = useState<number | null>(
+    profissionalFixo ?? profissionalInicial ?? null
+  );
   const [tratamentoIds, setTratamentoIds] = useState<number[]>([]);
-  const [data, setData] = useState(DataAgenda.hoje().toString());
-  const [horario, setHorario] = useState("");
+  const [data, setData] = useState(inicial.data ?? DataAgenda.hoje().toString());
+  // O horário escolhido só vale quando aparece entre os livres (depois de escolher os tratamentos).
+  const [horario, setHorario] = useState(inicial.horario ?? "");
 
   const [disponiveis, setDisponiveis] = useState<HorariosDisponiveis | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -51,12 +62,12 @@ export function ModalAgendamentoManual({ profissionalFixo = null, onFechar, onCr
       .then(([listaProfissionais, listaTratamentos]) => {
         setProfissionais(listaProfissionais);
         setTratamentos(listaTratamentos);
-        if (profissionalFixo === null && listaProfissionais.length === 1) {
+        if (profissionalFixo === null && !profissionalInicial && listaProfissionais.length === 1) {
           setProfissionalId(listaProfissionais[0].id);
         }
       })
       .catch(() => setErro("Não foi possível carregar profissionais e tratamentos."));
-  }, [profissionalFixo]);
+  }, [profissionalFixo, profissionalInicial]);
 
   // Esc fecha a janela.
   useEffect(() => {

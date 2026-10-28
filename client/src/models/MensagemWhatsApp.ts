@@ -95,7 +95,7 @@ export class MensagemWhatsApp {
       "",
       "Precisa *remarcar* ou *cancelar*? 🔄",
       `É só acessar 👉 ${Clinica.enderecoDeAgendamento()}`,
-      "e informar o seu telefone.",
+      `e informar o seu telefone (até ${Clinica.ANTECEDENCIA_MINIMA_HORAS}h antes do horário).`,
       "",
       "Te esperamos! 💕",
       `_${Clinica.NOME}_`,

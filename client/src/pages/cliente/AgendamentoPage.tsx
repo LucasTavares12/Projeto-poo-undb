@@ -32,6 +32,7 @@ import {
 } from "../../components/Icones";
 import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
 import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
+import { Clinica } from "../../models/Clinica";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
@@ -530,11 +531,11 @@ export function AgendamentoPage() {
                 Horários em {new DataAgenda(data).formatar()}{" "}
                 {modo === "agendar" && <span className="campo-obrigatorio">*</span>}
               </h3>
-              {modo === "ver" && (
-                <p className="passo-dica">
-                  Horários livres para atendimentos
-                </p>
-              )}
+              <p className="passo-dica">
+                {modo === "ver" ? "Horários livres para atendimentos. " : ""}
+                Pelo site, os agendamentos são feitos com pelo menos{" "}
+                {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas de antecedência.
+              </p>
               <SeletorHorario
                 horarios={horariosDisponiveis}
                 selecionado={horarioInicio}

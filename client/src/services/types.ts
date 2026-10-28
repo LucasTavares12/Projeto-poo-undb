@@ -46,6 +46,8 @@ export interface Agendamento {
   /** Quando a clínica mandou o lembrete / o agradecimento pelo WhatsApp (null = não mandou). */
   lembreteEnviadoEm: string | null;
   agradecimentoEnviadoEm: string | null;
+  /** Só em "Meus agendamentos": se ainda dá para remarcar/cancelar pelo site (antecedência). */
+  podeAlterarPeloSite?: boolean;
 }
 
 export interface Configuracoes {
@@ -136,4 +138,31 @@ export interface FichaDoCliente extends Omit<ClienteResumo, "proximoAgendamento"
   tratamentosMaisFeitos: { nome: string; quantidade: number }[];
   profissionais: string[];
   agendamentos: Agendamento[];
+}
+
+/** O que ocupa uma faixa da agenda: atendimento marcado ou horário livre/passado/fechado. */
+export interface BlocoDaAgenda {
+  tipo: "agendamento" | "livre" | "passado" | "fechado";
+  horario: string;
+  /** Quantas faixas de 30min o bloco ocupa (agendamentos podem ocupar várias). */
+  slots: number;
+  agendamento?: Agendamento;
+}
+
+export interface DiaDaAgenda {
+  data: string;
+  fechado: boolean;
+  motivoFechado: string | null;
+  agendamentos: number;
+  livres: number;
+  blocos: BlocoDaAgenda[];
+}
+
+/** Agenda de um profissional num período (normalmente uma semana). */
+export interface AgendaSemanal {
+  profissional: Profissional;
+  inicio: string;
+  /** Linhas da agenda (horários de 30min), na ordem. */
+  horarios: string[];
+  dias: DiaDaAgenda[];
 }

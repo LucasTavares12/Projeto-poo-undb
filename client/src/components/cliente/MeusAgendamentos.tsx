@@ -14,6 +14,7 @@ import {
   IconeSetaEsquerda,
 } from "../Icones";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
+import { Clinica } from "../../models/Clinica";
 
 const agendamentoService = new AgendamentoService();
 
@@ -121,7 +122,8 @@ export function MeusAgendamentos({ onVoltar }: Props) {
       <div className="passo-corpo">
         <p className="passo-dica">
           Precisa mudar o dia ou não vai poder comparecer? Informe o telefone usado no agendamento
-          para encontrá-lo. Você pode remarcar para outro horário livre ou cancelar.
+          para encontrá-lo. Você pode remarcar para outro horário livre ou cancelar até{" "}
+          {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas antes do horário marcado.
         </p>
 
         <form className="busca-agendamento" onSubmit={buscar}>
@@ -184,7 +186,12 @@ export function MeusAgendamentos({ onVoltar }: Props) {
                     </li>
                   </ul>
 
-                  {remarcandoId === agendamento.id ? (
+                  {agendamento.podeAlterarPeloSite === false ? (
+                    <p className="agendamento-cliente-aviso">
+                      Faltam menos de {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas para o seu horário.
+                      Para remarcar ou cancelar agora, fale direto com a clínica.
+                    </p>
+                  ) : remarcandoId === agendamento.id ? (
                     <RemarcarAgendamento
                       agendamento={agendamento}
                       telefone={busca.telefone}

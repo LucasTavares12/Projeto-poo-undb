@@ -5,6 +5,7 @@ import { Horario } from "../module/Horario";
 import { DiaSemana } from "../module/DiaSemana";
 import { RelogioClinica } from "../module/RelogioClinica";
 import { DataAgenda } from "../module/DataAgenda";
+import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
 
 /**
  * Calcula, para um profissional e uma data específica, quais horários
@@ -14,6 +15,13 @@ import { DataAgenda } from "../module/DataAgenda";
  * ou feriado da clínica (BloqueioAgenda) não têm nenhum horário livre, e
  * horários que já passaram (dias anteriores ou mais cedo hoje) nunca aparecem.
  */
+export interface OpcoesDeDisponibilidade {
+  /** Agendamento que está sendo remarcado: os horários dele contam como livres. */
+  ignorarAgendamentoId?: number;
+  /** Página do cliente: só horários com a antecedência mínima. */
+  exigirAntecedencia?: boolean;
+}
+
 export class DisponibilidadeService {
   private readonly horarioRepo = new HorarioDisponivelRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
@@ -26,12 +34,14 @@ export class DisponibilidadeService {
    *
    * Ao remarcar, `ignorarAgendamentoId` é o próprio agendamento: os horários que ele ocupa hoje
    * contam como livres (dá para empurrar o atendimento 30min sem "esbarrar" nele mesmo).
+   * Com `exigirAntecedencia` (página do cliente), só entram horários que começam daqui a
+   * `AntecedenciaMinima.HORAS` horas ou mais; sem ela (painel), basta não ter passado.
    */
   public async listarHorariosDisponiveis(
     profissionalId: number,
     data: Date,
     quantidadeSlotsNecessarios: number,
-    ignorarAgendamentoId?: number
+    opcoes: OpcoesDeDisponibilidade = {}
   ): Promise<Horario[]> {
     const dia = DataAgenda.paraTexto(data);
     const hoje = RelogioClinica.hoje();
@@ -48,13 +58,21 @@ export class DisponibilidadeService {
 
     const conjuntoLiberados = new Set(horariosDoDiaSemana.map((horario) => horario.toString()));
 
-    const conjuntoOcupados = await this.horariosOcupados(profissionalId, data, ignorarAgendamentoId);
+    const conjuntoOcupados = await this.horariosOcupados(
+      profissionalId,
+      data,
+      opcoes.ignorarAgendamentoId
+    );
 
     // Hoje, só dá para começar um atendimento num horário que ainda não chegou.
     const ehHoje = dia === hoje;
+    const aindaDaTempo = (candidato: Horario) =>
+      opcoes.exigirAntecedencia
+        ? AntecedenciaMinima.permite(data, candidato)
+        : !(ehHoje && RelogioClinica.jaPassouHoje(candidato));
     return horariosDoDiaSemana.filter(
       (candidato) =>
-        !(ehHoje && RelogioClinica.jaPassouHoje(candidato)) &&
+        aindaDaTempo(candidato) &&
         this.todosOsSlotsCabem(
           candidato,
           quantidadeSlotsNecessarios,

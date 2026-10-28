@@ -140,6 +140,9 @@ export function AdminLayout() {
           <NavLink to="/admin" end>
             <IconeQuadro /> Agendamentos
           </NavLink>
+          <NavLink to="/admin/agenda">
+            <IconeCalendario /> Agenda
+          </NavLink>
           {acessoTotal && (
             <NavLink to="/admin/tratamentos">
               <IconeBrilho /> Tratamentos
