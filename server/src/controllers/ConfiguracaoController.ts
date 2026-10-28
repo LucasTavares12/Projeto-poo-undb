@@ -1,29 +1,22 @@
 import { Request, Response } from "express";
-import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
+import { Controlador } from "./Controlador";
+import { ConfiguracaoService } from "../services/ConfiguracaoService";
 
-export class ConfiguracaoController {
-  private readonly repositorio = new ConfiguracaoRepository();
+export class ConfiguracaoController extends Controlador {
+  private readonly servico = new ConfiguracaoService();
 
   /** Pública: a página de agendamento precisa saber se mostra os botões de acesso. */
   public async obter(req: Request, res: Response): Promise<void> {
-    const configuracoes = await this.repositorio.carregar();
-    res.json(configuracoes);
+    res.json(await this.servico.obter());
   }
 
   /** Aba "Configurações" do painel: altera só as opções enviadas no corpo. */
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
       const { acessoPublicoLiberado } = req.body ?? {};
-      const configuracoes = await this.repositorio.carregar();
-
-      if (acessoPublicoLiberado !== undefined) {
-        configuracoes.setAcessoPublicoLiberado(acessoPublicoLiberado);
-      }
-
-      await this.repositorio.salvar(configuracoes);
-      res.json(configuracoes);
+      res.json(await this.servico.atualizar({ acessoPublicoLiberado }));
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 }

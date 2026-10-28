@@ -3,7 +3,8 @@ import { Administrador } from "../module/Administrador";
 import { AdministradorRepository } from "../repositories/AdministradorRepository";
 import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
-import { ErroAutenticacao } from "./ErroAutenticacao";
+import { ErroAutenticacao } from "../erros/ErroAutenticacao";
+import { ErroDeConflito } from "../erros/ErroDeConflito";
 
 interface ConteudoToken {
   adminId: number;
@@ -39,7 +40,7 @@ export class AutenticacaoService {
     const novo = await Administrador.comSenha(email, senha);
 
     if (await this.repositorio.buscarPorEmail(novo.getEmail())) {
-      throw new ErroAutenticacao("Já existe uma conta com este e-mail.", 409);
+      throw new ErroDeConflito("Já existe uma conta com este e-mail.");
     }
 
     return this.repositorio.salvar(novo);

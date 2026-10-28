@@ -1,79 +1,52 @@
 import { Request, Response } from "express";
-import { Tratamento } from "../module/Tratamento";
-import { TratamentoRepository } from "../repositories/TratamentoRepository";
-import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
+import { Controlador } from "./Controlador";
+import { TratamentoService } from "../services/TratamentoService";
+import type { DadosTratamento } from "../services/TratamentoService";
 
-export class TratamentoController {
-  private readonly repositorio = new TratamentoRepository();
-  private readonly profissionalRepo = new ProfissionalRepository();
+export class TratamentoController extends Controlador {
+  private readonly servico = new TratamentoService();
 
   public async listar(req: Request, res: Response): Promise<void> {
-    const tratamentos = await this.repositorio.listarTodos();
-    res.json(tratamentos);
+    res.json(await this.servico.listar());
   }
 
   public async criar(req: Request, res: Response): Promise<void> {
     try {
-      const { nome, descricao, valor, duracaoMinutos, profissionalId } = req.body;
-      const tratamento = await this.repositorio.salvar(
-        new Tratamento(
-          nome,
-          descricao,
-          Number(valor),
-          Number(duracaoMinutos),
-          undefined,
-          await this.lerProfissional(profissionalId)
-        )
-      );
-      res.status(201).json(tratamento);
+      res.status(201).json(await this.servico.criar(this.lerDados(req)));
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      const { nome, descricao, valor, duracaoMinutos, profissionalId } = req.body;
-      const tratamento = await this.repositorio.buscarPorId(id);
-      if (!tratamento) {
-        res.status(404).json({ erro: "Tratamento não encontrado." });
-        return;
-      }
-
-      tratamento.setNome(nome);
-      tratamento.setDescricao(descricao);
-      tratamento.setValor(Number(valor));
-      tratamento.setDuracaoMinutos(Number(duracaoMinutos));
-      tratamento.vincularProfissional(await this.lerProfissional(profissionalId));
-      await this.repositorio.atualizar(tratamento);
-      res.json(tratamento);
+      res.json(await this.servico.atualizar(Number(req.params.id), this.lerDados(req)));
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      await this.repositorio.deletar(id);
+      await this.servico.remover(Number(req.params.id));
       res.status(204).send();
     } catch (erro) {
-      res.status(409).json({
-        erro: "Não é possível excluir este tratamento: existem agendamentos vinculados a ele.",
-      });
+      this.responderErro(res, erro);
     }
   }
 
-  /** Vazio/null = tratamento de todos os profissionais; com valor, o profissional precisa existir. */
-  private async lerProfissional(valor: unknown): Promise<number | null> {
-    if (valor === undefined || valor === null || valor === "") {
-      return null;
-    }
-    const profissionalId = Number(valor);
-    if (!Number.isInteger(profissionalId) || !(await this.profissionalRepo.buscarPorId(profissionalId))) {
-      throw new Error("Profissional não encontrado.");
-    }
-    return profissionalId;
+  private lerDados(req: Request): DadosTratamento {
+    const { nome, descricao, valor, duracaoMinutos, profissionalId } = req.body ?? {};
+    return {
+      nome,
+      descricao,
+      valor: Number(valor),
+      duracaoMinutos: Number(duracaoMinutos),
+      // Vazio/null = tratamento de todos os profissionais.
+      profissionalId:
+        profissionalId === undefined || profissionalId === null || profissionalId === ""
+          ? null
+          : Number(profissionalId),
+    };
   }
 }

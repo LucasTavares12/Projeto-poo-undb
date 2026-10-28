@@ -1,7 +1,9 @@
 import { Administrador } from "../module/Administrador";
 import { AdministradorRepository } from "../repositories/AdministradorRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
-import { ErroAutenticacao } from "./ErroAutenticacao";
+import { ErroAutenticacao } from "../erros/ErroAutenticacao";
+import { ErroDeConflito } from "../erros/ErroDeConflito";
+import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 
 /**
  * Gerenciamento dos usuários do painel (aba "Configurações"): criar, editar o
@@ -26,7 +28,7 @@ export class UsuarioService {
   ): Promise<Administrador> {
     const novo = await Administrador.comSenha(email, senha);
     if (await this.repositorio.buscarPorEmail(novo.getEmail())) {
-      throw new ErroAutenticacao("Já existe uma conta com este e-mail.", 409);
+      throw new ErroDeConflito("Já existe uma conta com este e-mail.");
     }
     await this.validarProfissionalLivre(profissionalId, null);
     novo.vincularProfissional(profissionalId);
@@ -59,7 +61,7 @@ export class UsuarioService {
 
     const dono = await this.repositorio.buscarPorEmail(usuario.getEmail());
     if (dono && dono.getId() !== id) {
-      throw new ErroAutenticacao("Já existe uma conta com este e-mail.", 409);
+      throw new ErroDeConflito("Já existe uma conta com este e-mail.");
     }
 
     await this.repositorio.atualizar(usuario);
@@ -110,7 +112,7 @@ export class UsuarioService {
       return;
     }
     if (!(await this.profissionalRepo.buscarPorId(profissionalId))) {
-      throw new ErroAutenticacao("Profissional não encontrado.", 404);
+      throw new ErroNaoEncontrado("Profissional não encontrado.");
     }
     const dono = await this.repositorio.buscarPorProfissional(profissionalId);
     if (dono && dono.getId() !== idDoUsuario) {
@@ -130,7 +132,7 @@ export class UsuarioService {
   private async buscar(id: number): Promise<Administrador> {
     const usuario = Number.isInteger(id) ? await this.repositorio.buscarPorId(id) : null;
     if (!usuario) {
-      throw new ErroAutenticacao("Usuário não encontrado.", 404);
+      throw new ErroNaoEncontrado("Usuário não encontrado.");
     }
     return usuario;
   }

@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
+import { Controlador } from "./Controlador";
 import { UsuarioService } from "../services/UsuarioService";
-import { ErroAutenticacao } from "../services/ErroAutenticacao";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
 /** Aba "Configurações" > "Usuários do sistema". Todas as rotas exigem login. */
-export class UsuarioController {
+export class UsuarioController extends Controlador {
   private readonly servico = new UsuarioService();
 
   public async listar(req: Request, res: Response): Promise<void> {
@@ -65,8 +65,7 @@ export class UsuarioController {
         res.status(status).json(resultado);
       }
     } catch (erro) {
-      const codigo = erro instanceof ErroAutenticacao ? erro.status : 400;
-      res.status(codigo).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 }

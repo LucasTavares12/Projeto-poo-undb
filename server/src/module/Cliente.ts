@@ -8,8 +8,19 @@ export class Cliente extends Pessoa {
     this.id = id;
   }
 
+  /** Cliente novo (vindo de um agendamento): valida nome e telefone. */
+  public static novo(nome: string, telefone: string): Cliente {
+    const cliente = new Cliente(nome, telefone);
+    cliente.validarContato();
+    return cliente;
+  }
+
   public getId(): number | undefined {
     return this.id;
+  }
+
+  protected papel(): string {
+    return "do cliente";
   }
 
   public apresentar(): string {

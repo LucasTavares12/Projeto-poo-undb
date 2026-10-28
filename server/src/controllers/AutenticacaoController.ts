@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
+import { Controlador } from "./Controlador";
 import { AutenticacaoService } from "../services/AutenticacaoService";
-import { ErroAutenticacao } from "../services/ErroAutenticacao";
+import { ErroAutenticacao } from "../erros/ErroAutenticacao";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
-export class AutenticacaoController {
-  constructor(private readonly servico: AutenticacaoService) {}
+export class AutenticacaoController extends Controlador {
+  constructor(private readonly servico: AutenticacaoService) {
+    super();
+  }
 
   /** Tela de cadastro: cria a conta (e-mail + senha) para depois fazer login. */
   public async cadastrar(req: Request, res: Response): Promise<void> {
@@ -13,8 +16,7 @@ export class AutenticacaoController {
       const administrador = await this.servico.cadastrar(email, senha);
       res.status(201).json(administrador);
     } catch (erro) {
-      const status = erro instanceof ErroAutenticacao ? erro.status : 400;
-      res.status(status).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -23,8 +25,7 @@ export class AutenticacaoController {
     try {
       res.json(await this.servico.dadosDaSessao(SessaoDaRequisicao.adminId(res)));
     } catch (erro) {
-      const status = erro instanceof ErroAutenticacao ? erro.status : 500;
-      res.status(status).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro, 500);
     }
   }
 

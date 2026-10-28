@@ -1,7 +1,7 @@
 import { HistoricoCliente } from "../module/HistoricoCliente";
-import { Pessoa } from "../module/Pessoa";
+import { Telefone } from "../module/Telefone";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
-import { ErroNaoEncontrado } from "./ErroNaoEncontrado";
+import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 
 /**
  * Aba "Clientes" do painel: lista e ficha com o histórico de cada cliente.
@@ -34,11 +34,11 @@ export class ClienteService {
     return new HistoricoCliente(digitos, agendamentos);
   }
 
+  /** Telefone inválido na URL = cliente que não existe. */
   private lerTelefone(telefone: string): string {
-    const digitos = Pessoa.somenteDigitos(telefone);
-    if (digitos.length < 10 || digitos.length > 11) {
+    if (!Telefone.ehValido(telefone)) {
       throw new ErroNaoEncontrado("Cliente não encontrado.");
     }
-    return digitos;
+    return Telefone.somenteDigitos(telefone);
   }
 }

@@ -1,63 +1,48 @@
 import { Request, Response } from "express";
-import { Profissional } from "../module/Profissional";
-import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
+import { Controlador } from "./Controlador";
+import { ProfissionalService } from "../services/ProfissionalService";
+import type { DadosProfissional } from "../services/ProfissionalService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
-export class ProfissionalController {
-  private readonly repositorio = new ProfissionalRepository();
+export class ProfissionalController extends Controlador {
+  private readonly servico = new ProfissionalService();
 
   public async listar(req: Request, res: Response): Promise<void> {
-    const profissionais = await this.repositorio.listarTodos();
-    res.json(profissionais);
+    res.json(await this.servico.listar());
   }
 
   public async criar(req: Request, res: Response): Promise<void> {
     try {
-      const { nome, telefone, especialidade } = req.body;
-      const profissional = await this.repositorio.salvar(
-        new Profissional(nome, telefone, especialidade)
-      );
-      res.status(201).json(profissional);
+      res.status(201).json(await this.servico.criar(this.lerDados(req)));
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      if (!SessaoDaRequisicao.podeAcessarProfissional(res, id)) {
-        res.status(403).json({ erro: "Você só pode editar o seu próprio cadastro." });
-        return;
-      }
-      const { nome, telefone, especialidade } = req.body;
-      const profissional = await this.repositorio.buscarPorId(id);
-      if (!profissional) {
-        res.status(404).json({ erro: "Profissional não encontrado." });
-        return;
-      }
-
-      profissional.setNome(nome);
-      profissional.setTelefone(telefone);
-      profissional.setEspecialidade(especialidade);
-      await this.repositorio.atualizar(profissional);
+      const profissional = await this.servico.atualizar(
+        Number(req.params.id),
+        this.lerDados(req),
+        SessaoDaRequisicao.profissionalId(res)
+      );
       res.json(profissional);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      await this.repositorio.deletar(id);
+      await this.servico.remover(Number(req.params.id));
       res.status(204).send();
     } catch (erro) {
-      res.status(409).json({
-        erro:
-          "Não é possível excluir este profissional: existem agendamentos, horários, tratamentos ou um " +
-          "usuário do sistema vinculados a ele.",
-      });
+      this.responderErro(res, erro);
     }
+  }
+
+  private lerDados(req: Request): DadosProfissional {
+    const { nome, telefone, especialidade } = req.body ?? {};
+    return { nome, telefone, especialidade };
   }
 }

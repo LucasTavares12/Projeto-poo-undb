@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { Database } from "../database/Database";
+import { Controlador } from "./Controlador";
 
 /**
  * Controller simples só para confirmar que a API (e o banco) estão de pé.
  * Cada controller novo (Profissional, Tratamento, Agendamento...) vai
  * seguir este mesmo formato: uma classe com um método por rota.
  */
-export class HealthController {
+export class HealthController extends Controlador {
   public check(req: Request, res: Response): void {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   }

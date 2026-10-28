@@ -5,6 +5,8 @@ import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { RelogioClinica } from "../module/RelogioClinica";
 import { DataAgenda } from "../module/DataAgenda";
+import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
+import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 
 export interface DadosNovoBloqueio {
   /** null = clínica inteira (feriado, recesso). */
@@ -55,11 +57,15 @@ export class BloqueioAgendaService {
     return this.bloqueioRepo.listar(profissionalId, RelogioClinica.hoje());
   }
 
-  public buscarPorId(id: number): Promise<BloqueioAgenda | null> {
-    return this.bloqueioRepo.buscarPorId(id);
-  }
-
-  public async criar(dados: DadosNovoBloqueio): Promise<BloqueioCriado> {
+  /** Conta ligada a profissional só fecha a própria agenda (feriado é do acesso total). */
+  public async criar(
+    dados: DadosNovoBloqueio,
+    profissionalDoUsuario: number | null = null
+  ): Promise<BloqueioCriado> {
+    new PerfilDeAcesso(profissionalDoUsuario).exigir(
+      dados.profissionalId,
+      "Você só pode bloquear a agenda do seu profissional."
+    );
     const bloqueio = new BloqueioAgenda(
       dados.profissionalId,
       dados.dataInicio,
@@ -74,7 +80,7 @@ export class BloqueioAgendaService {
     if (dados.profissionalId !== null) {
       const profissional = await this.profissionalRepo.buscarPorId(dados.profissionalId);
       if (!profissional) {
-        throw new Error("Profissional não encontrado.");
+        throw new ErroNaoEncontrado("Profissional não encontrado.");
       }
     }
 
@@ -87,7 +93,17 @@ export class BloqueioAgendaService {
     return { bloqueio: salvo, agendamentosAfetados };
   }
 
-  public remover(id: number): Promise<void> {
-    return this.bloqueioRepo.deletar(id);
+  public async remover(id: number, profissionalDoUsuario: number | null = null): Promise<void> {
+    const bloqueio = await this.bloqueioRepo.buscarPorId(id);
+    if (!bloqueio) {
+      throw new ErroNaoEncontrado("Bloqueio não encontrado.");
+    }
+    new PerfilDeAcesso(profissionalDoUsuario).exigir(
+      bloqueio.getProfissionalId(),
+      bloqueio.ehDaClinicaInteira()
+        ? "Só quem tem acesso total pode remover um bloqueio da clínica inteira."
+        : "Você só pode remover os bloqueios do seu profissional."
+    );
+    await this.bloqueioRepo.deletar(id);
   }
 }

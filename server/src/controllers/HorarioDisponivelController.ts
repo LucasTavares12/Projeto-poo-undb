@@ -1,55 +1,46 @@
 import { Request, Response } from "express";
-import { HorarioDisponivel } from "../module/HorarioDisponivel";
-import { Horario } from "../module/Horario";
-import { DiaSemana } from "../module/DiaSemana";
-import { HorarioDisponivelRepository } from "../repositories/HorarioDisponivelRepository";
+import { Controlador } from "./Controlador";
+import { HorarioDisponivelService } from "../services/HorarioDisponivelService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
-export class HorarioDisponivelController {
-  private readonly repositorio = new HorarioDisponivelRepository();
+export class HorarioDisponivelController extends Controlador {
+  private readonly servico = new HorarioDisponivelService();
 
   public async listarPorProfissional(req: Request, res: Response): Promise<void> {
-    const profissionalId = Number(req.params.profissionalId);
-    if (!SessaoDaRequisicao.podeAcessarProfissional(res, profissionalId)) {
-      res.status(403).json({ erro: "Você só pode ver os horários do seu profissional." });
-      return;
+    try {
+      const horarios = await this.servico.listarDoProfissional(
+        Number(req.params.profissionalId),
+        SessaoDaRequisicao.profissionalId(res)
+      );
+      res.json(horarios);
+    } catch (erro) {
+      this.responderErro(res, erro);
     }
-    const horarios = await this.repositorio.listarPorProfissional(profissionalId);
-    res.json(horarios);
   }
 
+  /** Libera um horário da grade semanal ({ profissionalId, diaSemana, horaInicio }). */
   public async criar(req: Request, res: Response): Promise<void> {
     try {
-      const { profissionalId, diaSemana, horaInicio } = req.body;
-      if (!SessaoDaRequisicao.podeAcessarProfissional(res, Number(profissionalId))) {
-        res.status(403).json({ erro: "Você só pode alterar os horários do seu profissional." });
-        return;
-      }
-      const horario = await this.repositorio.salvar(
-        new HorarioDisponivel(
-          Number(profissionalId),
-          Number(diaSemana) as DiaSemana,
-          new Horario(horaInicio)
-        )
+      const { profissionalId, diaSemana, horaInicio } = req.body ?? {};
+      const horario = await this.servico.liberar(
+        Number(profissionalId),
+        Number(diaSemana),
+        String(horaInicio ?? ""),
+        SessaoDaRequisicao.profissionalId(res)
       );
       res.status(201).json(horario);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
+  /** Bloqueia de novo um horário da grade. */
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      const horario = await this.repositorio.buscarPorId(id);
-      if (horario && !SessaoDaRequisicao.podeAcessarProfissional(res, horario.getProfissionalId())) {
-        res.status(403).json({ erro: "Você só pode alterar os horários do seu profissional." });
-        return;
-      }
-      await this.repositorio.deletar(id);
+      await this.servico.bloquear(Number(req.params.id), SessaoDaRequisicao.profissionalId(res));
       res.status(204).send();
     } catch (erro) {
-      res.status(409).json({ erro: "Não é possível excluir este horário agora." });
+      this.responderErro(res, erro);
     }
   }
 }

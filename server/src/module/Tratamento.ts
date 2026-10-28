@@ -1,6 +1,8 @@
 import { Horario } from "./Horario";
 
 export class Tratamento {
+  public static readonly TAMANHO_MAXIMO_NOME = 150;
+
   private id?: number;
   private nome: string;
   private descricao: string;
@@ -20,8 +22,8 @@ export class Tratamento {
     id?: number,
     profissionalId: number | null = null
   ) {
-    if (valor < 0) {
-      throw new Error("O valor do tratamento não pode ser negativo.");
+    if (!Number.isFinite(valor) || valor < 0) {
+      throw new Error("Informe um valor válido para o tratamento (zero ou mais).");
     }
     if (duracaoMinutos <= 0 || duracaoMinutos % Horario.DURACAO_SLOT_MINUTOS !== 0) {
       throw new Error(
@@ -29,8 +31,9 @@ export class Tratamento {
       );
     }
 
-    this.nome = nome;
-    this.descricao = descricao;
+    this.nome = "";
+    this.setNome(nome);
+    this.descricao = String(descricao ?? "").trim();
     this.valor = valor;
     this.duracaoMinutos = duracaoMinutos;
     this.id = id;
@@ -58,16 +61,25 @@ export class Tratamento {
   }
 
   public setNome(nome: string): void {
-    this.nome = nome;
+    const texto = String(nome ?? "").trim();
+    if (texto === "") {
+      throw new Error("Informe o nome do tratamento.");
+    }
+    if (texto.length > Tratamento.TAMANHO_MAXIMO_NOME) {
+      throw new Error(
+        `O nome do tratamento pode ter no máximo ${Tratamento.TAMANHO_MAXIMO_NOME} caracteres.`
+      );
+    }
+    this.nome = texto;
   }
 
   public setDescricao(descricao: string): void {
-    this.descricao = descricao;
+    this.descricao = String(descricao ?? "").trim();
   }
 
   public setValor(valor: number): void {
-    if (valor < 0) {
-      throw new Error("O valor do tratamento não pode ser negativo.");
+    if (!Number.isFinite(valor) || valor < 0) {
+      throw new Error("Informe um valor válido para o tratamento (zero ou mais).");
     }
     this.valor = valor;
   }
@@ -79,6 +91,21 @@ export class Tratamento {
       );
     }
     this.duracaoMinutos = duracaoMinutos;
+  }
+
+  /** Altera os dados de uma vez, validando tudo (edição no painel). */
+  public atualizarDados(
+    nome: string,
+    descricao: string,
+    valor: number,
+    duracaoMinutos: number,
+    profissionalId: number | null
+  ): void {
+    this.setNome(nome);
+    this.setDescricao(descricao);
+    this.setValor(valor);
+    this.setDuracaoMinutos(duracaoMinutos);
+    this.vincularProfissional(profissionalId);
   }
 
   public getProfissionalId(): number | null {

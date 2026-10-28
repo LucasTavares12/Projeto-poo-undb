@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
+import { Controlador } from "./Controlador";
 import { BloqueioAgendaService } from "../services/BloqueioAgendaService";
 import type { DadosNovoBloqueio } from "../services/BloqueioAgendaService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { DataAgenda } from "../module/DataAgenda";
 
-export class BloqueioAgendaController {
+export class BloqueioAgendaController extends Controlador {
   private readonly servico = new BloqueioAgendaService();
 
   /** Painel: folgas e feriados (?incluirPassados=true traz também os que já terminaram). */
@@ -22,47 +23,29 @@ export class BloqueioAgendaController {
       const bloqueios = await this.servico.listarDoProfissional(Number(req.query.profissionalId));
       res.json(bloqueios.map((bloqueio) => bloqueio.paraPublico()));
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async criar(req: Request, res: Response): Promise<void> {
     try {
-      const dados = this.lerDadosNovoBloqueio(req);
-
-      // Conta ligada a profissional: só fecha a própria agenda (feriado da clínica é do acesso total).
-      const proprio = SessaoDaRequisicao.profissionalId(res);
-      if (proprio !== null && dados.profissionalId !== proprio) {
-        res.status(403).json({ erro: "Você só pode bloquear a agenda do seu profissional." });
-        return;
-      }
-
-      const { bloqueio, agendamentosAfetados } = await this.servico.criar(dados);
+      const { bloqueio, agendamentosAfetados } = await this.servico.criar(
+        this.lerDadosNovoBloqueio(req),
+        SessaoDaRequisicao.profissionalId(res)
+      );
       res.status(201).json({ bloqueio, agendamentosAfetados });
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
   public async deletar(req: Request, res: Response): Promise<void> {
-    const bloqueio = await this.servico.buscarPorId(Number(req.params.id));
-    if (!bloqueio) {
-      res.status(404).json({ erro: "Bloqueio não encontrado." });
-      return;
+    try {
+      await this.servico.remover(Number(req.params.id), SessaoDaRequisicao.profissionalId(res));
+      res.status(204).send();
+    } catch (erro) {
+      this.responderErro(res, erro);
     }
-
-    const proprio = SessaoDaRequisicao.profissionalId(res);
-    if (proprio !== null && bloqueio.getProfissionalId() !== proprio) {
-      res.status(403).json({
-        erro: bloqueio.ehDaClinicaInteira()
-          ? "Só quem tem acesso total pode remover um bloqueio da clínica inteira."
-          : "Você só pode remover os bloqueios do seu profissional.",
-      });
-      return;
-    }
-
-    await this.servico.remover(Number(req.params.id));
-    res.status(204).send();
   }
 
   private lerDadosNovoBloqueio(req: Request): DadosNovoBloqueio {

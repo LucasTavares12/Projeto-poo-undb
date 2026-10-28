@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
+import { Controlador } from "./Controlador";
 import { ClienteService } from "../services/ClienteService";
-import { ErroNaoEncontrado } from "../services/ErroNaoEncontrado";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { RelogioClinica } from "../module/RelogioClinica";
 
-export class ClienteController {
+export class ClienteController extends Controlador {
   private readonly servico = new ClienteService();
 
   /** Lista de clientes (?busca= nome ou telefone). */
@@ -26,11 +26,7 @@ export class ClienteController {
       );
       res.json(historico.paraFicha(RelogioClinica.hoje()));
     } catch (erro) {
-      this.responderErro(res, erro as Error);
+      this.responderErro(res, erro);
     }
-  }
-
-  private responderErro(res: Response, erro: Error): void {
-    res.status(erro instanceof ErroNaoEncontrado ? 404 : 400).json({ erro: erro.message });
   }
 }

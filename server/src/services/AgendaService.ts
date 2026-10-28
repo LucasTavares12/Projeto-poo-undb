@@ -4,7 +4,8 @@ import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { BloqueioAgendaRepository } from "../repositories/BloqueioAgendaRepository";
 import { HorarioDisponivelRepository } from "../repositories/HorarioDisponivelRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
-import { ErroNaoEncontrado } from "./ErroNaoEncontrado";
+import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
+import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 
 /** Visão de agenda do painel: a semana de um profissional, horário a horário. */
 export class AgendaService {
@@ -16,8 +17,13 @@ export class AgendaService {
   public async montar(
     profissionalId: number,
     inicio: Date,
-    quantidadeDias: number = AgendaSemanal.DIAS_PADRAO
+    quantidadeDias: number = AgendaSemanal.DIAS_PADRAO,
+    profissionalDoUsuario: number | null = null
   ): Promise<AgendaSemanal> {
+    new PerfilDeAcesso(profissionalDoUsuario).exigir(
+      profissionalId,
+      "Você só pode ver a agenda do seu profissional."
+    );
     const profissional = await this.profissionalRepo.buscarPorId(profissionalId);
     if (!profissional) {
       throw new ErroNaoEncontrado("Profissional não encontrado.");

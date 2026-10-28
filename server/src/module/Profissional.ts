@@ -1,6 +1,8 @@
 import { Pessoa } from "./Pessoa";
 
 export class Profissional extends Pessoa {
+  public static readonly TAMANHO_MAXIMO_ESPECIALIDADE = 100;
+
   private id?: number;
   private especialidade: string;
 
@@ -8,6 +10,14 @@ export class Profissional extends Pessoa {
     super(nome, telefone);
     this.especialidade = especialidade;
     this.id = id;
+  }
+
+  /** Profissional novo (cadastro no painel): valida nome, telefone e especialidade. */
+  public static novo(nome: string, telefone: string, especialidade: string): Profissional {
+    const profissional = new Profissional(nome, telefone, especialidade);
+    profissional.validarContato();
+    profissional.setEspecialidade(especialidade);
+    return profissional;
   }
 
   public getId(): number | undefined {
@@ -19,7 +29,27 @@ export class Profissional extends Pessoa {
   }
 
   public setEspecialidade(especialidade: string): void {
-    this.especialidade = especialidade;
+    const texto = String(especialidade ?? "").trim();
+    if (texto === "") {
+      throw new Error("Informe a especialidade do profissional.");
+    }
+    if (texto.length > Profissional.TAMANHO_MAXIMO_ESPECIALIDADE) {
+      throw new Error(
+        `A especialidade pode ter no máximo ${Profissional.TAMANHO_MAXIMO_ESPECIALIDADE} caracteres.`
+      );
+    }
+    this.especialidade = texto;
+  }
+
+  /** Altera os dados de uma vez, validando tudo (edição no painel). */
+  public atualizarDados(nome: string, telefone: string, especialidade: string): void {
+    this.setNome(nome);
+    this.setTelefone(telefone);
+    this.setEspecialidade(especialidade);
+  }
+
+  protected papel(): string {
+    return "do profissional";
   }
 
   public apresentar(): string {

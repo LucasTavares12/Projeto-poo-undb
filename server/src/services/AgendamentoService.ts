@@ -12,6 +12,8 @@ import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { DisponibilidadeService } from "./DisponibilidadeService";
 import { DataAgenda } from "../module/DataAgenda";
 import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
+import { Telefone } from "../module/Telefone";
+import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 
 export interface DadosNovoAgendamento {
   clienteNome: string;
@@ -73,19 +75,8 @@ export class AgendamentoService {
 
   /** Valida os dados e monta o agendamento (ainda sem salvar nada no banco). */
   private async montarNovoAgendamento(dados: DadosNovoAgendamento): Promise<Agendamento> {
-    const nome = String(dados.clienteNome ?? "").trim();
-    const telefone = String(dados.clienteTelefone ?? "").trim();
-    if (!nome) {
-      throw new Error("Informe o nome do cliente.");
-    }
-    if (!telefone) {
-      throw new Error("Informe o telefone do cliente.");
-    }
-    // Telefone com DDD: 10 dígitos (fixo) ou 11 (celular).
-    const digitosTelefone = telefone.replace(/\D/g, "").length;
-    if (digitosTelefone < 10 || digitosTelefone > 11) {
-      throw new Error("Telefone inválido: informe o DDD e o número.");
-    }
+    // A própria entidade valida nome e telefone (DDD + número).
+    const cliente = Cliente.novo(dados.clienteNome, dados.clienteTelefone);
     if (dados.tratamentoIds.length === 0) {
       throw new Error("Selecione ao menos um tratamento.");
     }
@@ -109,7 +100,7 @@ export class AgendamentoService {
     }
 
     return new Agendamento(
-      new Cliente(nome, telefone),
+      cliente,
       profissional,
       tratamentos,
       dados.data,
@@ -402,18 +393,14 @@ export class AgendamentoService {
     const digitos = this.lerTelefone(telefone);
     const agendamento = await this.agendamentoRepo.buscarPorId(id);
     if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
-      throw new Error("Agendamento não encontrado para este telefone.");
+      throw new ErroNaoEncontrado("Agendamento não encontrado para este telefone.");
     }
     return agendamento;
   }
 
   /** Só os números do telefone, com DDD: 10 dígitos (fixo) ou 11 (celular). */
   private lerTelefone(telefone: string): string {
-    const digitos = String(telefone ?? "").replace(/\D/g, "");
-    if (digitos.length < 10 || digitos.length > 11) {
-      throw new Error("Telefone inválido: informe o DDD e o número.");
-    }
-    return digitos;
+    return new Telefone(telefone).getDigitos();
   }
 
   /**
@@ -430,7 +417,7 @@ export class AgendamentoService {
       (profissionalDoUsuario !== null &&
         agendamento.getProfissional().getId() !== profissionalDoUsuario)
     ) {
-      throw new Error("Agendamento não encontrado.");
+      throw new ErroNaoEncontrado("Agendamento não encontrado.");
     }
     return agendamento;
   }

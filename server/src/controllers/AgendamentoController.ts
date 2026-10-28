@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Controlador } from "./Controlador";
 import { AgendamentoService } from "../services/AgendamentoService";
 import type { DadosNovoAgendamento } from "../services/AgendamentoService";
 import { Horario } from "../module/Horario";
@@ -7,7 +8,7 @@ import { TipoMensagem } from "../module/TipoMensagem";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { DataAgenda } from "../module/DataAgenda";
 
-export class AgendamentoController {
+export class AgendamentoController extends Controlador {
   private readonly servico = new AgendamentoService();
 
   /** Kanban: todos os agendamentos, ou só os do profissional ligado ao usuário logado. */
@@ -28,7 +29,7 @@ export class AgendamentoController {
       );
       res.json(horarios);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -52,7 +53,7 @@ export class AgendamentoController {
       );
       res.status(201).json(agendamento);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -89,7 +90,7 @@ export class AgendamentoController {
         }))
       );
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -102,7 +103,7 @@ export class AgendamentoController {
       );
       res.status(204).send();
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -116,7 +117,7 @@ export class AgendamentoController {
       );
       res.json(agendamento);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -130,7 +131,7 @@ export class AgendamentoController {
       );
       res.json(horarios);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -146,7 +147,7 @@ export class AgendamentoController {
       );
       res.json(agendamento);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -160,7 +161,7 @@ export class AgendamentoController {
       );
       res.json(horarios);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -176,7 +177,7 @@ export class AgendamentoController {
       );
       res.json(agendamento);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -198,7 +199,7 @@ export class AgendamentoController {
       await this.servico.cancelar(id, SessaoDaRequisicao.profissionalId(res));
       res.status(204).send();
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 
@@ -236,7 +237,7 @@ export class AgendamentoController {
       );
       res.json(agendamento);
     } catch (erro) {
-      res.status(400).json({ erro: (erro as Error).message });
+      this.responderErro(res, erro);
     }
   }
 }

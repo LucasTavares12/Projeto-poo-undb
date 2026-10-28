@@ -2,6 +2,8 @@ export * from "./Administrador";
 export * from "./ConfiguracoesClinica";
 export * from "./RelatorioMensal";
 export * from "./Pessoa";
+export * from "./Telefone";
+export * from "./PerfilDeAcesso";
 export * from "./Cliente";
 export * from "./HistoricoCliente";
 export * from "./AgendaSemanal";

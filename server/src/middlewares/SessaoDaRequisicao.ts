@@ -23,10 +23,4 @@ export class SessaoDaRequisicao {
     const valor = res.locals.profissionalId;
     return typeof valor === "number" ? valor : null;
   }
-
-  /** true se o usuário logado pode ver/alterar dados deste profissional. */
-  public static podeAcessarProfissional(res: Response, profissionalId: number): boolean {
-    const proprio = SessaoDaRequisicao.profissionalId(res);
-    return proprio === null || proprio === profissionalId;
-  }
 }

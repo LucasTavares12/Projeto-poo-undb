@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AutenticacaoService } from "../services/AutenticacaoService";
 import { SessaoDaRequisicao } from "./SessaoDaRequisicao";
+import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 
 /**
  * Protege as rotas do painel admin: só deixa a requisição seguir se vier
@@ -55,7 +56,7 @@ export class AutenticacaoMiddleware {
    * Usado no que é da clínica inteira: usuários, configurações, tratamentos, cadastro de profissionais.
    */
   public exigirAcessoTotal(req: Request, res: Response, next: NextFunction): void {
-    if (SessaoDaRequisicao.profissionalId(res) !== null) {
+    if (!new PerfilDeAcesso(SessaoDaRequisicao.profissionalId(res)).temAcessoTotal()) {
       res.status(403).json({ erro: "Esta área é só para usuários com acesso total." });
       return;
     }
