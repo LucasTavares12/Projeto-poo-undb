@@ -6,6 +6,7 @@ import { Horario } from "./Horario";
 import { DataAgenda } from "./DataAgenda";
 import { TipoMensagem } from "./TipoMensagem";
 import { AntecedenciaMinima } from "./AntecedenciaMinima";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export class Agendamento {
   /**
@@ -56,7 +57,7 @@ export class Agendamento {
     finalizadoEm: Date | null = null
   ) {
     if (tratamentos.length === 0) {
-      throw new Error("O agendamento precisa ter ao menos um tratamento.");
+      throw new ErroDeValidacao("O agendamento precisa ter ao menos um tratamento.");
     }
 
     this.cliente = cliente;
@@ -178,12 +179,12 @@ export class Agendamento {
    */
   public remarcar(data: Date, horario: Horario): void {
     if (!this.podeSerRemarcado()) {
-      throw new Error(
+      throw new ErroDeValidacao(
         "Só é possível remarcar agendamentos que ainda não começaram a ser atendidos."
       );
     }
     if (this.estaMarcadoEm(data, horario)) {
-      throw new Error("O agendamento já está marcado nesse dia e horário.");
+      throw new ErroDeValidacao("O agendamento já está marcado nesse dia e horário.");
     }
     this.data = data;
     this.horarioInicio = horario;
@@ -198,16 +199,16 @@ export class Agendamento {
   public registrarMensagem(tipo: TipoMensagem, quando: Date = new Date()): void {
     if (tipo === TipoMensagem.LEMBRETE) {
       if (this.status !== StatusAgendamento.AGENDADO) {
-        throw new Error("O lembrete é só para agendamentos que ainda não foram atendidos.");
+        throw new ErroDeValidacao("O lembrete é só para agendamentos que ainda não foram atendidos.");
       }
       this.lembreteEnviadoEm = quando;
     } else if (tipo === TipoMensagem.AGRADECIMENTO) {
       if (this.status !== StatusAgendamento.FINALIZADO) {
-        throw new Error("O agradecimento é só para atendimentos finalizados.");
+        throw new ErroDeValidacao("O agradecimento é só para atendimentos finalizados.");
       }
       this.agradecimentoEnviadoEm = quando;
     } else {
-      throw new Error(`Tipo de mensagem inválido: ${tipo}.`);
+      throw new ErroDeValidacao(`Tipo de mensagem inválido: ${tipo}.`);
     }
   }
 
@@ -231,7 +232,7 @@ export class Agendamento {
   /** Tira o agendamento do Kanban sem apagar nada dele. */
   public arquivar(): void {
     if (!this.podeSerArquivado()) {
-      throw new Error("Só é possível limpar do quadro agendamentos finalizados.");
+      throw new ErroDeValidacao("Só é possível limpar do quadro agendamentos finalizados.");
     }
     this.arquivado = true;
   }
@@ -239,7 +240,7 @@ export class Agendamento {
   /** Devolve ao Kanban um agendamento que tinha sido limpo da tela. */
   public desarquivar(): void {
     if (!this.arquivado) {
-      throw new Error("Este agendamento já está no quadro.");
+      throw new ErroDeValidacao("Este agendamento já está no quadro.");
     }
     this.arquivado = false;
     // Trazido de volta: fica mais DIAS_PARA_OCULTAR_FINALIZADO dias no quadro antes de sair de novo.
@@ -253,7 +254,7 @@ export class Agendamento {
   /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
   public moverPara(novoStatus: StatusAgendamento): void {
     if (!Object.values(StatusAgendamento).includes(novoStatus)) {
-      throw new Error(`Status de agendamento inválido: ${novoStatus}.`);
+      throw new ErroDeValidacao(`Status de agendamento inválido: ${novoStatus}.`);
     }
     if (novoStatus === this.status) {
       return;

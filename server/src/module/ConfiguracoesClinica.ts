@@ -1,3 +1,5 @@
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
 /**
  * Preferências gerais do sistema, ajustadas pelo admin na aba "Configurações".
  * Cada opção nova entra aqui como um atributo com valor padrão, getter e setter.
@@ -16,7 +18,7 @@ export class ConfiguracoesClinica {
 
   public setAcessoPublicoLiberado(liberado: boolean): void {
     if (typeof liberado !== "boolean") {
-      throw new Error("O valor de acessoPublicoLiberado deve ser verdadeiro ou falso.");
+      throw new ErroDeValidacao("O valor de acessoPublicoLiberado deve ser verdadeiro ou falso.");
     }
     this.acessoPublicoLiberado = liberado;
   }

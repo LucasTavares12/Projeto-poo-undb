@@ -20,6 +20,7 @@ import { ModalResumoAgendamento } from "../../components/admin/ModalResumoAgenda
 import { ModalRemarcarAgendamento } from "../../components/admin/ModalRemarcarAgendamento";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { IconeSetaDireita, IconeSetaEsquerda } from "../../components/Icones";
+import { AgendamentosAtualizados } from "../../models/AgendamentosAtualizados";
 
 const agendaService = new AgendaService();
 const profissionalService = new ProfissionalService();
@@ -73,6 +74,12 @@ export function AgendaPage() {
       })
       .catch(() => setErro("Não foi possível carregar os profissionais."));
   }, [proprioId]);
+
+  // Chegou notificação de agendamento novo/remarcado/cancelado: recarrega a semana.
+  useEffect(
+    () => AgendamentosAtualizados.escutar(() => setRecarga((atual) => atual + 1)),
+    []
+  );
 
   const consulta = escolhido === null ? null : `${escolhido}|${inicio}|${recarga}`;
 

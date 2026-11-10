@@ -14,6 +14,12 @@ import { DataAgenda } from "../module/DataAgenda";
 import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
 import { Telefone } from "../module/Telefone";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
+import { Notificacao } from "../module/Notificacao";
+import type { Notificador } from "./Notificador";
+import { NotificadorNoPainel } from "./NotificadorNoPainel";
+import { OrigemDaAcao } from "../module/OrigemDaAcao";
+import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export interface DadosNovoAgendamento {
   clienteNome: string;
@@ -35,6 +41,12 @@ export class AgendamentoService {
   private readonly tratamentoRepo = new TratamentoRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
   private readonly disponibilidadeService = new DisponibilidadeService();
+  /** Para onde vão os avisos de novo/remarcado/cancelado (hoje: o sino do painel). */
+  private readonly notificador: Notificador;
+
+  constructor(notificador: Notificador = new NotificadorNoPainel()) {
+    this.notificador = notificador;
+  }
 
   /**
    * Cria um agendamento (pela página do cliente ou pelo "Novo agendamento" do painel):
@@ -42,17 +54,18 @@ export class AgendamentoService {
    */
   public async criar(
     dados: DadosNovoAgendamento,
-    peloCliente = false
+    peloCliente = false,
+    autorId: number | null = null
   ): Promise<Agendamento> {
     const novo = await this.montarNovoAgendamento(dados);
 
     if (peloCliente && !AntecedenciaMinima.permite(dados.data, dados.horarioInicio)) {
-      throw new Error(AntecedenciaMinima.mensagemParaAgendar());
+      throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAgendar());
     }
 
     // Mensagem própria para o dia fechado: "horário ocupado" confundiria o cliente.
     if (await this.disponibilidadeService.estaBloqueado(dados.profissionalId, dados.data)) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `${novo.getProfissional().getNome()} não atende nessa data. Escolha outro dia.`
       );
     }
@@ -67,10 +80,14 @@ export class AgendamentoService {
       horario.equals(dados.horarioInicio)
     );
     if (!horarioAindaDisponivel) {
-      throw new Error("Esse horário não está mais disponível. Escolha outro horário.");
+      throw new ErroDeValidacao("Esse horário não está mais disponível. Escolha outro horário.");
     }
 
-    return this.salvarComCliente(novo);
+    const salvo = await this.salvarComCliente(novo);
+    await this.avisar(
+      Notificacao.novoAgendamento(salvo, this.origem(peloCliente), autorId)
+    );
+    return salvo;
   }
 
   /** Valida os dados e monta o agendamento (ainda sem salvar nada no banco). */
@@ -78,15 +95,15 @@ export class AgendamentoService {
     // A própria entidade valida nome e telefone (DDD + número).
     const cliente = Cliente.novo(dados.clienteNome, dados.clienteTelefone);
     if (dados.tratamentoIds.length === 0) {
-      throw new Error("Selecione ao menos um tratamento.");
+      throw new ErroDeValidacao("Selecione ao menos um tratamento.");
     }
     if (Number.isNaN(dados.data.getTime())) {
-      throw new Error("Data inválida.");
+      throw new ErroDeValidacao("Data inválida.");
     }
 
     const profissional = await this.profissionalRepo.buscarPorId(dados.profissionalId);
     if (!profissional) {
-      throw new Error("Profissional não encontrado.");
+      throw new ErroNaoEncontrado("Profissional não encontrado.");
     }
 
     const tratamentos = await this.buscarTratamentos(dados.tratamentoIds);
@@ -94,7 +111,7 @@ export class AgendamentoService {
       (tratamento) => !tratamento.ehRealizadoPor(dados.profissionalId)
     );
     if (deOutroProfissional) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `O tratamento "${deOutroProfissional.getNome()}" não é realizado por ${profissional.getNome()}.`
       );
     }
@@ -221,15 +238,20 @@ export class AgendamentoService {
    * ele ocupava voltam a aparecer livres, já que a disponibilidade é calculada
    * a partir dos agendamentos existentes.
    */
-  public async cancelar(id: number, profissionalDoUsuario: number | null = null): Promise<void> {
+  public async cancelar(
+    id: number,
+    profissionalDoUsuario: number | null = null,
+    autorId: number | null = null
+  ): Promise<void> {
     const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
     if (!agendamento.podeSerCancelado()) {
-      throw new Error(
+      throw new ErroDeValidacao(
         "Só é possível cancelar agendamentos que ainda não começaram a ser atendidos."
       );
     }
 
     await this.agendamentoRepo.deletar(id);
+    await this.avisar(Notificacao.cancelado(agendamento, OrigemDaAcao.EQUIPE, autorId));
   }
 
   /**
@@ -250,15 +272,16 @@ export class AgendamentoService {
   public async cancelarPeloCliente(id: number, telefone: string): Promise<void> {
     const agendamento = await this.buscarDoCliente(id, telefone);
     if (!agendamento.podeSerCancelado()) {
-      throw new Error(
+      throw new ErroDeValidacao(
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser cancelado."
       );
     }
     if (!agendamento.podeSerAlteradoPeloCliente()) {
-      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
+      throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAlterar());
     }
 
     await this.agendamentoRepo.deletar(id);
+    await this.avisar(Notificacao.cancelado(agendamento, OrigemDaAcao.CLIENTE, null));
   }
 
   /**
@@ -301,10 +324,11 @@ export class AgendamentoService {
     id: number,
     data: Date,
     horario: Horario,
-    profissionalDoUsuario: number | null = null
+    profissionalDoUsuario: number | null = null,
+    autorId: number | null = null
   ): Promise<Agendamento> {
     const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
-    return this.aplicarRemarcacao(agendamento, data, horario, false);
+    return this.aplicarRemarcacao(agendamento, data, horario, false, autorId);
   }
 
   /**
@@ -318,7 +342,7 @@ export class AgendamentoService {
     horario: Horario
   ): Promise<Agendamento> {
     const agendamento = await this.buscarDoCliente(id, telefone);
-    return this.aplicarRemarcacao(agendamento, data, horario, true);
+    return this.aplicarRemarcacao(agendamento, data, horario, true, null);
   }
 
   /**
@@ -332,16 +356,16 @@ export class AgendamentoService {
     peloCliente: boolean
   ): Promise<Horario[]> {
     if (!agendamento.podeSerRemarcado()) {
-      throw new Error(
+      throw new ErroDeValidacao(
         "Este agendamento já está em atendimento ou foi finalizado e não pode mais ser remarcado."
       );
     }
     // Pelo site, o horário atual também precisa estar a mais de 2h para poder mudar.
     if (peloCliente && !agendamento.podeSerAlteradoPeloCliente()) {
-      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
+      throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAlterar());
     }
     if (DataAgenda.paraTexto(data) < RelogioClinica.hoje()) {
-      throw new Error("Escolha uma data a partir de hoje.");
+      throw new ErroDeValidacao("Escolha uma data a partir de hoje.");
     }
 
     const horarios = await this.disponibilidadeService.listarHorariosDisponiveis(
@@ -358,31 +382,56 @@ export class AgendamentoService {
     agendamento: Agendamento,
     data: Date,
     horario: Horario,
-    peloCliente: boolean
+    peloCliente: boolean,
+    autorId: number | null
   ): Promise<Agendamento> {
     if (agendamento.estaMarcadoEm(data, horario)) {
-      throw new Error("O agendamento já está marcado nesse dia e horário.");
+      throw new ErroDeValidacao("O agendamento já está marcado nesse dia e horário.");
     }
     if (peloCliente && !agendamento.podeSerAlteradoPeloCliente()) {
-      throw new Error(AntecedenciaMinima.mensagemParaAlterar());
+      throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAlterar());
     }
     if (peloCliente && !AntecedenciaMinima.permite(data, horario)) {
-      throw new Error(AntecedenciaMinima.mensagemParaAgendar());
+      throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAgendar());
     }
 
     const profissional = agendamento.getProfissional();
     if (await this.disponibilidadeService.estaBloqueado(profissional.getId()!, data)) {
-      throw new Error(`${profissional.getNome()} não atende nessa data. Escolha outro dia.`);
+      throw new ErroDeValidacao(`${profissional.getNome()} não atende nessa data. Escolha outro dia.`);
     }
 
     const livres = await this.horariosLivresParaRemarcar(agendamento, data, peloCliente);
     if (!livres.some((livre) => livre.equals(horario))) {
-      throw new Error("Esse horário não está disponível. Escolha outro horário.");
+      throw new ErroDeValidacao("Esse horário não está disponível. Escolha outro horário.");
     }
 
+    const dataAnterior = agendamento.getData();
+    const horarioAnterior = agendamento.getHorarioInicio();
     agendamento.remarcar(data, horario);
     await this.agendamentoRepo.atualizarDataHorario(agendamento);
+    await this.avisar(
+      Notificacao.remarcado(
+        agendamento,
+        dataAnterior,
+        horarioAnterior,
+        this.origem(peloCliente),
+        autorId
+      )
+    );
     return agendamento;
+  }
+
+  private origem(peloCliente: boolean): OrigemDaAcao {
+    return peloCliente ? OrigemDaAcao.CLIENTE : OrigemDaAcao.EQUIPE;
+  }
+
+  /** O aviso nunca atrapalha o agendamento: se falhar, fica só registrado no log. */
+  private async avisar(notificacao: Notificacao): Promise<void> {
+    try {
+      await this.notificador.notificar(notificacao);
+    } catch (erro) {
+      console.error("Não foi possível registrar a notificação:", erro);
+    }
   }
 
   /**
@@ -412,11 +461,8 @@ export class AgendamentoService {
     profissionalDoUsuario: number | null
   ): Promise<Agendamento> {
     const agendamento = await this.agendamentoRepo.buscarPorId(id);
-    if (
-      !agendamento ||
-      (profissionalDoUsuario !== null &&
-        agendamento.getProfissional().getId() !== profissionalDoUsuario)
-    ) {
+    const perfil = new PerfilDeAcesso(profissionalDoUsuario);
+    if (!agendamento || !perfil.podeGerenciar(agendamento.getProfissional().getId() ?? null)) {
       throw new ErroNaoEncontrado("Agendamento não encontrado.");
     }
     return agendamento;
@@ -432,7 +478,7 @@ export class AgendamentoService {
 
     const indiceNaoEncontrado = tratamentos.findIndex((tratamento) => tratamento === null);
     if (indiceNaoEncontrado !== -1) {
-      throw new Error(`Tratamento com id ${ids[indiceNaoEncontrado]} não encontrado.`);
+      throw new ErroNaoEncontrado(`Tratamento com id ${ids[indiceNaoEncontrado]} não encontrado.`);
     }
 
     return tratamentos as Tratamento[];

@@ -7,6 +7,7 @@ import { RelogioClinica } from "../module/RelogioClinica";
 import { DataAgenda } from "../module/DataAgenda";
 import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export interface DadosNovoBloqueio {
   /** null = clínica inteira (feriado, recesso). */
@@ -52,7 +53,7 @@ export class BloqueioAgendaService {
   /** Página do cliente: períodos fechados (a partir de hoje) na agenda do profissional. */
   public listarDoProfissional(profissionalId: number): Promise<BloqueioAgenda[]> {
     if (!Number.isInteger(profissionalId) || profissionalId <= 0) {
-      throw new Error("Profissional inválido.");
+      throw new ErroDeValidacao("Profissional inválido.");
     }
     return this.bloqueioRepo.listar(profissionalId, RelogioClinica.hoje());
   }
@@ -75,7 +76,7 @@ export class BloqueioAgendaService {
 
     // Bloquear o passado não muda nada na agenda: provavelmente é erro na data.
     if (DataAgenda.paraTexto(bloqueio.getDataFim()) < RelogioClinica.hoje()) {
-      throw new Error("O período do bloqueio já passou. Confira as datas.");
+      throw new ErroDeValidacao("O período do bloqueio já passou. Confira as datas.");
     }
     if (dados.profissionalId !== null) {
       const profissional = await this.profissionalRepo.buscarPorId(dados.profissionalId);

@@ -1,3 +1,5 @@
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
 /**
  * Datas da agenda (dia, sem hora). Toda data da agenda é guardada como meia-noite UTC
  * do dia, para "2026-10-22" ser sempre o mesmo dia, em qualquer fuso do servidor.
@@ -12,7 +14,7 @@ export class DataAgenda {
     const texto = String(valor ?? "");
     const data = new Date(`${texto}T00:00:00Z`);
     if (!DataAgenda.FORMATO.test(texto) || Number.isNaN(data.getTime())) {
-      throw new Error(mensagemDeErro);
+      throw new ErroDeValidacao(mensagemDeErro);
     }
     return data;
   }

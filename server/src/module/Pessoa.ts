@@ -1,4 +1,5 @@
 import { Telefone } from "./Telefone";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /**
  * Base de quem tem nome e telefone na clínica (clientes e profissionais).
@@ -25,10 +26,10 @@ export abstract class Pessoa {
   public setNome(nome: string): void {
     const texto = String(nome ?? "").trim();
     if (texto === "") {
-      throw new Error(`Informe o nome ${this.papel()}.`);
+      throw new ErroDeValidacao(`Informe o nome ${this.papel()}.`);
     }
     if (texto.length > Pessoa.TAMANHO_MAXIMO_NOME) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `O nome ${this.papel()} pode ter no máximo ${Pessoa.TAMANHO_MAXIMO_NOME} caracteres.`
       );
     }
@@ -41,7 +42,7 @@ export abstract class Pessoa {
 
   public setTelefone(telefone: string): void {
     if (Telefone.somenteDigitos(telefone) === "") {
-      throw new Error(`Informe o telefone ${this.papel()}.`);
+      throw new ErroDeValidacao(`Informe o telefone ${this.papel()}.`);
     }
     // Valida (DDD + número) e guarda no formato de exibição: "(98) 98877-6655".
     this.telefone = new Telefone(telefone).formatar();

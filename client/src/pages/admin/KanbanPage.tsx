@@ -27,6 +27,7 @@ import { Link } from "react-router-dom";
 import { Telefone } from "../../models/Telefone";
 import { BotaoWhatsApp } from "../../components/admin/BotaoWhatsApp";
 import { EtapaAgendamento } from "../../models/EtapaAgendamento";
+import { AgendamentosAtualizados } from "../../models/AgendamentosAtualizados";
 
 const agendamentoService = new AgendamentoService();
 const relatorioService = new RelatorioService();
@@ -117,6 +118,18 @@ export function KanbanPage() {
     }
     carregar();
   }, []);
+
+  // Chegou notificação de agendamento novo/remarcado/cancelado: busca o quadro de novo.
+  useEffect(
+    () =>
+      AgendamentosAtualizados.escutar(() => {
+        agendamentoService
+          .listar()
+          .then(setAgendamentos)
+          .catch(() => undefined);
+      }),
+    []
+  );
 
   /** Devolve se deu certo (o erro já fica na tela). */
   async function atualizarLista(): Promise<boolean> {

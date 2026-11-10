@@ -1,4 +1,5 @@
 import { Horario } from "./Horario";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export class Tratamento {
   public static readonly TAMANHO_MAXIMO_NOME = 150;
@@ -23,10 +24,10 @@ export class Tratamento {
     profissionalId: number | null = null
   ) {
     if (!Number.isFinite(valor) || valor < 0) {
-      throw new Error("Informe um valor válido para o tratamento (zero ou mais).");
+      throw new ErroDeValidacao("Informe um valor válido para o tratamento (zero ou mais).");
     }
     if (duracaoMinutos <= 0 || duracaoMinutos % Horario.DURACAO_SLOT_MINUTOS !== 0) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `A duração do tratamento deve ser um múltiplo de ${Horario.DURACAO_SLOT_MINUTOS} minutos.`
       );
     }
@@ -63,10 +64,10 @@ export class Tratamento {
   public setNome(nome: string): void {
     const texto = String(nome ?? "").trim();
     if (texto === "") {
-      throw new Error("Informe o nome do tratamento.");
+      throw new ErroDeValidacao("Informe o nome do tratamento.");
     }
     if (texto.length > Tratamento.TAMANHO_MAXIMO_NOME) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `O nome do tratamento pode ter no máximo ${Tratamento.TAMANHO_MAXIMO_NOME} caracteres.`
       );
     }
@@ -79,14 +80,14 @@ export class Tratamento {
 
   public setValor(valor: number): void {
     if (!Number.isFinite(valor) || valor < 0) {
-      throw new Error("Informe um valor válido para o tratamento (zero ou mais).");
+      throw new ErroDeValidacao("Informe um valor válido para o tratamento (zero ou mais).");
     }
     this.valor = valor;
   }
 
   public setDuracaoMinutos(duracaoMinutos: number): void {
     if (duracaoMinutos <= 0 || duracaoMinutos % Horario.DURACAO_SLOT_MINUTOS !== 0) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `A duração do tratamento deve ser um múltiplo de ${Horario.DURACAO_SLOT_MINUTOS} minutos.`
       );
     }
@@ -115,7 +116,7 @@ export class Tratamento {
   /** Liga o tratamento a um profissional (ou, com null, libera para todos). */
   public vincularProfissional(profissionalId: number | null): void {
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
-      throw new Error("Profissional inválido.");
+      throw new ErroDeValidacao("Profissional inválido.");
     }
     this.profissionalId = profissionalId;
   }

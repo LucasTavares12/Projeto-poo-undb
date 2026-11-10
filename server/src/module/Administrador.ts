@@ -1,4 +1,5 @@
 import { randomBytes, scrypt, timingSafeEqual } from "crypto";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /**
  * Conta de acesso ao painel da clínica. A senha nunca é guardada em texto:
@@ -42,7 +43,7 @@ export class Administrador {
   private static validarEmail(email: string): string {
     const emailNormalizado = Administrador.normalizarEmail(email);
     if (!Administrador.FORMATO_EMAIL.test(emailNormalizado)) {
-      throw new Error("Informe um e-mail válido.");
+      throw new ErroDeValidacao("Informe um e-mail válido.");
     }
     return emailNormalizado;
   }
@@ -50,7 +51,7 @@ export class Administrador {
   /** Valida a senha digitada e devolve o "salt:hash" que vai para o banco. */
   private static async criarHash(senha: string): Promise<string> {
     if (typeof senha !== "string" || senha.length < Administrador.TAMANHO_MINIMO_SENHA) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `A senha precisa ter pelo menos ${Administrador.TAMANHO_MINIMO_SENHA} caracteres.`
       );
     }
@@ -117,7 +118,7 @@ export class Administrador {
   /** Liga a conta a um profissional (ou desliga, com null, voltando ao acesso total). */
   public vincularProfissional(profissionalId: number | null): void {
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
-      throw new Error("Profissional inválido.");
+      throw new ErroDeValidacao("Profissional inválido.");
     }
     this.profissionalId = profissionalId;
   }

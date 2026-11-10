@@ -7,6 +7,7 @@ import { StatusAgendamento } from "../module/StatusAgendamento";
 import { TipoMensagem } from "../module/TipoMensagem";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { DataAgenda } from "../module/DataAgenda";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export class AgendamentoController extends Controlador {
   private readonly servico = new AgendamentoService();
@@ -49,7 +50,8 @@ export class AgendamentoController extends Controlador {
     try {
       const agendamento = await this.servico.criar(
         this.lerDadosNovoAgendamento(req),
-        !SessaoDaRequisicao.ehDaEquipe(res)
+        !SessaoDaRequisicao.ehDaEquipe(res),
+        SessaoDaRequisicao.autor(res)
       );
       res.status(201).json(agendamento);
     } catch (erro) {
@@ -62,10 +64,10 @@ export class AgendamentoController extends Controlador {
       req.body ?? {};
 
     if (!data) {
-      throw new Error("Informe a data do agendamento.");
+      throw new ErroDeValidacao("Informe a data do agendamento.");
     }
     if (!horarioInicio) {
-      throw new Error("Informe o horário do agendamento.");
+      throw new ErroDeValidacao("Informe o horário do agendamento.");
     }
 
     return {
@@ -143,7 +145,8 @@ export class AgendamentoController extends Controlador {
         Number(req.params.id),
         data,
         horarioInicio,
-        SessaoDaRequisicao.profissionalId(res)
+        SessaoDaRequisicao.profissionalId(res),
+        SessaoDaRequisicao.autor(res)
       );
       res.json(agendamento);
     } catch (erro) {
@@ -184,7 +187,7 @@ export class AgendamentoController extends Controlador {
   private lerNovoHorario(req: Request) {
     const { data, horarioInicio } = req.body ?? {};
     if (!horarioInicio) {
-      throw new Error("Escolha o novo horário.");
+      throw new ErroDeValidacao("Escolha o novo horário.");
     }
     return {
       data: DataAgenda.ler(data, "Escolha uma data válida."),
@@ -196,7 +199,11 @@ export class AgendamentoController extends Controlador {
   public async cancelar(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      await this.servico.cancelar(id, SessaoDaRequisicao.profissionalId(res));
+      await this.servico.cancelar(
+        id,
+        SessaoDaRequisicao.profissionalId(res),
+        SessaoDaRequisicao.autor(res)
+      );
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);

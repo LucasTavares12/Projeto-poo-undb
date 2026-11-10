@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { Repositorio } from "./Repositorio";
 import { Administrador } from "../module/Administrador";
+import { ErroDeConflito } from "../erros/ErroDeConflito";
 
 interface LinhaAdministrador extends RowDataPacket {
   id: number;
@@ -127,7 +128,7 @@ export class AdministradorRepository extends Repositorio {
   /** O índice UNIQUE do e-mail é a garantia final contra contas repetidas. */
   private tratarEmailRepetido(erro: unknown): never {
     if ((erro as { code?: string }).code === "ER_DUP_ENTRY") {
-      throw new Error("Já existe uma conta com este e-mail.");
+      throw new ErroDeConflito("Já existe uma conta com este e-mail.");
     }
     throw erro;
   }

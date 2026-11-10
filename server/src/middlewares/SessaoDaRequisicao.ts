@@ -18,6 +18,11 @@ export class SessaoDaRequisicao {
     return typeof res.locals.adminId === "number";
   }
 
+  /** Conta do painel que fez a ação; null = cliente pela página pública. */
+  public static autor(res: Response): number | null {
+    return SessaoDaRequisicao.ehDaEquipe(res) ? SessaoDaRequisicao.adminId(res) : null;
+  }
+
   /** Profissional do usuário logado; null = acesso total (vê tudo da clínica). */
   public static profissionalId(res: Response): number | null {
     const valor = res.locals.profissionalId;
