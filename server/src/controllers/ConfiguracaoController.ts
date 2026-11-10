@@ -13,8 +13,8 @@ export class ConfiguracaoController extends Controlador {
   /** Aba "Configurações" do painel: altera só as opções enviadas no corpo. */
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
-      const { acessoPublicoLiberado } = req.body ?? {};
-      res.json(await this.servico.atualizar({ acessoPublicoLiberado }));
+      const { botaoEntrarVisivel, cadastroLiberado } = req.body ?? {};
+      res.json(await this.servico.atualizar({ botaoEntrarVisivel, cadastroLiberado }));
     } catch (erro) {
       this.responderErro(res, erro);
     }

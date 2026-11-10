@@ -13,7 +13,8 @@ export function LayoutCliente({ children }: Props) {
   const configuracoes = useConfiguracoes();
   const logado = SessaoAdmin.estaAtiva();
   // Até as configurações chegarem, os botões ficam escondidos para não "piscarem" na tela.
-  const mostrarAcesso = configuracoes?.acessoPublicoLiberado ?? false;
+  const mostrarEntrar = configuracoes?.botaoEntrarVisivel ?? false;
+  const mostrarCadastrar = configuracoes?.cadastroLiberado ?? false;
 
   return (
     <div className="cliente">
@@ -28,16 +29,18 @@ export function LayoutCliente({ children }: Props) {
               Painel
             </Link>
           ) : (
-            mostrarAcesso && (
             <>
-              <Link to="/admin/cadastro" className="botao-contorno">
-                Cadastrar
-              </Link>
-              <Link to="/admin/login" className="botao-primario">
-                Entrar
-              </Link>
+              {mostrarCadastrar && (
+                <Link to="/admin/cadastro" className="botao-contorno">
+                  Cadastrar
+                </Link>
+              )}
+              {mostrarEntrar && (
+                <Link to="/admin/login" className="botao-primario">
+                  Entrar
+                </Link>
+              )}
             </>
-            )
           )}
         </nav>
       </header>

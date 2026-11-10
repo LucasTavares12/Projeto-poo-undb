@@ -69,14 +69,31 @@ export function ConfiguracoesPage() {
             <input
               type="checkbox"
               className="admin-interruptor"
-              checked={configuracoes.acessoPublicoLiberado}
-              onChange={(evento) => alterar("acessoPublicoLiberado", evento.target.checked)}
+              checked={configuracoes.botaoEntrarVisivel}
+              onChange={(evento) => alterar("botaoEntrarVisivel", evento.target.checked)}
             />
             <span>
-              <strong>Mostrar "Entrar" e "Cadastrar" na página de agendamento</strong>
+              <strong>Mostrar o botão "Entrar" na página de agendamento</strong>
               <span className="admin-opcao-descricao">
-                Desligado, os clientes não veem esses botões e ninguém consegue criar conta nova.
-                Quem já tem conta continua entrando pelo endereço <code>{enderecoLogin}</code>.
+                Desligado, o botão some para os clientes. Quem tem conta continua entrando pelo
+                endereço <code>{enderecoLogin}</code>
+              </span>
+            </span>
+          </label>
+
+          <label className="admin-opcao">
+            <input
+              type="checkbox"
+              className="admin-interruptor"
+              checked={configuracoes.cadastroLiberado}
+              onChange={(evento) => alterar("cadastroLiberado", evento.target.checked)}
+            />
+            <span>
+              <strong>Permitir cadastro de novas contas</strong>
+              <span className="admin-opcao-descricao">
+                Ligado, aparece o botão "Cadastrar" na página de agendamento e qualquer pessoa pode
+                criar uma conta. Deixe desligado no dia a dia e ligue só quando alguém novo da
+                equipe precisar se cadastrar.
               </span>
             </span>
           </label>

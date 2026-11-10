@@ -19,7 +19,10 @@ export class ConfiguracaoRepository extends Repositorio {
     )
   `;
 
-  private static readonly CHAVE_ACESSO_PUBLICO = "acesso_publico_liberado";
+  private static readonly CHAVE_BOTAO_ENTRAR = "botao_entrar_visivel";
+  private static readonly CHAVE_CADASTRO = "cadastro_liberado";
+  /** Opção antiga que ligava "Entrar" e "Cadastrar" juntos: vale até as novas serem salvas. */
+  private static readonly CHAVE_ACESSO_PUBLICO_ANTIGA = "acesso_publico_liberado";
 
   /** Opções que nunca foram salvas ficam com o valor padrão da classe. */
   public async carregar(): Promise<ConfiguracoesClinica> {
@@ -30,9 +33,14 @@ export class ConfiguracaoRepository extends Repositorio {
     const valores = new Map(linhas.map((linha) => [linha.chave, linha.valor]));
 
     const configuracoes = new ConfiguracoesClinica();
-    const acessoPublico = valores.get(ConfiguracaoRepository.CHAVE_ACESSO_PUBLICO);
-    if (acessoPublico !== undefined) {
-      configuracoes.setAcessoPublicoLiberado(acessoPublico === "true");
+    const antiga = valores.get(ConfiguracaoRepository.CHAVE_ACESSO_PUBLICO_ANTIGA);
+    const botaoEntrar = valores.get(ConfiguracaoRepository.CHAVE_BOTAO_ENTRAR) ?? antiga;
+    const cadastro = valores.get(ConfiguracaoRepository.CHAVE_CADASTRO) ?? antiga;
+    if (botaoEntrar !== undefined) {
+      configuracoes.setBotaoEntrarVisivel(botaoEntrar === "true");
+    }
+    if (cadastro !== undefined) {
+      configuracoes.setCadastroLiberado(cadastro === "true");
     }
     return configuracoes;
   }
@@ -40,10 +48,8 @@ export class ConfiguracaoRepository extends Repositorio {
   public async salvar(configuracoes: ConfiguracoesClinica): Promise<void> {
     await this.garantirTabela(ConfiguracaoRepository.CRIAR_TABELA);
     const valores = [
-      [
-        ConfiguracaoRepository.CHAVE_ACESSO_PUBLICO,
-        String(configuracoes.getAcessoPublicoLiberado()),
-      ],
+      [ConfiguracaoRepository.CHAVE_BOTAO_ENTRAR, String(configuracoes.getBotaoEntrarVisivel())],
+      [ConfiguracaoRepository.CHAVE_CADASTRO, String(configuracoes.getCadastroLiberado())],
     ];
     await this.pool.query(
       "INSERT INTO configuracoes (chave, valor) VALUES ? ON DUPLICATE KEY UPDATE valor = VALUES(valor)",

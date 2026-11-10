@@ -51,7 +51,10 @@ export interface Agendamento {
 }
 
 export interface Configuracoes {
-  acessoPublicoLiberado: boolean;
+  /** Botão "Entrar" na página de agendamento (o /admin/login funciona sempre). */
+  botaoEntrarVisivel: boolean;
+  /** Botão "Cadastrar" na página de agendamento e criação de contas novas. */
+  cadastroLiberado: boolean;
 }
 
 export interface FaturamentoDoDia {

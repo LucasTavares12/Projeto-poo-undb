@@ -22,7 +22,7 @@ export function CadastroPage() {
     return <Navigate to="/admin" replace />;
   }
 
-  if (configuracoes && !configuracoes.acessoPublicoLiberado) {
+  if (configuracoes && !configuracoes.cadastroLiberado) {
     return (
       <main className="login">
         <div className="login-cartao">

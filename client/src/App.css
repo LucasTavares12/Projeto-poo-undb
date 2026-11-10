@@ -583,6 +583,13 @@
   cursor: pointer;
 }
 
+/* Várias opções seguidas: separadas por uma linha fina. */
+.admin-opcao + .admin-opcao {
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
 .admin-opcao strong {
   display: block;
   color: var(--text-h);
@@ -764,7 +771,8 @@
   /* Dois cartões por linha no tablet, um só no celular. */
   .admin-tabela-cartoes tbody {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    /* min(): dentro de um formulário estreito o cartão ocupa a largura toda, sem vazar. */
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     align-items: start;
     gap: 12px;
   }
@@ -905,15 +913,16 @@
 }
 
 @media (max-width: 720px) {
+  /* Cabe inteira num celular de 360px; só rola de lado em telas ainda menores. */
   .admin-grade {
-    min-width: 340px;
-    padding: 6px;
+    min-width: 296px;
+    padding: 6px 4px;
     border-spacing: 3px;
     font-size: 12px;
   }
 
   .admin-grade tbody th {
-    width: 42px;
+    width: 38px;
   }
 
   /* Célula mais alta: fácil de acertar com o dedo. */
@@ -1605,7 +1614,7 @@
   }
 }
 
-/* Abas das etapas: só no celular, onde aparece uma coluna por vez. */
+/* Abas das etapas: só no celular e no tablet em pé, onde aparece uma coluna por vez. */
 .kanban-abas {
   display: none;
 }
@@ -1623,7 +1632,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .kanban-abas {
     position: sticky;
     top: 60px;
@@ -1742,6 +1751,20 @@
 
   .kanban-cartao-acoes .admin-botao:only-child {
     margin-left: 0;
+  }
+}
+
+/* Tablet em pé: a etapa escolhida mostra os cards em duas colunas, sem esticar. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .kanban-coluna.visivel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+
+  .kanban-coluna.visivel > :not(.kanban-cartao) {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1944,6 +1967,28 @@
 .relatorio-tabela-total td {
   background: var(--superficie-alt);
   font-weight: 700;
+}
+
+/* Celular: colunas mais justas para a tabela caber no cartão (e, se não couber, rola nela). */
+@media (max-width: 640px) {
+  .relatorio-tabela {
+    overflow-x: auto;
+  }
+
+  .relatorio-tabela .admin-tabela th,
+  .relatorio-tabela .admin-tabela td {
+    padding: 10px 6px;
+  }
+
+  .relatorio-tabela .admin-tabela th {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .relatorio-tabela .admin-tabela td {
+    font-size: 13px;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 960px) {
@@ -2392,6 +2437,20 @@
 
 .usuarios-tabela .admin-tabela-acoes {
   flex-wrap: wrap;
+}
+
+/* E-mails longos quebram no "@" (e a etiqueta "Você" desce) em vez de alargar a tabela. */
+.usuarios-identificacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.usuarios-email {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .usuarios-acesso {
@@ -4653,6 +4712,30 @@
     padding: 7px 12px;
     font-size: 14px;
   }
+}
+
+/* Celulares estreitos: o nome da clínica cabe inteiro ao lado de "Cadastrar" e "Entrar". */
+@media (max-width: 420px) {
+  .cliente-cabecalho {
+    font-size: 15px;
+  }
+
+  .cliente-marca > svg {
+    display: none;
+  }
+
+  .cliente-cabecalho-acoes {
+    gap: 6px;
+  }
+
+  .cliente-cabecalho-acoes .botao-primario,
+  .cliente-cabecalho-acoes .botao-contorno {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
 
   .cliente-conteudo {
     padding: 28px 16px 32px;
@@ -5533,7 +5616,16 @@
 .modal-notificacoes-confirmar {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+}
+
+/* Celular: botões um embaixo do outro, com "Marcar como visto" em cima. */
+@media (max-width: 420px) {
+  .modal-notificacoes .modal-rodape {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
 }
 
 @keyframes modal-notificacoes-entrar {
