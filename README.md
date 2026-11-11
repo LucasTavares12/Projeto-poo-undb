@@ -234,7 +234,7 @@ Nesta seção explica como rodar o sistema e como o código é conferido automat
 2. **Server:** copie `server/.env.example` para `server/.env` e preencha os dados do MySQL e o `ADMIN_TOKEN_SEGREDO`. Depois:
 
    ```bash
-   cd server
+   cd serverS
    npm install
    npm run dev
    ```
@@ -263,19 +263,63 @@ docker run -p 3000:3000 meu-server
 
 O servidor fica disponível em `http://localhost:3000`. Para parar, use `Ctrl + C`.
 
+Rodando sozinho, o server não encontra o banco de dados. Para ter o sistema completo, use o Docker Compose (seção abaixo).
+
 ### Como rodar o client com Docker
 
 Com o Docker Desktop aberto, no terminal:
 
 ```bash
 cd client
-docker build -t meu-client .
+docker build --build-arg VITE_API_URL=http://localhost:3000 -t meu-client .
 docker run -p 8090:80 meu-client
 ```
 
 O site fica disponível em `http://localhost:8090`. Para parar, use `Ctrl + C`.
 
-O client usa o nginx para entregar os arquivos do site já compilados, por isso a porta dentro do container é a 80. No computador usamos a 8090 para não conflitar com o server, que usa a 3000.
+O endereço da API (`VITE_API_URL`) é passado no momento do build, porque o Vite o incorpora ao site compilado. O client usa o nginx para entregar os arquivos já compilados, por isso a porta dentro do container é a 80. No computador usamos a 8090 para não conflitar com o server, que usa a 3000.
+
+### Como rodar o projeto completo com Docker Compose (recomendado)
+
+O `docker-compose.yml` sobe o banco de dados (MySQL), o server e o client com um único comando, já ligados entre si.
+
+Pré-requisito: ter o Docker Desktop instalado e aberto.
+
+Na raiz do projeto, execute:
+
+```bash
+docker compose up --build
+```
+
+Quando terminar de subir, acesse o site em `http://localhost:8090`.
+
+A API (server) roda na porta 3000 e é usada pelo site por trás dos panos. Ela não tem página inicial, então abrir `http://localhost:3000` no navegador mostra "Cannot GET /". Isso é normal e indica que o server está no ar.
+
+Para conferir que os três serviços estão ativos, use:
+
+```bash
+docker compose ps
+```
+
+Para rodar em segundo plano (sem prender o terminal), use `docker compose up -d`.
+
+Para desligar tudo, mantendo os dados do banco:
+
+```bash
+docker compose down
+```
+
+Atenção: `docker compose down -v` também apaga os dados do banco.
+
+O banco é criado com as tabelas do arquivo `server/database/schema.sql`, mas começa sem registros. Os dados (profissionais, tratamentos, horários) precisam ser cadastrados pelo sistema.
+
+| Serviço | Função | Porta no computador |
+|---|---|---|
+| `db` | Banco de dados MySQL | não exposta |
+| `server` | API (Node.js), usada pelo site | 3000 |
+| `client` | Site (React + nginx) | 8090 |
+
+
 
 ### Integração Contínua (CI)
 
