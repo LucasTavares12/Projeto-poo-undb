@@ -12,6 +12,7 @@ import { UsuarioController } from "./controllers/UsuarioController";
 import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
 import { ClienteController } from "./controllers/ClienteController";
 import { AgendaController } from "./controllers/AgendaController";
+import { NotificacaoController } from "./controllers/NotificacaoController";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { AutenticacaoService } from "./services/AutenticacaoService";
@@ -36,6 +37,7 @@ export class App {
   private readonly bloqueioAgendaController = new BloqueioAgendaController();
   private readonly clienteController = new ClienteController();
   private readonly agendaController = new AgendaController();
+  private readonly notificacaoController = new NotificacaoController();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
   // Controller de login e middleware compartilham o mesmo serviço (mesmo segredo de assinatura).
@@ -94,6 +96,7 @@ export class App {
     this.configurarRotasDeBloqueios();
     this.configurarRotasDeClientes();
     this.app.get("/agenda", this.exigirAdmin, (req, res) => this.agendaController.semana(req, res));
+    this.configurarRotasDeNotificacoes();
     this.configurarRotasDeAgendamentos();
     this.configurarRotasDeConfiguracoes();
     this.configurarRotasDeRelatorios();
@@ -160,6 +163,15 @@ export class App {
     );
     this.app.get("/clientes/:telefone", this.exigirAdmin, (req, res) =>
       this.clienteController.ficha(req, res)
+    );
+  }
+
+  private configurarRotasDeNotificacoes(): void {
+    this.app.get("/notificacoes", this.exigirAdmin, (req, res) =>
+      this.notificacaoController.listar(req, res)
+    );
+    this.app.post("/notificacoes/lidas", this.exigirAdmin, (req, res) =>
+      this.notificacaoController.marcarLidas(req, res)
     );
   }
 

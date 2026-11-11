@@ -1,6 +1,7 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { DataAgenda } from "./DataAgenda";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 interface FaturamentoDoDia {
   data: string; // "YYYY-MM-DD"
@@ -36,10 +37,10 @@ export class RelatorioMensal {
 
   constructor(mes: string, agendamentosDoMes: Agendamento[], profissionalId: number | null = null) {
     if (!RelatorioMensal.FORMATO_MES.test(mes)) {
-      throw new Error('Mês inválido. Use o formato "AAAA-MM".');
+      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
     }
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
-      throw new Error("Profissional inválido.");
+      throw new ErroDeValidacao("Profissional inválido.");
     }
 
     this.mes = mes;
@@ -56,7 +57,7 @@ export class RelatorioMensal {
   public static periodo(mes: string): { inicio: string; fim: string } {
     const correspondencia = RelatorioMensal.FORMATO_MES.exec(mes);
     if (!correspondencia) {
-      throw new Error('Mês inválido. Use o formato "AAAA-MM".');
+      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
     }
     const [, ano, mesNumero] = correspondencia;
     const ultimoDia = new Date(Date.UTC(Number(ano), Number(mesNumero), 0)).getUTCDate();

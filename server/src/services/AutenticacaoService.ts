@@ -33,7 +33,7 @@ export class AutenticacaoService {
 
   public async cadastrar(email: string, senha: string): Promise<Administrador> {
     const configuracoes = await this.configuracaoRepo.carregar();
-    if (!configuracoes.getAcessoPublicoLiberado()) {
+    if (!configuracoes.getCadastroLiberado()) {
       throw new ErroAutenticacao("O cadastro de novas contas está desativado.", 403);
     }
 

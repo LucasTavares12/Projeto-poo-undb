@@ -1,6 +1,7 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { DataAgenda } from "./DataAgenda";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /** Quantas vezes um tratamento foi feito pelo cliente. */
 interface TratamentoFeito {
@@ -21,7 +22,7 @@ export class HistoricoCliente {
 
   constructor(telefone: string, agendamentos: Agendamento[]) {
     if (agendamentos.length === 0) {
-      throw new Error("O histórico precisa de ao menos um agendamento do cliente.");
+      throw new ErroDeValidacao("O histórico precisa de ao menos um agendamento do cliente.");
     }
     this.telefone = telefone;
     this.agendamentos = [...agendamentos].sort((a, b) =>

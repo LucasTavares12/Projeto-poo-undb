@@ -1,4 +1,5 @@
 import { DataAgenda } from "./DataAgenda";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /**
  * Período de dias inteiros em que a agenda fica fechada: folga ou férias de um
@@ -28,14 +29,14 @@ export class BloqueioAgenda {
     id?: number
   ) {
     if (Number.isNaN(dataInicio.getTime()) || Number.isNaN(dataFim.getTime())) {
-      throw new Error("Informe datas válidas para o bloqueio.");
+      throw new ErroDeValidacao("Informe datas válidas para o bloqueio.");
     }
     if (dataFim < dataInicio) {
-      throw new Error("A data final do bloqueio não pode ser antes da data inicial.");
+      throw new ErroDeValidacao("A data final do bloqueio não pode ser antes da data inicial.");
     }
     const motivoLimpo = String(motivo ?? "").trim();
     if (motivoLimpo.length > BloqueioAgenda.TAMANHO_MAXIMO_MOTIVO) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `O motivo pode ter no máximo ${BloqueioAgenda.TAMANHO_MAXIMO_MOTIVO} caracteres.`
       );
     }
@@ -47,7 +48,7 @@ export class BloqueioAgenda {
     this.id = id;
 
     if (this.getQuantidadeDias() > BloqueioAgenda.DIAS_MAXIMOS) {
-      throw new Error(`Um bloqueio pode durar no máximo ${BloqueioAgenda.DIAS_MAXIMOS} dias.`);
+      throw new ErroDeValidacao(`Um bloqueio pode durar no máximo ${BloqueioAgenda.DIAS_MAXIMOS} dias.`);
     }
   }
 

@@ -25,7 +25,7 @@ export class AutenticacaoController extends Controlador {
     try {
       res.json(await this.servico.dadosDaSessao(SessaoDaRequisicao.adminId(res)));
     } catch (erro) {
-      this.responderErro(res, erro, 500);
+      this.responderErro(res, erro);
     }
   }
 

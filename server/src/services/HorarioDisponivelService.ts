@@ -6,6 +6,7 @@ import { HorarioDisponivelRepository } from "../repositories/HorarioDisponivelRe
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 import { ErroDeConflito } from "../erros/ErroDeConflito";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /**
  * Grade semanal de cada profissional (aba "Horários"). Conta ligada a profissional
@@ -39,7 +40,7 @@ export class HorarioDisponivelService {
       HorarioDisponivelService.SEM_PERMISSAO
     );
     if (!Object.values(DiaSemana).includes(diaSemana)) {
-      throw new Error("Dia da semana inválido.");
+      throw new ErroDeValidacao("Dia da semana inválido.");
     }
     if (!(await this.profissionalRepo.buscarPorId(profissionalId))) {
       throw new ErroNaoEncontrado("Profissional não encontrado.");

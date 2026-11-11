@@ -82,7 +82,7 @@ export function LoginPage() {
           {entrando ? "Entrando..." : "Entrar"}
         </button>
 
-        {configuracoes?.acessoPublicoLiberado && (
+        {configuracoes?.cadastroLiberado && (
           <p className="login-alternativa">
             Não tem conta? <Link to="/admin/cadastro">Cadastre-se</Link>
           </p>

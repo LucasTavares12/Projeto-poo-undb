@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Navigate,
   NavLink,
@@ -24,6 +24,12 @@ import {
   IconeSair,
 } from "../../components/Icones";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
+import { useNotificacoes } from "../../hooks/useNotificacoes";
+import {
+  BotaoSino,
+  ModalDeNotificacoes,
+  PainelDeNotificacoes,
+} from "../../components/admin/CentralDeNotificacoes";
 
 const autenticacaoService = new AutenticacaoService();
 
@@ -37,6 +43,25 @@ export function AdminLayout() {
   // No celular o menu vira uma gaveta. Guarda a página em que foi aberto: ao navegar, fecha sozinho.
   const [menuAbertoEm, setMenuAbertoEm] = useState<string | null>(null);
   const menuAberto = menuAbertoEm === pathname;
+
+  // Agendamento novo abre um modal em qualquer página; remarcações e cancelamentos ficam no
+  // sino. Fechar o modal ou o sino tira aqueles avisos de vez.
+  const { naoLidas, paraOModal, noSino, fechar } = useNotificacoes(logado && usuario !== null);
+  const [sinoAberto, setSinoAberto] = useState(false);
+  const fecharSino = useCallback(() => {
+    setSinoAberto(false);
+    fechar(noSino);
+  }, [fechar, noSino]);
+  const fecharModal = useCallback(() => fechar(paraOModal), [fechar, paraOModal]);
+
+  function alternarSino(): void {
+    setMenuAbertoEm(null);
+    if (sinoAberto) {
+      fecharSino();
+    } else {
+      setSinoAberto(true);
+    }
+  }
 
   useEffect(() => {
     if (!logado) {
@@ -109,10 +134,37 @@ export function AdminLayout() {
           </span>
           Painel da Clínica
         </span>
+        <BotaoSino
+          naoLidas={naoLidas}
+          aberto={sinoAberto}
+          onClick={alternarSino}
+        />
         <span className="admin-avatar pequeno" title={usuario.email}>
           {(usuario.email.charAt(0) || "A").toUpperCase()}
         </span>
       </header>
+
+      {sinoAberto && (
+        <PainelDeNotificacoes
+          notificacoes={noSino}
+          onFechar={fecharSino}
+          onAbrirAgendamentos={() => {
+            fecharSino();
+            navegar("/admin");
+          }}
+        />
+      )}
+
+      {paraOModal.length > 0 && (
+        <ModalDeNotificacoes
+          notificacoes={paraOModal}
+          onFechar={fecharModal}
+          onVerAgendamentos={() => {
+            fecharModal();
+            navegar("/admin");
+          }}
+        />
+      )}
 
       <div className="admin-lateral-fundo" onClick={() => setMenuAbertoEm(null)} aria-hidden="true" />
 
@@ -134,6 +186,15 @@ export function AdminLayout() {
             <IconeFechar tamanho={20} />
           </button>
         </div>
+
+        {/* No computador o sino fica numa linha própria, logo abaixo do nome do painel. */}
+        <BotaoSino
+          className="sino-lateral"
+          naoLidas={naoLidas}
+          aberto={sinoAberto}
+          onClick={alternarSino}
+          comTexto
+        />
 
         <span className="admin-nav-secao">Menu</span>
         <nav className="admin-nav">

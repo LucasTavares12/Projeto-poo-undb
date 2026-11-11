@@ -51,7 +51,10 @@ export interface Agendamento {
 }
 
 export interface Configuracoes {
-  acessoPublicoLiberado: boolean;
+  /** Botão "Entrar" na página de agendamento (o /admin/login funciona sempre). */
+  botaoEntrarVisivel: boolean;
+  /** Botão "Cadastrar" na página de agendamento e criação de contas novas. */
+  cadastroLiberado: boolean;
 }
 
 export interface FaturamentoDoDia {
@@ -165,4 +168,23 @@ export interface AgendaSemanal {
   /** Linhas da agenda (horários de 30min), na ordem. */
   horarios: string[];
   dias: DiaDaAgenda[];
+}
+
+export type TipoNotificacao = "NOVO_AGENDAMENTO" | "AGENDAMENTO_REMARCADO" | "AGENDAMENTO_CANCELADO";
+
+/** Aviso do sino do painel. */
+export interface Notificacao {
+  id: number;
+  tipo: TipoNotificacao;
+  profissionalId: number;
+  agendamentoId: number | null;
+  titulo: string;
+  mensagem: string;
+  origem: "CLIENTE" | "EQUIPE";
+  criadaEm: string;
+}
+
+export interface ResumoDeNotificacoes {
+  naoLidas: number;
+  notificacoes: Notificacao[];
 }

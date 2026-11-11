@@ -1,3 +1,5 @@
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
 /**
  * Value object que representa um horário da grade fixa de 30 em 30 minutos
  * usada pela clínica (09:00, 09:30, 10:00, ...). Toda a validação e a
@@ -11,7 +13,7 @@ export class Horario {
 
   constructor(valor: string) {
     if (!Horario.ehValido(valor)) {
-      throw new Error(
+      throw new ErroDeValidacao(
         `Horário inválido: ${valor}. Use o formato "HH:MM" alinhado à grade de 30 minutos.`
       );
     }

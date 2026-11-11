@@ -5,6 +5,7 @@ import { Horario } from "./Horario";
 import { HorarioDisponivel } from "./HorarioDisponivel";
 import { Profissional } from "./Profissional";
 import { RelogioClinica } from "./RelogioClinica";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /**
  * O que ocupa uma faixa da agenda num dia:
@@ -116,7 +117,7 @@ export class AgendaSemanal {
     agora: Date = new Date()
   ) {
     if (!Number.isInteger(quantidadeDias) || quantidadeDias < 1 || quantidadeDias > 31) {
-      throw new Error("Escolha um período de 1 a 31 dias.");
+      throw new ErroDeValidacao("Escolha um período de 1 a 31 dias.");
     }
     this.profissional = profissional;
     this.inicio = inicio;

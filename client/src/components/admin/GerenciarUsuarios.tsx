@@ -355,8 +355,10 @@ function UsuarioLinha({
         <td className="admin-tabela-titulo">
           <span className="admin-tabela-nome">
             <span className="admin-avatar pequeno">{usuario.email.charAt(0).toUpperCase()}</span>
-            {usuario.email}
-            {ehVoce && <span className="admin-etiqueta">Você</span>}
+            <span className="usuarios-identificacao">
+              <EmailQuebravel email={usuario.email} />
+              {ehVoce && <span className="admin-etiqueta">Você</span>}
+            </span>
           </span>
         </td>
         <td data-rotulo="Acesso">
@@ -515,5 +517,20 @@ function SeletorDeVinculo({ valor, opcoes, onAlterar }: SeletorDeVinculoProps) {
         ))}
       </select>
     </label>
+  );
+}
+
+/** E-mail que, sem espaço, quebra antes do "@" em vez de no meio do nome. */
+function EmailQuebravel({ email }: { email: string }) {
+  const arroba = email.indexOf("@");
+  if (arroba <= 0) {
+    return <span className="usuarios-email">{email}</span>;
+  }
+  return (
+    <span className="usuarios-email">
+      {email.slice(0, arroba)}
+      <wbr />
+      {email.slice(arroba)}
+    </span>
   );
 }

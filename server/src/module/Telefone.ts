@@ -1,3 +1,5 @@
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
 /**
  * Telefone brasileiro com DDD: 10 dígitos (fixo) ou 11 (celular). É o que identifica o
  * cliente (para remarcar, cancelar e montar a ficha). Toda validação de telefone do
@@ -9,7 +11,7 @@ export class Telefone {
   constructor(texto: string) {
     const digitos = Telefone.somenteDigitos(texto);
     if (digitos.length < 10 || digitos.length > 11) {
-      throw new Error("Telefone inválido: informe o DDD e o número.");
+      throw new ErroDeValidacao("Telefone inválido: informe o DDD e o número.");
     }
     this.digitos = digitos;
   }

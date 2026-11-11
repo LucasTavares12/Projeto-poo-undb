@@ -1,29 +1,49 @@
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
 /**
  * Preferências gerais do sistema, ajustadas pelo admin na aba "Configurações".
  * Cada opção nova entra aqui como um atributo com valor padrão, getter e setter.
  */
 export class ConfiguracoesClinica {
   /**
-   * Quando ligado, a página de agendamento mostra os botões "Entrar" e "Cadastrar"
-   * e qualquer pessoa pode criar uma conta. Desligado, os botões somem e novos
-   * cadastros são recusados (o login continua pelo endereço /admin/login).
+   * Mostra o botão "Entrar" na página de agendamento. Só esconde o botão: quem tem conta
+   * sempre consegue entrar pelo endereço /admin/login.
    */
-  private acessoPublicoLiberado = true;
+  private botaoEntrarVisivel = true;
 
-  public getAcessoPublicoLiberado(): boolean {
-    return this.acessoPublicoLiberado;
+  /**
+   * Mostra o botão "Cadastrar" na página de agendamento e aceita contas novas.
+   * Desligado, o botão some e o servidor recusa qualquer cadastro.
+   */
+  private cadastroLiberado = true;
+
+  public getBotaoEntrarVisivel(): boolean {
+    return this.botaoEntrarVisivel;
   }
 
-  public setAcessoPublicoLiberado(liberado: boolean): void {
-    if (typeof liberado !== "boolean") {
-      throw new Error("O valor de acessoPublicoLiberado deve ser verdadeiro ou falso.");
+  public setBotaoEntrarVisivel(visivel: boolean): void {
+    this.botaoEntrarVisivel = ConfiguracoesClinica.lerLigado(visivel, "botaoEntrarVisivel");
+  }
+
+  public getCadastroLiberado(): boolean {
+    return this.cadastroLiberado;
+  }
+
+  public setCadastroLiberado(liberado: boolean): void {
+    this.cadastroLiberado = ConfiguracoesClinica.lerLigado(liberado, "cadastroLiberado");
+  }
+
+  private static lerLigado(valor: unknown, opcao: string): boolean {
+    if (typeof valor !== "boolean") {
+      throw new ErroDeValidacao(`O valor de ${opcao} deve ser verdadeiro ou falso.`);
     }
-    this.acessoPublicoLiberado = liberado;
+    return valor;
   }
 
   public toJSON() {
     return {
-      acessoPublicoLiberado: this.acessoPublicoLiberado,
+      botaoEntrarVisivel: this.botaoEntrarVisivel,
+      cadastroLiberado: this.cadastroLiberado,
     };
   }
 }
