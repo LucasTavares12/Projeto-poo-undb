@@ -55,5 +55,9 @@ export class ConfiguracaoRepository extends Repositorio {
       "INSERT INTO configuracoes (chave, valor) VALUES ? ON DUPLICATE KEY UPDATE valor = VALUES(valor)",
       [valores]
     );
+    // As opções novas já estão gravadas: a antiga não tem mais o que dizer.
+    await this.pool.query("DELETE FROM configuracoes WHERE chave = ?", [
+      ConfiguracaoRepository.CHAVE_ACESSO_PUBLICO_ANTIGA,
+    ]);
   }
 }

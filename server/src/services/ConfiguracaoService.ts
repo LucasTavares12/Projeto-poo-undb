@@ -1,5 +1,6 @@
 import { ConfiguracoesClinica } from "../module/ConfiguracoesClinica";
 import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
+import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export interface AlteracaoDeConfiguracoes {
   /** undefined = não mexe nessa opção. */
@@ -17,6 +18,9 @@ export class ConfiguracaoService {
 
   /** Altera só as opções informadas; o resto continua como estava. */
   public async atualizar(alteracao: AlteracaoDeConfiguracoes): Promise<ConfiguracoesClinica> {
+    if (alteracao.botaoEntrarVisivel === undefined && alteracao.cadastroLiberado === undefined) {
+      throw new ErroDeValidacao("Nenhuma configuração conhecida foi enviada.");
+    }
     const configuracoes = await this.repositorio.carregar();
     if (alteracao.botaoEntrarVisivel !== undefined) {
       configuracoes.setBotaoEntrarVisivel(alteracao.botaoEntrarVisivel);

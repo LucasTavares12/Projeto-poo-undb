@@ -9,6 +9,9 @@ const configuracaoService = new ConfiguracaoService();
 
 export function ConfiguracoesPage() {
   const [configuracoes, setConfiguracoes] = useState<Configuracoes | null>(null);
+  // Como estava no servidor: ao salvar, vai só o que a pessoa mudou (outro admin pode ter
+  // mudado a outra opção nesse meio-tempo).
+  const [salvas, setSalvas] = useState<Configuracoes | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -16,7 +19,9 @@ export function ConfiguracoesPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        setConfiguracoes(await configuracaoService.obter());
+        const atuais = await configuracaoService.obter();
+        setConfiguracoes(atuais);
+        setSalvas(atuais);
       } catch {
         setErro("Não foi possível carregar as configurações.");
       }
@@ -31,7 +36,18 @@ export function ConfiguracoesPage() {
 
   async function salvar(evento: FormEvent): Promise<void> {
     evento.preventDefault();
-    if (!configuracoes) {
+    if (!configuracoes || !salvas) {
+      return;
+    }
+    const alteradas: Partial<Configuracoes> = {};
+    if (configuracoes.botaoEntrarVisivel !== salvas.botaoEntrarVisivel) {
+      alteradas.botaoEntrarVisivel = configuracoes.botaoEntrarVisivel;
+    }
+    if (configuracoes.cadastroLiberado !== salvas.cadastroLiberado) {
+      alteradas.cadastroLiberado = configuracoes.cadastroLiberado;
+    }
+    if (Object.keys(alteradas).length === 0) {
+      setMensagem("Nada para salvar: nenhuma opção foi alterada.");
       return;
     }
 
@@ -39,7 +55,9 @@ export function ConfiguracoesPage() {
     setErro(null);
     setMensagem(null);
     try {
-      setConfiguracoes(await configuracaoService.atualizar(configuracoes));
+      const atualizadas = await configuracaoService.atualizar(alteradas);
+      setConfiguracoes(atualizadas);
+      setSalvas(atualizadas);
       setMensagem("Configurações salvas.");
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
