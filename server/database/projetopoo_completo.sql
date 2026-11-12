@@ -124,7 +124,7 @@ CREATE TABLE `configuracoes` (
 
 LOCK TABLES `configuracoes` WRITE;
 /*!40000 ALTER TABLE `configuracoes` DISABLE KEYS */;
-INSERT INTO `configuracoes` VALUES ('acesso_publico_liberado','true');
+INSERT INTO `configuracoes` VALUES ('botao_entrar_visivel','true'),('cadastro_liberado','true');
 /*!40000 ALTER TABLE `configuracoes` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `horarios_disponiveis`;

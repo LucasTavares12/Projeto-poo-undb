@@ -1632,7 +1632,8 @@
   }
 }
 
-@media (max-width: 900px) {
+/* Abas: no celular sempre; até 900px só em tela de toque (com mouse dá para arrastar). */
+@media (max-width: 720px), (max-width: 900px) and (pointer: coarse) {
   .kanban-abas {
     position: sticky;
     top: 60px;
@@ -1755,7 +1756,7 @@
 }
 
 /* Tablet em pé: a etapa escolhida mostra os cards em duas colunas, sem esticar. */
-@media (min-width: 601px) and (max-width: 900px) {
+@media (min-width: 601px) and (max-width: 720px), (min-width: 601px) and (max-width: 900px) and (pointer: coarse) {
   .kanban-coluna.visivel {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2451,6 +2452,13 @@
 .usuarios-email {
   min-width: 0;
   overflow-wrap: break-word;
+}
+
+/* No cartão (celular/tablet) a largura é a da tela: e-mail enorme quebra onde precisar. */
+@media (max-width: 960px) {
+  .usuarios-email {
+    overflow-wrap: anywhere;
+  }
 }
 
 .usuarios-acesso {
@@ -5620,10 +5628,10 @@
   gap: 6px;
 }
 
-/* Celular: botões um embaixo do outro, com "Marcar como visto" em cima. */
+/* Celular: botões um embaixo do outro, na mesma ordem do teclado/leitor de tela. */
 @media (max-width: 420px) {
   .modal-notificacoes .modal-rodape {
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: stretch;
   }
 }
