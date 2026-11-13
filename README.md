@@ -230,7 +230,7 @@ Nesta seção explica como rodar o sistema e como o código é conferido automat
 
 É preciso ter o **Node.js** e o **MySQL** instalados.
 
-1. **Banco de dados:** crie o banco rodando o script `server/database/schema.sql` no MySQL. (O `projetopoo_completo.sql` cria o banco já com dados de exemplo.) As tabelas e colunas novas também são criadas sozinhas na primeira vez que o sistema as usa.
+1. **Banco de dados:** crie o banco rodando o script `server/database/projetopoo_completo.sql` no MySQL. Ele cria o banco `projetopoo` e todas as tabelas, sem dados. As tabelas e colunas novas também são criadas sozinhas na primeira vez que o sistema as usa.
 2. **Server:** copie `server/.env.example` para `server/.env` e preencha os dados do MySQL e o `ADMIN_TOKEN_SEGREDO`. Depois:
 
    ```bash
