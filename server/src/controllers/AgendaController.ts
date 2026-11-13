@@ -12,9 +12,9 @@ export class AgendaController extends Controlador {
   public async semana(req: Request, res: Response): Promise<void> {
     try {
       const agenda = await this.servico.montar(
-        Number(req.query.profissionalId),
+        this.lerId(req.query.profissionalId, "Escolha um profissional."),
         DataAgenda.ler(req.query.inicio, "Informe a data de início da agenda."),
-        req.query.dias ? Number(req.query.dias) : AgendaSemanal.DIAS_PADRAO,
+        this.lerInteiro(req.query.dias, AgendaSemanal.DIAS_PADRAO, "Quantidade de dias inválida."),
         SessaoDaRequisicao.profissionalId(res)
       );
       res.json(agenda);

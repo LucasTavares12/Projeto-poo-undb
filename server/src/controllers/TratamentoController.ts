@@ -20,7 +20,7 @@ export class TratamentoController extends Controlador {
 
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
-      res.json(await this.servico.atualizar(Number(req.params.id), this.lerDados(req)));
+      res.json(await this.servico.atualizar(this.lerId(req.params.id), this.lerDados(req)));
     } catch (erro) {
       this.responderErro(res, erro);
     }
@@ -28,7 +28,7 @@ export class TratamentoController extends Controlador {
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      await this.servico.remover(Number(req.params.id));
+      await this.servico.remover(this.lerId(req.params.id));
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);
@@ -43,10 +43,7 @@ export class TratamentoController extends Controlador {
       valor: Number(valor),
       duracaoMinutos: Number(duracaoMinutos),
       // Vazio/null = tratamento de todos os profissionais.
-      profissionalId:
-        profissionalId === undefined || profissionalId === null || profissionalId === ""
-          ? null
-          : Number(profissionalId),
+      profissionalId: this.lerIdOpcional(profissionalId, "Profissional inválido."),
     };
   }
 }
