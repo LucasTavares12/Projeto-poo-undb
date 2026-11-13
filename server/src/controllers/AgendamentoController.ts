@@ -36,12 +36,14 @@ export class AgendamentoController extends Controlador {
 
   private lerConsultaDeHorarios(req: Request) {
     return {
-      profissionalId: Number(req.query.profissionalId),
+      profissionalId: this.lerId(req.query.profissionalId, "Escolha um profissional."),
       data: DataAgenda.ler(req.query.data),
-      tratamentoIds: String(req.query.tratamentoIds || "")
-        .split(",")
-        .filter((valor) => valor.length > 0)
-        .map(Number),
+      tratamentoIds: this.lerIds(
+        String(req.query.tratamentoIds || "")
+          .split(",")
+          .filter((valor) => valor.length > 0),
+        "Tratamento inválido."
+      ),
     };
   }
 
@@ -73,8 +75,8 @@ export class AgendamentoController extends Controlador {
     return {
       clienteNome,
       clienteTelefone,
-      profissionalId: Number(profissionalId),
-      tratamentoIds: Array.isArray(tratamentoIds) ? tratamentoIds.map(Number) : [],
+      profissionalId: this.lerId(profissionalId, "Escolha um profissional."),
+      tratamentoIds: this.lerIds(tratamentoIds, "Tratamento inválido."),
       data: DataAgenda.ler(data),
       horarioInicio: new Horario(String(horarioInicio ?? "")),
     };
@@ -100,7 +102,7 @@ export class AgendamentoController extends Controlador {
   public async cancelarDoCliente(req: Request, res: Response): Promise<void> {
     try {
       await this.servico.cancelarPeloCliente(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         String(req.query.telefone ?? "")
       );
       res.status(204).send();
@@ -113,7 +115,7 @@ export class AgendamentoController extends Controlador {
   public async registrarMensagem(req: Request, res: Response): Promise<void> {
     try {
       const agendamento = await this.servico.registrarMensagem(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         req.body?.tipo as TipoMensagem,
         SessaoDaRequisicao.profissionalId(res)
       );
@@ -127,7 +129,7 @@ export class AgendamentoController extends Controlador {
   public async horariosParaRemarcar(req: Request, res: Response): Promise<void> {
     try {
       const horarios = await this.servico.horariosParaRemarcar(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         DataAgenda.ler(req.query.data, "Escolha uma data válida."),
         SessaoDaRequisicao.profissionalId(res)
       );
@@ -142,7 +144,7 @@ export class AgendamentoController extends Controlador {
     try {
       const { data, horarioInicio } = this.lerNovoHorario(req);
       const agendamento = await this.servico.remarcar(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         data,
         horarioInicio,
         SessaoDaRequisicao.profissionalId(res),
@@ -158,7 +160,7 @@ export class AgendamentoController extends Controlador {
   public async horariosParaRemarcarDoCliente(req: Request, res: Response): Promise<void> {
     try {
       const horarios = await this.servico.horariosParaRemarcarDoCliente(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         String(req.query.telefone ?? ""),
         DataAgenda.ler(req.query.data, "Escolha uma data válida.")
       );
@@ -173,7 +175,7 @@ export class AgendamentoController extends Controlador {
     try {
       const { data, horarioInicio } = this.lerNovoHorario(req);
       const agendamento = await this.servico.remarcarPeloCliente(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         String(req.query.telefone ?? ""),
         data,
         horarioInicio
@@ -198,7 +200,7 @@ export class AgendamentoController extends Controlador {
   /** Botão "Cancelar" dos cards da coluna "Agendados" no Kanban. */
   public async cancelar(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
+      const id = this.lerId(req.params.id);
       await this.servico.cancelar(
         id,
         SessaoDaRequisicao.profissionalId(res),
@@ -235,8 +237,8 @@ export class AgendamentoController extends Controlador {
   /** Admin arrasta o card no Kanban para outra coluna. */
   public async atualizarStatus(req: Request, res: Response): Promise<void> {
     try {
-      const id = Number(req.params.id);
-      const status = req.body.status as StatusAgendamento;
+      const id = this.lerId(req.params.id);
+      const status = req.body?.status as StatusAgendamento;
       const agendamento = await this.servico.moverStatus(
         id,
         status,

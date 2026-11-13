@@ -12,7 +12,7 @@ export class NotificacaoController extends Controlador {
       const resultado = await this.servico.listar(
         SessaoDaRequisicao.adminId(res),
         SessaoDaRequisicao.profissionalId(res),
-        req.query.limite ? Number(req.query.limite) : NotificacaoService.LIMITE_PADRAO
+        this.lerInteiro(req.query.limite, NotificacaoService.LIMITE_PADRAO, "Limite inválido.")
       );
       res.json(resultado);
     } catch (erro) {

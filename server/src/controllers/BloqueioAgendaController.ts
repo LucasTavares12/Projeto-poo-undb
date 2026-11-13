@@ -20,7 +20,9 @@ export class BloqueioAgendaController extends Controlador {
   /** Página do cliente: dias fechados na agenda do profissional (sem o motivo). */
   public async listarPublico(req: Request, res: Response): Promise<void> {
     try {
-      const bloqueios = await this.servico.listarDoProfissional(Number(req.query.profissionalId));
+      const bloqueios = await this.servico.listarDoProfissional(
+        this.lerId(req.query.profissionalId, "Escolha um profissional.")
+      );
       res.json(bloqueios.map((bloqueio) => bloqueio.paraPublico()));
     } catch (erro) {
       this.responderErro(res, erro);
@@ -41,7 +43,7 @@ export class BloqueioAgendaController extends Controlador {
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      await this.servico.remover(Number(req.params.id), SessaoDaRequisicao.profissionalId(res));
+      await this.servico.remover(this.lerId(req.params.id), SessaoDaRequisicao.profissionalId(res));
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);
@@ -56,10 +58,8 @@ export class BloqueioAgendaController extends Controlador {
     const fim = dataFim ? DataAgenda.ler(dataFim, "Data final inválida.") : inicio;
 
     return {
-      profissionalId:
-        profissionalId === null || profissionalId === undefined || profissionalId === ""
-          ? null
-          : Number(profissionalId),
+      // Vazio/null = a clínica inteira fecha.
+      profissionalId: this.lerIdOpcional(profissionalId, "Profissional inválido."),
       dataInicio: inicio,
       dataFim: fim,
       motivo: String(motivo ?? ""),

@@ -22,7 +22,7 @@ export class ProfissionalController extends Controlador {
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
       const profissional = await this.servico.atualizar(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         this.lerDados(req),
         SessaoDaRequisicao.profissionalId(res)
       );
@@ -34,7 +34,7 @@ export class ProfissionalController extends Controlador {
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      await this.servico.remover(Number(req.params.id));
+      await this.servico.remover(this.lerId(req.params.id));
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);

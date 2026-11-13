@@ -12,10 +12,9 @@ export class RelatorioController extends Controlador {
    */
   public async mensal(req: Request, res: Response): Promise<void> {
     try {
-      const filtro = req.query.profissionalId;
       const relatorio = await this.servico.gerarMensal(
         String(req.query.mes ?? ""),
-        filtro === undefined || filtro === "" ? null : Number(filtro),
+        this.lerIdOpcional(req.query.profissionalId, "Profissional inválido."),
         SessaoDaRequisicao.profissionalId(res)
       );
       res.json(relatorio);

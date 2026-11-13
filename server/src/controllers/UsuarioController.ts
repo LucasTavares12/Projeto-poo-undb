@@ -20,14 +20,14 @@ export class UsuarioController extends Controlador {
 
   public async alterarEmail(req: Request, res: Response): Promise<void> {
     await this.responder(res, 200, () =>
-      this.servico.alterarEmail(Number(req.params.id), req.body?.email)
+      this.servico.alterarEmail(this.lerId(req.params.id), req.body?.email)
     );
   }
 
   public async alterarSenha(req: Request, res: Response): Promise<void> {
     await this.responder(res, 204, async () => {
       const { senha, senhaAtual } = req.body ?? {};
-      await this.servico.alterarSenha(Number(req.params.id), senha, this.idLogado(res), senhaAtual);
+      await this.servico.alterarSenha(this.lerId(req.params.id), senha, this.idLogado(res), senhaAtual);
     });
   }
 
@@ -35,14 +35,14 @@ export class UsuarioController extends Controlador {
   public async vincularProfissional(req: Request, res: Response): Promise<void> {
     await this.responder(res, 200, () =>
       this.servico.vincularProfissional(
-        Number(req.params.id),
+        this.lerId(req.params.id),
         this.lerProfissional(req.body?.profissionalId)
       )
     );
   }
 
   public async excluir(req: Request, res: Response): Promise<void> {
-    await this.responder(res, 204, () => this.servico.excluir(Number(req.params.id)));
+    await this.responder(res, 204, () => this.servico.excluir(this.lerId(req.params.id)));
   }
 
   /** Quem está logado (preenchido pelo AutenticacaoMiddleware). */
@@ -52,7 +52,7 @@ export class UsuarioController extends Controlador {
 
   /** Vazio/null = sem profissional (acesso total). */
   private lerProfissional(valor: unknown): number | null {
-    return valor === undefined || valor === null || valor === "" ? null : Number(valor);
+    return this.lerIdOpcional(valor, "Profissional inválido.");
   }
 
   /** Executa a ação e responde: erro esperado com o status dele; validação do modelo = 400. */

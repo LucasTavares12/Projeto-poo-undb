@@ -9,6 +9,7 @@ import { ClienteRepository } from "../repositories/ClienteRepository";
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { TratamentoRepository } from "../repositories/TratamentoRepository";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
+import { TravaDaAgenda } from "../repositories/TravaDaAgenda";
 import { DisponibilidadeService } from "./DisponibilidadeService";
 import { DataAgenda } from "../module/DataAgenda";
 import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
@@ -41,6 +42,8 @@ export class AgendamentoService {
   private readonly tratamentoRepo = new TratamentoRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
   private readonly disponibilidadeService = new DisponibilidadeService();
+  /** Um agendamento/remarcação por vez na agenda de cada profissional (evita horário duplicado). */
+  private readonly trava = new TravaDaAgenda();
   /** Para onde vão os avisos de novo/remarcado/cancelado (hoje: o sino do painel). */
   private readonly notificador: Notificador;
 
@@ -63,27 +66,31 @@ export class AgendamentoService {
       throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAgendar());
     }
 
-    // Mensagem própria para o dia fechado: "horário ocupado" confundiria o cliente.
-    if (await this.disponibilidadeService.estaBloqueado(dados.profissionalId, dados.data)) {
-      throw new ErroDeValidacao(
-        `${novo.getProfissional().getNome()} não atende nessa data. Escolha outro dia.`
+    // Conferir se está livre e gravar acontecem juntos, com a agenda travada: dois pedidos
+    // ao mesmo tempo para o mesmo horário não passam os dois.
+    const salvo = await this.trava.executar(dados.profissionalId, async () => {
+      // Mensagem própria para o dia fechado: "horário ocupado" confundiria o cliente.
+      if (await this.disponibilidadeService.estaBloqueado(dados.profissionalId, dados.data)) {
+        throw new ErroDeValidacao(
+          `${novo.getProfissional().getNome()} não atende nessa data. Escolha outro dia.`
+        );
+      }
+
+      const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
+        dados.profissionalId,
+        dados.data,
+        novo.getQuantidadeSlots(),
+        { exigirAntecedencia: peloCliente }
       );
-    }
+      const horarioAindaDisponivel = horariosDisponiveis.some((horario) =>
+        horario.equals(dados.horarioInicio)
+      );
+      if (!horarioAindaDisponivel) {
+        throw new ErroDeValidacao("Esse horário não está mais disponível. Escolha outro horário.");
+      }
 
-    const horariosDisponiveis = await this.disponibilidadeService.listarHorariosDisponiveis(
-      dados.profissionalId,
-      dados.data,
-      novo.getQuantidadeSlots(),
-      { exigirAntecedencia: peloCliente }
-    );
-    const horarioAindaDisponivel = horariosDisponiveis.some((horario) =>
-      horario.equals(dados.horarioInicio)
-    );
-    if (!horarioAindaDisponivel) {
-      throw new ErroDeValidacao("Esse horário não está mais disponível. Escolha outro horário.");
-    }
-
-    const salvo = await this.salvarComCliente(novo);
+      return this.salvarComCliente(novo);
+    });
     await this.avisar(
       Notificacao.novoAgendamento(salvo, this.origem(peloCliente), autorId)
     );
@@ -396,19 +403,25 @@ export class AgendamentoService {
     }
 
     const profissional = agendamento.getProfissional();
-    if (await this.disponibilidadeService.estaBloqueado(profissional.getId()!, data)) {
-      throw new ErroDeValidacao(`${profissional.getNome()} não atende nessa data. Escolha outro dia.`);
-    }
-
-    const livres = await this.horariosLivresParaRemarcar(agendamento, data, peloCliente);
-    if (!livres.some((livre) => livre.equals(horario))) {
-      throw new ErroDeValidacao("Esse horário não está disponível. Escolha outro horário.");
-    }
-
     const dataAnterior = agendamento.getData();
     const horarioAnterior = agendamento.getHorarioInicio();
-    agendamento.remarcar(data, horario);
-    await this.agendamentoRepo.atualizarDataHorario(agendamento);
+
+    // Mesma trava do agendamento novo: conferir e gravar sem ninguém ocupar o horário no meio.
+    await this.trava.executar(profissional.getId()!, async () => {
+      if (await this.disponibilidadeService.estaBloqueado(profissional.getId()!, data)) {
+        throw new ErroDeValidacao(
+          `${profissional.getNome()} não atende nessa data. Escolha outro dia.`
+        );
+      }
+
+      const livres = await this.horariosLivresParaRemarcar(agendamento, data, peloCliente);
+      if (!livres.some((livre) => livre.equals(horario))) {
+        throw new ErroDeValidacao("Esse horário não está disponível. Escolha outro horário.");
+      }
+
+      agendamento.remarcar(data, horario);
+      await this.agendamentoRepo.atualizarDataHorario(agendamento);
+    });
     await this.avisar(
       Notificacao.remarcado(
         agendamento,

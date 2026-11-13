@@ -1,4 +1,5 @@
 import mysql, { Pool, PoolOptions } from "mysql2/promise";
+import { RelogioClinica } from "../module/RelogioClinica";
 
 /**
  * Encapsula o pool de conexões com o MySQL (schema "projetopoo").
@@ -19,9 +20,16 @@ export class Database {
       database: process.env.DB_NAME || "projetopoo",
       waitForConnections: true,
       connectionLimit: 10,
+      // Datas do Node <-> DATETIME do banco no fuso da clínica (não no fuso do servidor).
+      timezone: RelogioClinica.deslocamentoUtc(),
     };
 
     this.pool = mysql.createPool(config);
+    // Cada conexão nova usa o fuso da clínica: NOW() e CURDATE() passam a ser a hora
+    // e o dia da clínica, mesmo num MySQL hospedado em UTC.
+    this.pool.pool.on("connection", (conexao) => {
+      conexao.query("SET time_zone = ?", [RelogioClinica.deslocamentoUtc()]);
+    });
   }
 
   public static getInstancia(): Database {

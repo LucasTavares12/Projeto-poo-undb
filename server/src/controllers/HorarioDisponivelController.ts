@@ -9,7 +9,7 @@ export class HorarioDisponivelController extends Controlador {
   public async listarPorProfissional(req: Request, res: Response): Promise<void> {
     try {
       const horarios = await this.servico.listarDoProfissional(
-        Number(req.params.profissionalId),
+        this.lerId(req.params.profissionalId, "Profissional inválido."),
         SessaoDaRequisicao.profissionalId(res)
       );
       res.json(horarios);
@@ -23,8 +23,8 @@ export class HorarioDisponivelController extends Controlador {
     try {
       const { profissionalId, diaSemana, horaInicio } = req.body ?? {};
       const horario = await this.servico.liberar(
-        Number(profissionalId),
-        Number(diaSemana),
+        this.lerId(profissionalId, "Escolha um profissional."),
+        this.lerInteiro(diaSemana, -1, "Dia da semana inválido."),
         String(horaInicio ?? ""),
         SessaoDaRequisicao.profissionalId(res)
       );
@@ -37,7 +37,7 @@ export class HorarioDisponivelController extends Controlador {
   /** Bloqueia de novo um horário da grade. */
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      await this.servico.bloquear(Number(req.params.id), SessaoDaRequisicao.profissionalId(res));
+      await this.servico.bloquear(this.lerId(req.params.id), SessaoDaRequisicao.profissionalId(res));
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);
