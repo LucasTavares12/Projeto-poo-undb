@@ -6,7 +6,7 @@ services:
       MYSQL_DATABASE: projetopoo
     volumes:
       - db-data:/var/lib/mysql
-      - ./server/database/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./server/database/projetopoo_completo.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
