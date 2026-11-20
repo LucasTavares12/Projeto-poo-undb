@@ -9,6 +9,8 @@ import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { GraficoFaturamentoDiario } from "../../components/admin/GraficoFaturamentoDiario";
 import { GraficoRanking } from "../../components/admin/GraficoRanking";
+import { CartaoLucro } from "../../components/admin/CartaoLucro";
+import { DonoDoLucro } from "../../models/DonoDoLucro";
 import {
   IconeCalendario,
   IconeConfirmado,
@@ -82,6 +84,8 @@ export function RelatoriosPage() {
   const atualizando = dados?.consulta !== consulta && !mensagemErro;
   const podeAvancar = !mes.proximo().ehDepoisDe(MesReferencia.atual());
 
+  const acessoTotal = new PerfilDeAcesso({ profissionalId: proprioId }).temAcessoTotal();
+
   const profissionalSelecionado = profissionais.find(
     (profissional) => profissional.id === profissionalId
   );
@@ -91,7 +95,7 @@ export function RelatoriosPage() {
 
   const filtros = (
     <div className="relatorio-filtros">
-      {new PerfilDeAcesso({ profissionalId: proprioId }).temAcessoTotal() && (
+      {acessoTotal && (
       <label className="filtro-profissional">
         <span>Profissional</span>
         <select
@@ -146,6 +150,13 @@ export function RelatoriosPage() {
           <ResumoDoMes atual={dados.atual} anterior={dados.anterior} />
 
           <div className="relatorio-grade">
+            {/* Lucro: com "Todos", o da clínica; com um profissional (ou na conta dele), o dele. */}
+            <CartaoLucro
+              key={`${mes.toString()}|${profissionalId ?? "clinica"}`}
+              mes={mes.toString()}
+              dono={new DonoDoLucro(profissionalId, profissionalSelecionado?.nome ?? null)}
+            />
+
             <article className="relatorio-cartao relatorio-cartao-largo">
               <header className="relatorio-cartao-cabecalho">
                 <div>

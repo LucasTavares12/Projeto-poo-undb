@@ -1,6 +1,7 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { DataAgenda } from "./DataAgenda";
+import { MesReferencia } from "./MesReferencia";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 interface FaturamentoDoDia {
@@ -29,39 +30,35 @@ interface TratamentoRealizado {
  * (agendados e em atendimento ainda podem não acontecer).
  */
 export class RelatorioMensal {
-  private static readonly FORMATO_MES = /^(\d{4})-(0[1-9]|1[0-2])$/;
-
-  private readonly mes: string; // "YYYY-MM"
+  private readonly mes: MesReferencia;
   private readonly profissionalId: number | null; // null = todos os profissionais juntos
   private readonly finalizados: Agendamento[];
 
+  /** `mes` = "AAAA-MM" (o `MesReferencia` valida). */
   constructor(mes: string, agendamentosDoMes: Agendamento[], profissionalId: number | null = null) {
-    if (!RelatorioMensal.FORMATO_MES.test(mes)) {
-      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
-    }
+    const referencia = new MesReferencia(mes);
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
       throw new ErroDeValidacao("Profissional inválido.");
     }
 
-    this.mes = mes;
+    this.mes = referencia;
     this.profissionalId = profissionalId;
     this.finalizados = agendamentosDoMes.filter(
       (agendamento) =>
         agendamento.getStatus() === StatusAgendamento.FINALIZADO &&
-        RelatorioMensal.dataDe(agendamento).startsWith(mes) &&
+        referencia.contem(RelatorioMensal.dataDe(agendamento)) &&
         (profissionalId === null || agendamento.getProfissional().getId() === profissionalId)
     );
   }
 
-  /** Primeiro e último dia do mês, no formato usado nas consultas ("YYYY-MM-DD"). */
-  public static periodo(mes: string): { inicio: string; fim: string } {
-    const correspondencia = RelatorioMensal.FORMATO_MES.exec(mes);
-    if (!correspondencia) {
-      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
-    }
-    const [, ano, mesNumero] = correspondencia;
-    const ultimoDia = new Date(Date.UTC(Number(ano), Number(mesNumero), 0)).getUTCDate();
-    return { inicio: `${mes}-01`, fim: `${mes}-${String(ultimoDia).padStart(2, "0")}` };
+  /** "AAAA-MM". */
+  public getMes(): string {
+    return this.mes.toString();
+  }
+
+  /** null = soma de todos os profissionais (clínica inteira). */
+  public getProfissionalId(): number | null {
+    return this.profissionalId;
   }
 
   private static dataDe(agendamento: Agendamento): string {
@@ -83,11 +80,9 @@ export class RelatorioMensal {
 
   /** Um item para cada dia do mês, inclusive os dias sem atendimento (valor 0). */
   public getFaturamentoPorDia(): FaturamentoDoDia[] {
-    const { fim } = RelatorioMensal.periodo(this.mes);
-    const totalDias = Number(fim.slice(8, 10));
-
-    const dias: FaturamentoDoDia[] = Array.from({ length: totalDias }, (_, indice) => ({
-      data: `${this.mes}-${String(indice + 1).padStart(2, "0")}`,
+    const quantidadeDeDias = this.mes.getQuantidadeDeDias();
+    const dias: FaturamentoDoDia[] = Array.from({ length: quantidadeDeDias }, (_, indice) => ({
+      data: this.mes.dia(indice + 1),
       valor: 0,
       atendimentos: 0,
     }));
@@ -149,7 +144,7 @@ export class RelatorioMensal {
 
   public toJSON() {
     return {
-      mes: this.mes,
+      mes: this.getMes(),
       profissionalId: this.profissionalId,
       faturamentoTotal: this.getFaturamentoTotal(),
       quantidadeAtendimentos: this.getQuantidadeAtendimentos(),

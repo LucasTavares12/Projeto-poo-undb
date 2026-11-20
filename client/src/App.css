@@ -28,6 +28,7 @@
   --perigo-bg: rgba(194, 65, 12, 0.08);
   --raio: 10px;
   --grafico: #b14d66;
+  --positivo: #15803d;
 
   background: var(--fundo);
   color: var(--text);
@@ -51,6 +52,7 @@
     --perigo: #f08a5d;
     --perigo-bg: rgba(240, 138, 93, 0.12);
     --grafico: #d86f8a;
+    --positivo: #4ade80;
   }
 }
 
@@ -1946,6 +1948,111 @@
 .relatorio-cartao-cabecalho p {
   margin-top: 2px;
   font-size: 13px;
+}
+
+/* Lucro do mês: faturamento, gastos informados e o resultado (lucro ou prejuízo). */
+.lucro-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lucro-numero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto;
+  align-items: start;
+  column-gap: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--superficie-alt);
+}
+
+.lucro-resultado.lucro .admin-resumo-valor {
+  color: var(--positivo);
+}
+
+.lucro-resultado.prejuizo .admin-resumo-valor {
+  color: var(--perigo);
+}
+
+.lucro-resultado.prejuizo .admin-resumo-icone {
+  background: var(--perigo-bg);
+  color: var(--perigo);
+}
+
+/* "Editar" e "Apagar" do gasto: botões com cara de link, embaixo do valor. */
+.lucro-acoes-gasto {
+  display: flex;
+  gap: 14px;
+}
+
+.lucro-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lucro-link.perigo {
+  color: var(--perigo);
+}
+
+.lucro-link:hover {
+  text-decoration: underline;
+}
+
+.lucro-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.lucro-aviso {
+  margin: 14px 0 0;
+}
+
+.lucro-confirmacao {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--perigo);
+  border-radius: 10px;
+  background: var(--perigo-bg);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.lucro-confirmacao p {
+  margin: 0;
+}
+
+.lucro-confirmacao .admin-acoes {
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.lucro-formulario {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.lucro-formulario .admin-campos {
+  max-width: 320px;
+}
+
+.lucro-formulario .admin-acoes {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .lucro-numeros {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .relatorio-vazio {

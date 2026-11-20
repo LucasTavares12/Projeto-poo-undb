@@ -103,6 +103,15 @@ CREATE TABLE `configuracoes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+DROP TABLE IF EXISTS `gastos_mensais`;
+CREATE TABLE `gastos_mensais` (
+  `mes` char(7) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `profissional_id` int NOT NULL DEFAULT '0' COMMENT '0 = gasto da clínica inteira',
+  `valor` decimal(12,2) NOT NULL,
+  `atualizado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`mes`,`profissional_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 DROP TABLE IF EXISTS `notificacoes_fechadas`;
 DROP TABLE IF EXISTS `notificacoes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

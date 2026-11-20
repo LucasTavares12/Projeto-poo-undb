@@ -92,6 +92,22 @@ export interface RelatorioMensal {
   faturamentoPorProfissional: FaturamentoDoProfissional[];
 }
 
+/** Lucro de um mês (faturamento − gasto informado), da clínica ou de um profissional. */
+export interface LucroMensal {
+  mes: string;
+  /** null = clínica inteira (faturamento de todos − gasto da clínica). */
+  profissionalId: number | null;
+  faturamento: number;
+  /** null = o gasto do mês ainda não foi informado. */
+  gasto: number | null;
+  /** Pode ser negativo (prejuízo). null = falta informar o gasto. */
+  lucro: number | null;
+  /** Lucro em % do faturamento (null sem gasto ou sem faturamento). */
+  margem: number | null;
+  /** Para sugerir o mesmo valor do mês anterior. */
+  gastoDoMesAnterior: number | null;
+}
+
 /** Usuário do painel (conta de administrador). */
 export interface Usuario {
   id: number;

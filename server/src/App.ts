@@ -8,6 +8,7 @@ import { AgendamentoController } from "./controllers/AgendamentoController";
 import { AutenticacaoController } from "./controllers/AutenticacaoController";
 import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
 import { RelatorioController } from "./controllers/RelatorioController";
+import { LucroController } from "./controllers/LucroController";
 import { UsuarioController } from "./controllers/UsuarioController";
 import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
 import { ClienteController } from "./controllers/ClienteController";
@@ -33,6 +34,7 @@ export class App {
   private readonly agendamentoController = new AgendamentoController();
   private readonly configuracaoController = new ConfiguracaoController();
   private readonly relatorioController = new RelatorioController();
+  private readonly lucroController = new LucroController();
   private readonly usuarioController = new UsuarioController();
   private readonly bloqueioAgendaController = new BloqueioAgendaController();
   private readonly clienteController = new ClienteController();
@@ -234,6 +236,17 @@ export class App {
   private configurarRotasDeRelatorios(): void {
     this.app.get("/relatorios/mensal", this.exigirAdmin, (req, res) =>
       this.relatorioController.mensal(req, res)
+    );
+    // Lucro e gasto do mês: da clínica (acesso total) ou de um profissional. Conta ligada a
+    // um profissional só vê e altera o dela (o serviço garante).
+    this.app.get("/relatorios/lucro", this.exigirAdmin, (req, res) =>
+      this.lucroController.mensal(req, res)
+    );
+    this.app.put("/relatorios/gastos/:mes", this.exigirAdmin, (req, res) =>
+      this.lucroController.informarGasto(req, res)
+    );
+    this.app.delete("/relatorios/gastos/:mes", this.exigirAdmin, (req, res) =>
+      this.lucroController.apagarGasto(req, res)
     );
   }
 

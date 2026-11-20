@@ -79,10 +79,10 @@ export function MeusAgendamentos({ onVoltar }: Props) {
     setErro(null);
     setMensagem(null);
     try {
-      await agendamentoService.cancelarDoCliente(agendamento.id, busca.telefone);
+      await agendamentoService.cancelarDoCliente(agendamento.id, busca.getTelefone());
       setBusca(busca.sem(agendamento));
       setMensagem(
-        `Agendamento de ${HorarioMarcado.de(agendamento).formatar()}${paraQuem(agendamento)} ` +
+        `Agendamento de ${HorarioMarcado.de(agendamento).formatar()}${new PessoasDoAgendamento(agendamento).paraQuem()} ` +
           "cancelado. O horário foi liberado."
       );
     } catch (erroRequisicao) {
@@ -100,15 +100,9 @@ export function MeusAgendamentos({ onVoltar }: Props) {
     setBusca(busca.comAtualizado(atualizado));
     setRemarcandoId(null);
     setMensagem(
-      `Pronto! O agendamento de ${HorarioMarcado.de(anterior).formatar()}${paraQuem(anterior)} ` +
+      `Pronto! O agendamento de ${HorarioMarcado.de(anterior).formatar()}${new PessoasDoAgendamento(anterior).paraQuem()} ` +
         `foi remarcado para ${HorarioMarcado.de(atualizado).formatar()}.`
     );
-  }
-
-  /** " (para Ana)" quando o horário é de outra pessoa do telefone; vazio quando é seu. */
-  function paraQuem(agendamento: Agendamento): string {
-    const pessoas = new PessoasDoAgendamento(agendamento);
-    return pessoas.foiMarcadoPorOutraPessoa() ? ` (para ${pessoas.atendido()})` : "";
   }
 
   // A pessoa escolhida pode ter saído da lista (cancelou o último horário dela).
@@ -156,7 +150,7 @@ export function MeusAgendamentos({ onVoltar }: Props) {
 
         {busca !== null && busca.quantidade() === 0 && (
           <p className="passo-dica">
-            Nenhum agendamento em aberto para o telefone {busca.telefone}. Confira se é o mesmo
+            Nenhum agendamento em aberto para o telefone {busca.getTelefone()}. Confira se é o mesmo
             número informado ao agendar. Se outra pessoa agendou para você, use o telefone que
             ela informou.
           </p>
@@ -223,7 +217,7 @@ export function MeusAgendamentos({ onVoltar }: Props) {
                   ) : remarcandoId === agendamento.id ? (
                     <RemarcarAgendamento
                       agendamento={agendamento}
-                      telefone={busca.telefone}
+                      telefone={busca.getTelefone()}
                       onRemarcado={(atualizado) => aoRemarcar(agendamento, atualizado)}
                       onDesistir={() => setRemarcandoId(null)}
                     />

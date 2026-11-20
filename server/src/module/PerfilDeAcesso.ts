@@ -22,6 +22,14 @@ export class PerfilDeAcesso {
   }
 
   /**
+   * O profissional que a conta de fato consulta: com acesso total, o filtro pedido (null =
+   * clínica inteira); ligada a um profissional, sempre o dela, qualquer que seja o filtro.
+   */
+  public aplicarFiltro(filtroProfissional: number | null): number | null {
+    return this.temAcessoTotal() ? filtroProfissional : this.profissionalId;
+  }
+
+  /**
    * true se a conta pode mexer nas coisas deste profissional. `profissionalId` null = algo da
    * clínica inteira (ex: feriado), que só quem tem acesso total pode alterar.
    */

@@ -8,7 +8,7 @@ import { NomeDePessoa } from "./NomeDePessoa";
  * usam o mesmo telefone da busca. Cada mudança devolve uma lista nova (não altera esta).
  */
 export class AgendamentosDoTelefone {
-  public readonly telefone: string;
+  private readonly telefone: string;
   private readonly agendamentos: Agendamento[];
 
   constructor(telefone: string, agendamentos: Agendamento[]) {
@@ -16,6 +16,11 @@ export class AgendamentosDoTelefone {
     this.agendamentos = [...agendamentos].sort((a, b) =>
       HorarioMarcado.de(a).compararCom(HorarioMarcado.de(b))
     );
+  }
+
+  /** Telefone da busca: remarcar e cancelar confirmam com ele. */
+  public getTelefone(): string {
+    return this.telefone;
   }
 
   public quantidade(): number {

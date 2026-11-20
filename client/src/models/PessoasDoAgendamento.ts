@@ -39,6 +39,11 @@ export class PessoasDoAgendamento {
       : "Telefone";
   }
 
+  /** " (para Ana)" quando o horário é de outra pessoa do telefone; vazio quando é do dono. */
+  public paraQuem(): string {
+    return this.foiMarcadoPorOutraPessoa() ? ` (para ${this.atendido()})` : "";
+  }
+
   /** Para falar com o dono do telefone: "seu horário" ou "o horário de Ana". */
   public horarioDe(): string {
     return this.foiMarcadoPorOutraPessoa() ? `o horário de ${this.atendido()}` : "seu horário";

@@ -45,7 +45,7 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 - Vê a semana de cada profissional numa agenda, horário a horário.
 - Consulta a ficha e o histórico de cada cliente.
 - Manda lembretes e agradecimentos pelo WhatsApp.
-- Acompanha o faturamento nos relatórios.
+- Acompanha o faturamento e o lucro nos relatórios (informando o gasto de cada mês).
 
 ---
 
@@ -77,7 +77,7 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Profissionais** | Cadastro de quem realiza os atendimentos. |
 | **Horários** | Grade semanal de cada profissional: clica-se nos horários (de 30 em 30 minutos) para liberar ou bloquear. Os horários liberados se repetem toda semana. |
 | **Folgas e feriados** | Fecha dias inteiros na agenda de um profissional (folga, férias, atestado) ou da clínica inteira (feriado). Nesses dias nenhum horário aparece livre. Se já houver agendamentos no período, o sistema avisa quais são. |
-| **Relatórios** | Faturamento do mês (com comparação com o mês anterior), número de atendimentos, ticket médio, melhor dia, gráfico de faturamento por dia, tratamentos mais realizados e faturamento por profissional. |
+| **Relatórios** | Faturamento do mês (com comparação com o mês anterior), número de atendimentos, ticket médio, melhor dia, gráfico de faturamento por dia, tratamentos mais realizados e faturamento por profissional. Na parte **Lucro**, informa-se o gasto do mês e o sistema mostra o lucro (ou prejuízo) e a margem: com "Todos os profissionais", é o lucro da clínica (faturamento total − gasto da clínica); escolhendo um profissional, é o lucro dele (faturamento dele − gasto próprio dele). Cada profissional vê e informa só o próprio; quem tem acesso total vê e informa todos. O gasto pode ser editado ou apagado (se foi informado errado) e, se o mês ainda não tem gasto, o sistema sugere o valor do mês anterior. |
 | **Configurações e usuários** | Liga ou desliga os botões "Entrar" e "Cadastrar" na página pública. Gerencia as contas do painel: criar usuário, trocar e-mail, redefinir senha, excluir e vincular a um profissional. |
 
 ### Contas e permissões
