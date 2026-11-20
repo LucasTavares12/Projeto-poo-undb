@@ -23,8 +23,12 @@ import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 export interface DadosNovoAgendamento {
+  /** Quem vai ser atendido. */
   clienteNome: string;
+  /** Contato (WhatsApp) de quem marcou: o da própria pessoa ou o de quem marcou para ela. */
   clienteTelefone: string;
+  /** Quem marcou, quando é para outra pessoa (vazio/ausente = a própria pessoa marcou). */
+  responsavelNome?: string | null;
   profissionalId: number;
   tratamentoIds: number[];
   data: Date;
@@ -123,27 +127,32 @@ export class AgendamentoService {
       );
     }
 
-    return new Agendamento(
+    const agendamento = new Agendamento(
       cliente,
       profissional,
       tratamentos,
       dados.data,
       dados.horarioInicio
     );
+    agendamento.definirResponsavel(dados.responsavelNome);
+    return agendamento;
   }
 
-  /** Grava o cliente e depois o agendamento já ligado a ele. */
+  /**
+   * Grava o agendamento ligado ao cliente: reaproveita quem já tem o mesmo telefone e nome
+   * (a mesma pessoa voltando) ou cadastra a pessoa nova.
+   */
   private async salvarComCliente(novo: Agendamento): Promise<Agendamento> {
-    const cliente = await this.clienteRepo.salvar(novo.getCliente());
-    return this.agendamentoRepo.salvar(
-      new Agendamento(
-        cliente,
-        novo.getProfissional(),
-        novo.getTratamentos(),
-        novo.getData(),
-        novo.getHorarioInicio()
-      )
+    const cliente = await this.clienteRepo.buscarOuSalvar(novo.getCliente());
+    const agendamento = new Agendamento(
+      cliente,
+      novo.getProfissional(),
+      novo.getTratamentos(),
+      novo.getData(),
+      novo.getHorarioInicio()
     );
+    agendamento.definirResponsavel(novo.getResponsavelNome());
+    return this.agendamentoRepo.salvar(agendamento);
   }
 
   /**
@@ -262,8 +271,9 @@ export class AgendamentoService {
   }
 
   /**
-   * Página do cliente: agendamentos que a pessoa ainda pode cancelar, encontrados pelo
-   * telefone informado na hora de agendar.
+   * Página do cliente: agendamentos que ainda dá para cancelar, encontrados pelo telefone
+   * informado na hora de agendar. Vêm os de todas as pessoas do telefone: quem marcou para
+   * outra pessoa (a mãe para a filha) também gerencia esses horários.
    */
   public async listarDoCliente(telefone: string): Promise<Agendamento[]> {
     const agendamentos = await this.agendamentoRepo.listarAgendadosPorTelefone(
@@ -448,13 +458,13 @@ export class AgendamentoService {
   }
 
   /**
-   * Agendamento procurado pela página do cliente: só vale se foi feito com este telefone.
-   * Agendamento de outro telefone é tratado como inexistente.
+   * Agendamento procurado pela página do cliente: só vale se foi feito com este telefone
+   * (pela própria pessoa ou por quem marcou para ela). De outro telefone = inexistente.
    */
   private async buscarDoCliente(id: number, telefone: string): Promise<Agendamento> {
     const digitos = this.lerTelefone(telefone);
     const agendamento = await this.agendamentoRepo.buscarPorId(id);
-    if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
+    if (!agendamento || !agendamento.pertenceAoTelefone(digitos)) {
       throw new ErroNaoEncontrado("Agendamento não encontrado para este telefone.");
     }
     return agendamento;

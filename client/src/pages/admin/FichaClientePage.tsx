@@ -1,11 +1,13 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ClienteService } from "../../services/ClienteService";
 import type { FichaDoCliente } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
+import { FichaDoClienteLink } from "../../models/FichaDoClienteLink";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { EtapaAgendamento } from "../../models/EtapaAgendamento";
 import {
@@ -15,6 +17,7 @@ import {
   IconeDinheiro,
   IconePessoas,
   IconeSetaEsquerda,
+  IconeTelefone,
   IconeTendencia,
   IconeWhatsApp,
 } from "../../components/Icones";
@@ -24,27 +27,43 @@ const clienteService = new ClienteService();
 /** Ficha do cliente: resumo, preferências e todos os agendamentos. */
 export function FichaClientePage() {
   const { telefone = "" } = useParams();
-  const [ficha, setFicha] = useState<FichaDoCliente | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
+  // Um telefone pode ter várias pessoas (a mãe e a filha que ela agendou): o nome diz qual.
+  const [parametros] = useSearchParams();
+  const nome = parametros.get("nome") ?? "";
+  // A resposta fica marcada com a pessoa pedida: ao trocar de pessoa (link "Outras pessoas
+  // com este telefone"), a ficha anterior deixa de valer sozinha até a nova chegar.
+  const pessoa = `${telefone}|${nome}`;
+  const [resultado, setResultado] = useState<{
+    pessoa: string;
+    ficha: FichaDoCliente | null;
+    erro: string | null;
+  } | null>(null);
+  const atual = resultado?.pessoa === pessoa ? resultado : null;
+  const ficha = atual?.ficha ?? null;
+  const erro = atual?.erro ?? null;
 
   useEffect(() => {
     let cancelado = false;
     clienteService
-      .ficha(telefone)
+      .ficha(telefone, nome)
       .then((resposta) => {
         if (!cancelado) {
-          setFicha(resposta);
+          setResultado({ pessoa: `${telefone}|${nome}`, ficha: resposta, erro: null });
         }
       })
       .catch((erroRequisicao: Error) => {
         if (!cancelado) {
-          setErro(erroRequisicao.message);
+          setResultado({
+            pessoa: `${telefone}|${nome}`,
+            ficha: null,
+            erro: erroRequisicao.message,
+          });
         }
       });
     return () => {
       cancelado = true;
     };
-  }, [telefone]);
+  }, [telefone, nome]);
 
   const voltar = (
     <Link to="/admin/clientes" className="ficha-voltar">
@@ -88,6 +107,27 @@ export function FichaClientePage() {
       </header>
 
       {erro && <p className="mensagem-erro">{erro}</p>}
+
+      {(ficha.responsaveis.length > 0 || ficha.outrasPessoas.length > 0) && (
+        <div className="ficha-mesmo-telefone">
+          {ficha.responsaveis.length > 0 && (
+            <p>
+              Agendado por <b>{ficha.responsaveis.join(", ")}</b>, com o telefone acima.
+            </p>
+          )}
+          {ficha.outrasPessoas.length > 0 && (
+            <p>
+              Outras pessoas com este telefone:{" "}
+              {ficha.outrasPessoas.map((outra, indice) => (
+                <span key={outra}>
+                  {indice > 0 && ", "}
+                  <Link to={FichaDoClienteLink.para(ficha.telefone, outra)}>{outra}</Link>
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="admin-resumo">
         <div className="admin-resumo-cartao">
@@ -181,6 +221,12 @@ export function FichaClientePage() {
                 <li>
                   <IconePessoas tamanho={14} /> {agendamento.profissional.nome}
                 </li>
+                {new PessoasDoAgendamento(agendamento).marcadoPor() && (
+                  <li>
+                    <IconeTelefone tamanho={14} />{" "}
+                    {new PessoasDoAgendamento(agendamento).marcadoPor()}
+                  </li>
+                )}
                 <li>
                   <IconeDinheiro tamanho={14} />
                   {new Dinheiro(agendamento.valorTotal).formatar()} ·{" "}

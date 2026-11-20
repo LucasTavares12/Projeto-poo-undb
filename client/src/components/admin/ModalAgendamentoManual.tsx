@@ -42,6 +42,8 @@ export function ModalAgendamentoManual({
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
+  // Quando a pessoa do telefone marca para outra (a mãe para a filha). Vazio = a própria.
+  const [responsavelNome, setResponsavelNome] = useState("");
   const profissionalInicial = inicial.profissionalId;
   const [profissionalId, setProfissionalId] = useState<number | null>(
     profissionalFixo ?? profissionalInicial ?? null
@@ -180,6 +182,7 @@ export function ModalAgendamentoManual({
       const criado = await agendamentoService.criar({
         clienteNome: clienteNome.trim(),
         clienteTelefone: clienteTelefone.trim(),
+        responsavelNome: responsavelNome.trim(),
         profissionalId,
         tratamentoIds,
         data,
@@ -247,6 +250,15 @@ export function ModalAgendamentoManual({
                 }
               />
               {mostrarErro("telefone") && <span className="campo-erro">{erros.telefone}</span>}
+            </label>
+            <label className="admin-campo-largo">
+              <span>Marcado por (opcional)</span>
+              <input
+                type="text"
+                placeholder="Se for para outra pessoa: o nome do dono do telefone (ex.: a mãe)"
+                value={responsavelNome}
+                onChange={(evento) => setResponsavelNome(evento.target.value)}
+              />
             </label>
             <label className="admin-campo-largo">
               <span>

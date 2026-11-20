@@ -34,8 +34,8 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 1. Escolhe o profissional.
 2. Escolhe um ou mais serviços (tratamentos) que aquele profissional realiza.
 3. Escolhe a data e um dos horários livres daquele dia.
-4. Informa nome e telefone, confere o resumo e confirma o agendamento.
-5. Se precisar, depois remarca ou cancela o próprio agendamento informando o telefone usado.
+4. Diz se o atendimento é **para ele** ou **para outra pessoa** (ex.: a mãe marcando para a filha com o próprio telefone), informa os nomes e o telefone, confere o resumo e confirma o agendamento.
+5. Se precisar, depois remarca ou cancela informando o telefone usado. Quem marcou para outras pessoas vê todos os agendamentos daquele telefone.
 
 **Para a clínica (administrador):**
 
@@ -58,9 +58,9 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Agendar** | Passo a passo com barra de progresso: profissional → serviço(s) → data → horário → dados. Mostra o total (valor e duração) dos serviços escolhidos. |
 | **Escolha da data** | Faixa com os próximos 14 dias para tocar e escolher. Dias de folga ou feriado aparecem riscados como "fechado". Para datas mais distantes, há um calendário. |
 | **Horários disponíveis** | Só aparecem horários realmente livres: dentro da grade do profissional, sem outro agendamento e com espaço para a duração de todos os serviços. Ficam separados em Manhã, Tarde e Noite. |
-| **Confirmação** | Antes de gravar, abre a janela "Está tudo certo?" com o resumo completo (data, profissional, serviços, valor, nome e telefone). |
+| **Confirmação** | Antes de gravar, abre a janela "Está tudo certo?" com o resumo completo (data, profissional, serviços, valor, nome e telefone; e quem marcou, quando é para outra pessoa). |
 | **Ver horários** | Consulta os horários livres de um profissional sem precisar agendar. |
-| **Meus agendamentos** | O cliente informa o telefone usado no agendamento e vê os agendamentos em aberto. Pode **remarcar** (só para horários livres, com confirmação "De / Para") ou **cancelar**. |
+| **Meus agendamentos** | O cliente informa o telefone usado no agendamento e vê os agendamentos em aberto, inclusive os que marcou para outras pessoas com o próprio telefone (cada um diz para quem é, e dá para filtrar por pessoa). Pode **remarcar** (só para horários livres, com confirmação "De / Para") ou **cancelar**. O aviso que chega ao painel diz quem fez e de quem era o horário ("Maria cancelou o horário de Ana"). |
 | **Antecedência mínima** | Pelo site, agendar, remarcar e cancelar só com pelo menos **2 horas** de antecedência. |
 
 ### Painel da clínica (área administrativa)
@@ -72,7 +72,7 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Agenda** | A semana de um profissional horário a horário: atendimentos (com a cor da etapa e a duração), horários livres, horários que já passaram e dias fechados. Clicar num horário livre abre o "Novo agendamento" já preenchido. Clicar num atendimento abre o resumo, com atalhos para a ficha do cliente, WhatsApp e remarcar. No celular, mostra um dia por vez. |
 | **Novo agendamento** | A equipe agenda pelo painel (ex: cliente que ligou ou chegou na hora), sem a regra de antecedência mínima. |
 | **Lembretes e agradecimentos pelo WhatsApp** | Nos agendados, o botão "Enviar lembrete" abre o WhatsApp do cliente com a mensagem pronta (data, horário, serviços, profissional). Nos finalizados, o botão "Agradecer" abre uma mensagem de agradecimento. O card mostra quando cada mensagem foi enviada. |
-| **Clientes** | Lista de todos os clientes, com busca por nome ou telefone. A ficha mostra atendimentos, total gasto, ticket médio, último atendimento, próximo horário, tratamentos mais feitos, profissionais que atenderam e o histórico completo em linha do tempo. |
+| **Clientes** | Lista de todos os clientes, com busca por nome ou telefone. A ficha mostra atendimentos, total gasto, ticket médio, último atendimento, próximo horário, tratamentos mais feitos, profissionais que atenderam e o histórico completo em linha do tempo. Um mesmo telefone pode ter várias pessoas (ex.: mãe e filha): cada uma tem a sua ficha, e a ficha mostra quem marcou e as outras pessoas do telefone. |
 | **Tratamentos** | Cadastro de procedimentos com descrição, valor, duração e o profissional que realiza (ou todos). |
 | **Profissionais** | Cadastro de quem realiza os atendimentos. |
 | **Horários** | Grade semanal de cada profissional: clica-se nos horários (de 30 em 30 minutos) para liberar ou bloquear. Os horários liberados se repetem toda semana. |
@@ -136,9 +136,9 @@ O backend é todo organizado em classes, separadas em camadas:
 
 Exemplos dos pilares da orientação a objetos no projeto:
 
-- **Encapsulamento:** atributos privados com métodos que aplicam as regras (ex: `Agendamento.remarcar()`, `Agendamento.registrarMensagem()`).
-- **Herança:** `Pessoa` → `Cliente` e `Profissional`; `Repositorio` → repositórios; `Controlador` → controllers; `ErroDaAplicacao` → tipos de erro.
-- **Polimorfismo:** cada subclasse de `Pessoa` implementa `papel()` e `apresentar()` do seu jeito; cada tipo de erro define o seu `status`.
+- **Encapsulamento:** atributos privados com métodos que aplicam as regras (ex: `Agendamento.remarcar()`, `Agendamento.registrarMensagem()`, `Agendamento.pertenceAoTelefone()`, que decide quem pode remarcar e cancelar pelo site).
+- **Herança:** `Pessoa` → `Cliente`, `Profissional` e `Responsavel` (quem marca para outra pessoa); `Repositorio` → repositórios; `Controlador` → controllers; `ErroDaAplicacao` → tipos de erro.
+- **Polimorfismo:** cada subclasse de `Pessoa` implementa `papel()` e `apresentar()` do seu jeito; `Agendamento.getContato()` devolve uma `Pessoa`, que é o `Responsavel` ou o próprio `Cliente`; cada tipo de erro define o seu `status`.
 - **Abstração:** classes abstratas (`Pessoa`, `Repositorio`, `Controlador`, `ErroDaAplicacao`) e objetos de valor (`Horario`, `Telefone`, `DataAgenda`).
 
 O frontend segue a mesma ideia: as regras de exibição ficam em classes de modelo (`client/src/models`) e o acesso à API em classes de serviço (`client/src/services`), que herdam de `ApiClient`.
@@ -151,9 +151,10 @@ O frontend segue a mesma ideia: as regras de exibição ficam em classes de mode
 
 | Entidade | Papel no sistema |
 |---|---|
-| **Pessoa** | Representa as pessoas relacionadas ao sistema. Serve como base para o cliente e o profissional. |
-| **Cliente** | Pessoa que realiza o agendamento. É identificado pelo telefone. |
+| **Pessoa** | Representa as pessoas relacionadas ao sistema. Serve como base para o cliente, o profissional e o responsável. |
+| **Cliente** | Pessoa que recebe o atendimento. É identificada pelo telefone + nome: o telefone é o contato de quem marcou, que pode ser outra pessoa (o agendamento guarda quem marcou). |
 | **Profissional** | Pessoa que realiza os tratamentos na clínica. |
+| **Responsável** | Pessoa que marcou o horário para outra usando o próprio telefone (ex.: a mãe para a filha). Recebe os avisos e pode remarcar ou cancelar com esse telefone. |
 | **Tratamento** | Procedimento oferecido pela clínica, com valor, duração e o profissional que realiza. |
 | **Agendamento** | Registro que reúne as informações de um atendimento: cliente, profissional, tratamentos, data, horário, etapa e as mensagens de WhatsApp enviadas. |
 | **Horário** | Um horário da grade de 30 em 30 minutos (09:00, 09:30...). |
@@ -174,7 +175,7 @@ As entidades se conectam entre si para que o sistema funcione de forma organizad
 
 | Elementos | Como se relacionam | Explicação |
 |---|---|---|
-| Cliente e Agendamento | Um cliente pode realizar vários agendamentos | O mesmo cliente pode voltar à clínica e marcar novos atendimentos. O histórico junta todos pelo telefone. |
+| Cliente e Agendamento | Um cliente pode realizar vários agendamentos | O mesmo cliente pode voltar à clínica e marcar novos atendimentos. O histórico junta todos pelo telefone e pelo nome de quem foi atendido. |
 | Profissional e Agendamento | Um profissional pode realizar vários atendimentos | Cada profissional atende diversos clientes em diferentes dias e horários. |
 | Tratamento e Profissional | Um tratamento pode ser de um profissional ou de todos | O tratamento pode ser exclusivo de um profissional ou oferecido por qualquer um da clínica. |
 | Agendamento e Tratamento | Um agendamento pode ter vários tratamentos | O cliente pode fazer mais de um procedimento no mesmo horário; a duração e o valor são somados. |

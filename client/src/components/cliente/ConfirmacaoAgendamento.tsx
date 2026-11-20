@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { ComponentProps } from "react";
 import { ResumoAgendamento } from "./ResumoAgendamento";
+import type { QuemAgenda } from "../../models/QuemAgenda";
 
 interface Props {
   resumo: ComponentProps<typeof ResumoAgendamento>;
-  clienteNome: string;
-  clienteTelefone: string;
+  /** Quem vai ser atendido, quem está marcando e o telefone. */
+  quemAgenda: QuemAgenda;
   enviando: boolean;
   erro: string | null;
   onRevisar: () => void;
@@ -15,14 +16,15 @@ interface Props {
 /** Última conferência antes de gravar o agendamento: mostra tudo e pede a confirmação. */
 export function ConfirmacaoAgendamento({
   resumo,
-  clienteNome,
-  clienteTelefone,
+  quemAgenda,
   enviando,
   erro,
   onRevisar,
   onConfirmar,
 }: Props) {
   const botaoConfirmar = useRef<HTMLButtonElement>(null);
+  const dados = quemAgenda.paraEnvio();
+  const paraOutraPessoa = quemAgenda.ehParaOutraPessoa();
 
   useEffect(() => {
     botaoConfirmar.current?.focus();
@@ -64,12 +66,18 @@ export function ConfirmacaoAgendamento({
 
           <dl className="confirmacao-cliente">
             <div>
-              <dt>Nome</dt>
-              <dd>{clienteNome.trim()}</dd>
+              <dt>{paraOutraPessoa ? "Quem vai ser atendido" : "Nome"}</dt>
+              <dd>{dados.clienteNome}</dd>
             </div>
+            {paraOutraPessoa && (
+              <div>
+                <dt>Agendado por</dt>
+                <dd>{dados.responsavelNome}</dd>
+              </div>
+            )}
             <div>
-              <dt>Telefone</dt>
-              <dd>{clienteTelefone}</dd>
+              <dt>{paraOutraPessoa ? "Seu telefone" : "Telefone"}</dt>
+              <dd>{dados.clienteTelefone}</dd>
             </div>
           </dl>
         </div>

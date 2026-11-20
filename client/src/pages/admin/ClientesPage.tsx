@@ -5,6 +5,7 @@ import type { ClienteResumo } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Telefone } from "../../models/Telefone";
+import { FichaDoClienteLink } from "../../models/FichaDoClienteLink";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
@@ -94,8 +95,11 @@ export function ClientesPage() {
           </p>
           <ul className={`clientes-lista ${buscando ? "atualizando" : ""}`}>
             {clientes.map((cliente) => (
-              <li key={cliente.telefone}>
-                <Link to={`/admin/clientes/${cliente.telefone}`} className="cliente-item">
+              <li key={`${cliente.telefone}|${cliente.nome}`}>
+                <Link
+                  to={FichaDoClienteLink.para(cliente.telefone, cliente.nome)}
+                  className="cliente-item"
+                >
                   <span className="admin-avatar">{cliente.nome.charAt(0).toUpperCase()}</span>
                   <span className="cliente-item-texto">
                     <strong>{cliente.nome}</strong>

@@ -1,6 +1,7 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { DataAgenda } from "./DataAgenda";
+import { Pessoa } from "./Pessoa";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 /** Quantas vezes um tratamento foi feito pelo cliente. */
@@ -10,8 +11,9 @@ interface TratamentoFeito {
 }
 
 /**
- * Tudo o que a clínica sabe de um cliente: os agendamentos feitos com o mesmo telefone
- * (cada agendamento guarda o nome digitado na hora, então o telefone é o que une tudo).
+ * Tudo o que a clínica sabe de um cliente: os agendamentos com o mesmo telefone e o mesmo
+ * nome de quem foi atendido (sem ligar para acentos, maiúsculas e espaços). Um telefone pode
+ * ter várias pessoas: a mãe que marca para ela e para a filha tem duas fichas, uma de cada.
  * Os números (gasto, visitas...) contam só os atendimentos finalizados: o que foi
  * agendado e ainda não aconteceu não entra na conta.
  */
@@ -30,30 +32,21 @@ export class HistoricoCliente {
     );
   }
 
-  /** Separa os agendamentos por cliente (telefone) e monta um histórico para cada um. */
+  /** Separa os agendamentos por cliente (telefone + nome) e monta um histórico para cada um. */
   public static agrupar(agendamentos: Agendamento[]): HistoricoCliente[] {
-    const porTelefone = new Map<string, Agendamento[]>();
+    const porPessoa = new Map<string, Agendamento[]>();
     for (const agendamento of agendamentos) {
-      const telefone = agendamento.getCliente().getTelefoneDigitos();
-      porTelefone.set(telefone, [...(porTelefone.get(telefone) ?? []), agendamento]);
+      const pessoa = agendamento.getCliente().getIdentificador();
+      porPessoa.set(pessoa, [...(porPessoa.get(pessoa) ?? []), agendamento]);
     }
-    return [...porTelefone].map(
-      ([telefone, doCliente]) => new HistoricoCliente(telefone, doCliente)
+    return [...porPessoa.values()].map(
+      (daPessoa) => new HistoricoCliente(daPessoa[0].getCliente().getTelefoneDigitos(), daPessoa)
     );
   }
 
   /** "YYYY-MM-DD HH:MM": ordena certo como texto. */
   private static momento(agendamento: Agendamento): string {
     return `${DataAgenda.paraTexto(agendamento.getData())} ${agendamento.getHorarioInicio()}`;
-  }
-
-  /** Para busca sem diferenciar maiúsculas e acentos ("Mônica" acha "monica"). */
-  private static normalizar(texto: string): string {
-    return texto
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .trim();
   }
 
   public getTelefone(): string {
@@ -65,16 +58,39 @@ export class HistoricoCliente {
     return this.agendamentos[0].getCliente().getNome();
   }
 
-  /** true se o nome ou o telefone contém o texto buscado. */
+  /** true se é a ficha desta pessoa (mesmo nome, sem ligar para acentos e maiúsculas). */
+  public ehDe(nome: string): boolean {
+    return this.agendamentos[0].getCliente().temNome(nome);
+  }
+
+  /** Quem já marcou para esta pessoa usando o próprio telefone (ex.: a mãe), sem repetir. */
+  public getResponsaveis(): string[] {
+    const porNome = new Map<string, string>();
+    for (const agendamento of this.agendamentos) {
+      const nome = agendamento.getResponsavelNome();
+      if (nome !== null && !porNome.has(Pessoa.normalizarNome(nome))) {
+        porNome.set(Pessoa.normalizarNome(nome), nome);
+      }
+    }
+    return [...porNome.values()];
+  }
+
+  /**
+   * true se o nome, o telefone ou quem marcou contém o texto buscado ("Mônica" acha
+   * "monica"; buscar a mãe também acha a filha que ela agendou).
+   */
   public combinaCom(busca: string): boolean {
-    const texto = HistoricoCliente.normalizar(busca);
+    const texto = Pessoa.normalizarNome(busca);
     if (texto === "") {
       return true;
     }
     const digitos = texto.replace(/\D/g, "");
-    const nomes = new Set(this.agendamentos.map((agendamento) => agendamento.getCliente().getNome()));
+    const nomes = new Set([
+      ...this.agendamentos.map((agendamento) => agendamento.getCliente().getNome()),
+      ...this.getResponsaveis(),
+    ]);
     return (
-      [...nomes].some((nome) => HistoricoCliente.normalizar(nome).includes(texto)) ||
+      [...nomes].some((nome) => Pessoa.normalizarNome(nome).includes(texto)) ||
       (digitos.length >= 3 && this.telefone.includes(digitos))
     );
   }
@@ -152,11 +168,16 @@ export class HistoricoCliente {
     };
   }
 
-  /** Ficha completa: resumo, números e todos os agendamentos. */
-  public paraFicha(hoje: string) {
+  /**
+   * Ficha completa: resumo, números e todos os agendamentos. `outrasPessoas` = os nomes das
+   * outras pessoas atendidas com o mesmo telefone (para a ficha apontar para elas).
+   */
+  public paraFicha(hoje: string, outrasPessoas: string[] = []) {
     const primeiro = this.getPrimeiroAtendimento();
     return {
       ...this.paraResumo(hoje),
+      responsaveis: this.getResponsaveis(),
+      outrasPessoas,
       ticketMedio: this.getTicketMedio(),
       primeiroAtendimento: primeiro ? DataAgenda.paraTexto(primeiro.getData()) : null,
       proximoAgendamento: this.getProximoAgendamento(hoje),

@@ -1,3 +1,4 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import type { Agendamento } from "../../services/types";
@@ -115,7 +116,7 @@ export function ModalResumoAgendamento({
             <li>
               <IconeTelefone tamanho={16} />
               <span>
-                <small>Telefone</small>
+                <small>{new PessoasDoAgendamento(agendamento).rotuloDoTelefone()}</small>
                 {telefone.formatar()}
               </span>
             </li>

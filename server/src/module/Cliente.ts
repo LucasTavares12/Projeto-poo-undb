@@ -19,6 +19,19 @@ export class Cliente extends Pessoa {
     return this.id;
   }
 
+  /**
+   * O que identifica a pessoa atendida: telefone (só números) + nome normalizado. Um mesmo
+   * telefone pode ter várias pessoas (a mãe e a filha que ela agendou).
+   */
+  public getIdentificador(): string {
+    return `${this.getTelefoneDigitos()}|${Pessoa.normalizarNome(this.nome)}`;
+  }
+
+  /** true se é a mesma pessoa: mesmo telefone e mesmo nome (sem ligar para acentos e maiúsculas). */
+  public ehAMesmaPessoaQue(outro: Cliente): boolean {
+    return this.getIdentificador() === outro.getIdentificador();
+  }
+
   protected papel(): string {
     return "do cliente";
   }

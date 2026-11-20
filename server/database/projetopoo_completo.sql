@@ -1,4 +1,4 @@
-
+  
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -57,6 +57,7 @@ CREATE TABLE `agendamentos` (
   `lembrete_enviado_em` datetime DEFAULT NULL,
   `agradecimento_enviado_em` datetime DEFAULT NULL,
   `finalizado_em` datetime DEFAULT NULL,
+  `responsavel_nome` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   KEY `profissional_id` (`profissional_id`),

@@ -1,4 +1,6 @@
 import { Cliente } from "./Cliente";
+import { Pessoa } from "./Pessoa";
+import { Responsavel } from "./Responsavel";
 import { Profissional } from "./Profissional";
 import { Tratamento } from "./Tratamento";
 import { StatusAgendamento } from "./StatusAgendamento";
@@ -42,6 +44,12 @@ export class Agendamento {
    * finalizado antes de o sistema guardar essa data; aí vale a data do agendamento).
    */
   private finalizadoEm: Date | null;
+  /**
+   * Quem marcou, quando o atendimento é para outra pessoa (ex.: a mãe que agenda para a
+   * filha com o próprio telefone). null = a própria pessoa atendida marcou. O cliente do
+   * agendamento é sempre quem vai ser atendido; o telefone dele é o contato de quem marcou.
+   */
+  private responsavel: Responsavel | null;
 
   constructor(
     cliente: Cliente,
@@ -54,7 +62,8 @@ export class Agendamento {
     arquivado = false,
     lembreteEnviadoEm: Date | null = null,
     agradecimentoEnviadoEm: Date | null = null,
-    finalizadoEm: Date | null = null
+    finalizadoEm: Date | null = null,
+    responsavel: Responsavel | null = null
   ) {
     if (tratamentos.length === 0) {
       throw new ErroDeValidacao("O agendamento precisa ter ao menos um tratamento.");
@@ -71,6 +80,7 @@ export class Agendamento {
     this.lembreteEnviadoEm = lembreteEnviadoEm;
     this.agradecimentoEnviadoEm = agradecimentoEnviadoEm;
     this.finalizadoEm = finalizadoEm;
+    this.responsavel = responsavel;
   }
 
   public getId(): number | undefined {
@@ -79,6 +89,43 @@ export class Agendamento {
 
   public getCliente(): Cliente {
     return this.cliente;
+  }
+
+  /** Quem marcou para outra pessoa; null = a própria pessoa atendida marcou. */
+  public getResponsavel(): Responsavel | null {
+    return this.responsavel;
+  }
+
+  public getResponsavelNome(): string | null {
+    return this.responsavel?.getNome() ?? null;
+  }
+
+  public foiMarcadoPorOutraPessoa(): boolean {
+    return this.responsavel !== null;
+  }
+
+  /**
+   * Com quem a clínica fala sobre este horário: o dono do telefone. É quem marcou para
+   * outra pessoa ou, se a própria pessoa marcou, o cliente atendido.
+   */
+  public getContato(): Pessoa {
+    return this.responsavel ?? this.cliente;
+  }
+
+  /**
+   * Agendamento novo feito para outra pessoa: guarda quem marcou.
+   * Vazio ou igual ao nome de quem vai ser atendido = a própria pessoa marcou (fica null).
+   */
+  public definirResponsavel(nome: string | null | undefined): void {
+    this.responsavel = Responsavel.para(nome, this.cliente);
+  }
+
+  /**
+   * Pela página do cliente, ver, remarcar e cancelar valem para quem tem o telefone do
+   * agendamento: a própria pessoa ou quem marcou para ela (a mãe gerencia o da filha).
+   */
+  public pertenceAoTelefone(telefone: string): boolean {
+    return this.getContato().temTelefone(telefone);
   }
 
   public getProfissional(): Profissional {
@@ -271,6 +318,7 @@ export class Agendamento {
       horarioInicio: this.horarioInicio,
       status: this.status,
       cliente: this.cliente,
+      responsavelNome: this.getResponsavelNome(),
       profissional: this.profissional,
       tratamentos: this.tratamentos,
       valorTotal: this.getValorTotal(),

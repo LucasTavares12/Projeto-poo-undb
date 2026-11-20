@@ -3,8 +3,12 @@ import type { Agendamento, StatusAgendamento } from "./types";
 import type { TipoMensagem } from "../models/MensagemWhatsApp";
 
 export interface DadosNovoAgendamento {
+  /** Quem vai ser atendido. */
   clienteNome: string;
+  /** Contato (WhatsApp) de quem marcou. */
   clienteTelefone: string;
+  /** Quem marcou, quando é para outra pessoa (vazio = a própria pessoa). */
+  responsavelNome?: string;
   profissionalId: number;
   tratamentoIds: number[];
   data: string; // "YYYY-MM-DD"

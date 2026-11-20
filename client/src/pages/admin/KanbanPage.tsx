@@ -1,3 +1,4 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useCallback, useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
@@ -24,7 +25,7 @@ import {
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 import { Link } from "react-router-dom";
-import { Telefone } from "../../models/Telefone";
+import { FichaDoClienteLink } from "../../models/FichaDoClienteLink";
 import { BotaoWhatsApp } from "../../components/admin/BotaoWhatsApp";
 import { EtapaAgendamento } from "../../models/EtapaAgendamento";
 import { AgendamentosAtualizados } from "../../models/AgendamentosAtualizados";
@@ -527,7 +528,10 @@ export function KanbanPage() {
                         <span>
                           <strong>
                             <Link
-                              to={`/admin/clientes/${new Telefone(agendamento.cliente.telefone).getDigitos()}`}
+                              to={FichaDoClienteLink.para(
+                                agendamento.cliente.telefone,
+                                agendamento.cliente.nome
+                              )}
                               className="kanban-cartao-nome"
                               title="Abrir a ficha do cliente"
                               draggable={false}
@@ -538,6 +542,11 @@ export function KanbanPage() {
                           <span className="kanban-cartao-telefone">
                             <IconeTelefone tamanho={12} /> {agendamento.cliente.telefone}
                           </span>
+                          {new PessoasDoAgendamento(agendamento).marcadoPor() && (
+                            <span className="kanban-cartao-responsavel">
+                              {new PessoasDoAgendamento(agendamento).marcadoPor()}
+                            </span>
+                          )}
                         </span>
                       </div>
 

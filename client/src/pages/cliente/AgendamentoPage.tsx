@@ -33,6 +33,8 @@ import {
 import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
 import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
 import { Clinica } from "../../models/Clinica";
+import { QuemAgenda } from "../../models/QuemAgenda";
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
@@ -90,7 +92,11 @@ export function AgendamentoPage() {
   // Horário que o cliente escolheu em "Ver horários": volta pré-selecionado ao agendar, se couber.
   const horarioPreferido = useRef<string | null>(null);
 
+  // "Para mim" ou "Para outra pessoa" (ex.: a mãe que marca para a filha com o próprio
+  // telefone). clienteNome é sempre quem vai ser atendido; o telefone é de quem está marcando.
+  const [paraOutraPessoa, setParaOutraPessoa] = useState(false);
   const [clienteNome, setClienteNome] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
   // Só mostra os avisos de campo obrigatório depois da primeira tentativa de confirmar.
   const [tentouConfirmar, setTentouConfirmar] = useState(false);
@@ -217,18 +223,13 @@ export function AgendamentoPage() {
   const valorTotal = tratamentosSelecionados.getValorTotal();
   const duracaoTotal = tratamentosSelecionados.getDuracaoTotalMinutos();
 
-  // Campos obrigatórios do agendamento: nome, telefone, data e horário.
+  // Campos obrigatórios do agendamento: quem agenda (nomes e telefone), data e horário.
+  const quemAgenda = new QuemAgenda(paraOutraPessoa, clienteNome, responsavelNome, clienteTelefone);
   const errosDosDados = {
-    nome: clienteNome.trim() === "" ? "Informe seu nome." : null,
-    telefone:
-      clienteTelefone.trim() === ""
-        ? "Informe um telefone para contato."
-        : !new Telefone(clienteTelefone).ehValido()
-          ? "Telefone incompleto: informe o DDD e o número."
-          : null,
+    ...quemAgenda.erros(),
     dataHorario: data === "" || horarioInicio === null ? "Escolha a data e o horário." : null,
   };
-  const dadosValidos = !errosDosDados.nome && !errosDosDados.telefone && !errosDosDados.dataHorario;
+  const dadosValidos = quemAgenda.ehValido() && !errosDosDados.dataHorario;
 
   // O que foi escolhido até aqui, no formato do cartão de resumo.
   const resumoEscolhido = {
@@ -262,7 +263,9 @@ export function AgendamentoPage() {
     horarioPreferido.current = null;
     setTratamentoIds([]);
     setSelecaoHorario(null);
+    setParaOutraPessoa(false);
     setClienteNome("");
+    setResponsavelNome("");
     setClienteTelefone("");
     setTentouConfirmar(false);
     setAgendamentoConfirmado(null);
@@ -327,8 +330,7 @@ export function AgendamentoPage() {
     setErro(null);
     try {
       const agendamento = await agendamentoService.criar({
-        clienteNome: clienteNome.trim(),
-        clienteTelefone: clienteTelefone.trim(),
+        ...quemAgenda.paraEnvio(),
         profissionalId,
         tratamentoIds,
         data,
@@ -352,6 +354,7 @@ export function AgendamentoPage() {
   }
 
   if (agendamentoConfirmado) {
+    const pessoasConfirmadas = new PessoasDoAgendamento(agendamentoConfirmado);
     return (
       <LayoutCliente>
         <section className="passo passo-sucesso">
@@ -360,10 +363,18 @@ export function AgendamentoPage() {
               <IconeConfirmado tamanho={34} />
             </span>
             <h2>Agendamento confirmado!</h2>
-            <p>
-              <strong>{agendamentoConfirmado.cliente.nome.split(" ")[0]}</strong>, seu horário está
-              marcado. Te esperamos!
-            </p>
+            {pessoasConfirmadas.foiMarcadoPorOutraPessoa() ? (
+              <p>
+                <strong>{pessoasConfirmadas.contato().primeiroNome()}</strong>, o horário de{" "}
+                <strong>{pessoasConfirmadas.atendido().toString()}</strong> está marcado.
+                Esperamos vocês!
+              </p>
+            ) : (
+              <p>
+                <strong>{pessoasConfirmadas.atendido().primeiroNome()}</strong>, seu horário
+                está marcado. Te esperamos!
+              </p>
+            )}
           </header>
           <div className="passo-corpo">
             <ResumoAgendamento
@@ -551,8 +562,7 @@ export function AgendamentoPage() {
               {conferindo && (
                 <ConfirmacaoAgendamento
                   resumo={resumoEscolhido}
-                  clienteNome={clienteNome}
-                  clienteTelefone={clienteTelefone}
+                  quemAgenda={quemAgenda}
                   enviando={enviando}
                   erro={erro}
                   onRevisar={fecharConferencia}
@@ -564,15 +574,65 @@ export function AgendamentoPage() {
                 <p className="mensagem-erro">{errosDosDados.dataHorario}</p>
               )}
               <div className="formulario-cliente">
+                <fieldset className="para-quem">
+                  <legend>Para quem é o atendimento?</legend>
+                  <div className="para-quem-opcoes" role="radiogroup">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={!paraOutraPessoa}
+                      className={`para-quem-opcao ${!paraOutraPessoa ? "selecionada" : ""}`}
+                      onClick={() => setParaOutraPessoa(false)}
+                    >
+                      Para mim
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={paraOutraPessoa}
+                      className={`para-quem-opcao ${paraOutraPessoa ? "selecionada" : ""}`}
+                      onClick={() => setParaOutraPessoa(true)}
+                    >
+                      Para outra pessoa
+                    </button>
+                  </div>
+                  {paraOutraPessoa && (
+                    <p className="para-quem-dica">
+                      Ex.: um filho, a mãe ou uma amiga. Os avisos chegam no seu WhatsApp e você
+                      pode remarcar ou cancelar com o seu telefone.
+                    </p>
+                  )}
+                </fieldset>
+                {paraOutraPessoa && (
+                  <label className="campo-rotulo">
+                    <span>
+                      Seu nome <span className="campo-obrigatorio">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      className={`campo ${tentouConfirmar && errosDosDados.responsavel ? "invalido" : ""}`}
+                      placeholder="Quem está agendando"
+                      autoComplete="name"
+                      required
+                      aria-invalid={tentouConfirmar && Boolean(errosDosDados.responsavel)}
+                      value={responsavelNome}
+                      onChange={(evento) => setResponsavelNome(evento.target.value)}
+                    />
+                    {tentouConfirmar && errosDosDados.responsavel && (
+                      <span className="campo-erro">{errosDosDados.responsavel}</span>
+                    )}
+                  </label>
+                )}
                 <label className="campo-rotulo">
                   <span>
-                    Nome <span className="campo-obrigatorio">*</span>
+                    {paraOutraPessoa ? "Nome de quem vai ser atendido" : "Nome"}{" "}
+                    <span className="campo-obrigatorio">*</span>
                   </span>
                   <input
                     type="text"
                     className={`campo ${tentouConfirmar && errosDosDados.nome ? "invalido" : ""}`}
-                    placeholder="Seu nome completo"
-                    autoComplete="name"
+                    placeholder={paraOutraPessoa ? "Nome completo da pessoa" : "Seu nome completo"}
+                    autoComplete={paraOutraPessoa ? "off" : "name"}
                     required
                     aria-invalid={tentouConfirmar && Boolean(errosDosDados.nome)}
                     value={clienteNome}
@@ -584,7 +644,8 @@ export function AgendamentoPage() {
                 </label>
                 <label className="campo-rotulo">
                   <span>
-                    Telefone <span className="campo-obrigatorio">*</span>
+                    {paraOutraPessoa ? "Seu telefone (WhatsApp)" : "Telefone"}{" "}
+                    <span className="campo-obrigatorio">*</span>
                   </span>
                   <input
                     type="tel"

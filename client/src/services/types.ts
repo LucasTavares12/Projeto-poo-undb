@@ -38,7 +38,10 @@ export interface Agendamento {
   data: string;
   horarioInicio: string;
   status: StatusAgendamento;
+  /** Quem vai ser atendido. O telefone é o contato de quem marcou. */
   cliente: Cliente;
+  /** Quem marcou, quando foi para outra pessoa (null = a própria pessoa atendida marcou). */
+  responsavelNome: string | null;
   profissional: Profissional;
   tratamentos: Tratamento[];
   valorTotal: number;
@@ -122,7 +125,7 @@ export interface PeriodoBloqueado {
   dataFim: string;
 }
 
-/** Linha da lista de clientes (o telefone, só números, identifica o cliente). */
+/** Linha da lista de clientes (telefone, só números, + nome identificam o cliente). */
 export interface ClienteResumo {
   telefone: string;
   nome: string;
@@ -137,6 +140,10 @@ export interface ClienteResumo {
 export interface FichaDoCliente extends Omit<ClienteResumo, "proximoAgendamento"> {
   ticketMedio: number;
   primeiroAtendimento: string | null;
+  /** Quem já marcou para esta pessoa usando o próprio telefone (ex.: a mãe). */
+  responsaveis: string[];
+  /** Outras pessoas atendidas com o mesmo telefone. */
+  outrasPessoas: string[];
   proximoAgendamento: Agendamento | null;
   tratamentosMaisFeitos: { nome: string; quantidade: number }[];
   profissionais: string[];

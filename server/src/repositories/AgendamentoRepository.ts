@@ -2,6 +2,7 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { Repositorio } from "./Repositorio";
 import { Agendamento } from "../module/Agendamento";
 import { Cliente } from "../module/Cliente";
+import { Responsavel } from "../module/Responsavel";
 import { Profissional } from "../module/Profissional";
 import { Tratamento } from "../module/Tratamento";
 import { Horario } from "../module/Horario";
@@ -17,6 +18,7 @@ interface LinhaAgendamentoBase extends RowDataPacket {
   lembrete_enviado_em: Date | null;
   agradecimento_enviado_em: Date | null;
   finalizado_em: Date | null;
+  responsavel_nome: string | null;
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
@@ -43,7 +45,7 @@ export class AgendamentoRepository extends Repositorio {
   private static readonly SELECT_BASE = `
     SELECT
       a.id, a.data, a.hora_inicio, a.status, a.arquivado,
-      a.lembrete_enviado_em, a.agradecimento_enviado_em, a.finalizado_em,
+      a.lembrete_enviado_em, a.agradecimento_enviado_em, a.finalizado_em, a.responsavel_nome,
       c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
       p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
     FROM agendamentos a
@@ -82,17 +84,23 @@ export class AgendamentoRepository extends Repositorio {
     ALTER TABLE agendamentos ADD COLUMN finalizado_em DATETIME NULL
   `;
 
+  // Quem marcou, quando o atendimento é para outra pessoa (null = a própria pessoa marcou).
+  private static readonly ADICIONAR_RESPONSAVEL = `
+    ALTER TABLE agendamentos ADD COLUMN responsavel_nome VARCHAR(150) NULL
+  `;
+
   public async salvar(agendamento: Agendamento): Promise<Agendamento> {
     await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
-      `INSERT INTO agendamentos (cliente_id, profissional_id, data, hora_inicio, status)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO agendamentos (cliente_id, profissional_id, data, hora_inicio, status, responsavel_nome)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         agendamento.getCliente().getId(),
         agendamento.getProfissional().getId(),
         DataAgenda.paraTexto(agendamento.getData()),
         agendamento.getHorarioInicio().toString(),
         agendamento.getStatus(),
+        agendamento.getResponsavelNome(),
       ]
     );
 
@@ -403,6 +411,11 @@ export class AgendamentoRepository extends Repositorio {
         "finalizado_em",
         AgendamentoRepository.ADICIONAR_FINALIZADO_EM
       ),
+      this.garantirColuna(
+        "agendamentos",
+        "responsavel_nome",
+        AgendamentoRepository.ADICIONAR_RESPONSAVEL
+      ),
     ]);
   }
 
@@ -427,7 +440,8 @@ export class AgendamentoRepository extends Repositorio {
       Boolean(linha.arquivado),
       linha.lembrete_enviado_em,
       linha.agradecimento_enviado_em,
-      linha.finalizado_em
+      linha.finalizado_em,
+      linha.responsavel_nome ? new Responsavel(linha.responsavel_nome, cliente) : null
     );
   }
 }

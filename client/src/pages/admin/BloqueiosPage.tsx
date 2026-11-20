@@ -1,3 +1,4 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -192,6 +193,8 @@ export function BloqueiosPage() {
                 </span>
                 <span className="bloqueio-aviso-telefone">
                   <IconeTelefone tamanho={13} /> {agendamento.cliente.telefone}
+                  {new PessoasDoAgendamento(agendamento).foiMarcadoPorOutraPessoa() &&
+                    ` (${new PessoasDoAgendamento(agendamento).contato()})`}
                 </span>
               </li>
             ))}

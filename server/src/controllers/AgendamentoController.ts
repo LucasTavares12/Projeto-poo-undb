@@ -62,8 +62,15 @@ export class AgendamentoController extends Controlador {
   }
 
   private lerDadosNovoAgendamento(req: Request): DadosNovoAgendamento {
-    const { clienteNome, clienteTelefone, profissionalId, tratamentoIds, data, horarioInicio } =
-      req.body ?? {};
+    const {
+      clienteNome,
+      clienteTelefone,
+      responsavelNome,
+      profissionalId,
+      tratamentoIds,
+      data,
+      horarioInicio,
+    } = req.body ?? {};
 
     if (!data) {
       throw new ErroDeValidacao("Informe a data do agendamento.");
@@ -75,6 +82,7 @@ export class AgendamentoController extends Controlador {
     return {
       clienteNome,
       clienteTelefone,
+      responsavelNome: typeof responsavelNome === "string" ? responsavelNome : null,
       profissionalId: this.lerId(profissionalId, "Escolha um profissional."),
       tratamentoIds: this.lerIds(tratamentoIds, "Tratamento inválido."),
       data: DataAgenda.ler(data),

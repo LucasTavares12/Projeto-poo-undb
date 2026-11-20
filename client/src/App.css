@@ -1364,6 +1364,13 @@
   font-size: 12px;
 }
 
+.kanban-cartao-responsavel {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-style: italic;
+}
+
 .kanban-cartao-detalhes {
   display: flex;
   flex-direction: column;
@@ -3152,6 +3159,28 @@
   text-decoration: none;
 }
 
+/* Ficha: quem marcou para a pessoa e as outras pessoas do mesmo telefone. */
+.ficha-mesmo-telefone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-size: 14px;
+}
+
+.ficha-mesmo-telefone p {
+  margin: 0;
+}
+
+.ficha-mesmo-telefone a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .ficha-cabecalho {
   display: flex;
   align-items: center;
@@ -4144,6 +4173,66 @@
   font-weight: 400;
 }
 
+/* "Para quem é o atendimento?": para mim ou para outra pessoa (com o meu telefone). */
+.para-quem {
+  max-width: 360px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.para-quem legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: #3f2f32;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.para-quem-opcoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.para-quem-opcao {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--cliente-texto);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.para-quem-opcao:hover {
+  background: var(--principal-claro);
+}
+
+.para-quem-opcao.selecionada {
+  background: var(--principal);
+  color: #fff;
+  font-weight: 600;
+}
+
+.para-quem-opcao:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+.para-quem-dica {
+  margin: 8px 0 0;
+  color: var(--cliente-texto);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .formulario-cliente .campo-legenda {
   color: var(--cliente-texto);
 }
@@ -5038,6 +5127,42 @@
   border: 1px solid var(--cliente-borda);
   border-radius: 8px;
   text-align: left;
+}
+
+/* Meus agendamentos: telefone com horários de várias pessoas (a mãe e a filha). */
+.filtro-pessoas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filtro-pessoa {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--cliente-texto);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filtro-pessoa:hover {
+  background: var(--principal-claro);
+}
+
+.filtro-pessoa.selecionada {
+  border-color: var(--principal);
+  background: var(--principal);
+  color: #fff;
+  font-weight: 600;
+}
+
+.filtro-pessoa:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
 }
 
 .agendamento-cliente-detalhes {

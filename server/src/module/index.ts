@@ -5,6 +5,8 @@ export * from "./Pessoa";
 export * from "./Telefone";
 export * from "./PerfilDeAcesso";
 export * from "./Cliente";
+export * from "./Responsavel";
+export * from "./ClientesDoTelefone";
 export * from "./HistoricoCliente";
 export * from "./AgendaSemanal";
 export * from "./Profissional";

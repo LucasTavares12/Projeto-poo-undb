@@ -9,12 +9,32 @@ interface LinhaCliente extends RowDataPacket {
 }
 
 export class ClienteRepository extends Repositorio {
+  // Telefone só com os números: "(98) 98877-6655" e "98988776655" são o mesmo.
+  private static readonly TELEFONE_SO_DIGITOS =
+    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')";
+
   public async salvar(cliente: Cliente): Promise<Cliente> {
     const [resultado] = await this.pool.query<ResultSetHeader>(
       "INSERT INTO clientes (nome, telefone) VALUES (?, ?)",
       [cliente.getNome(), cliente.getTelefone()]
     );
     return new Cliente(cliente.getNome(), cliente.getTelefone(), resultado.insertId);
+  }
+
+  /**
+   * Agendamento novo: reaproveita o cliente com o mesmo telefone e o mesmo nome (sem ligar
+   * para acentos, maiúsculas e espaços) e só cadastra se ainda não existir. Um telefone pode
+   * ter várias pessoas (ex.: a mãe e a filha): cada uma é um cliente diferente.
+   */
+  public async buscarOuSalvar(cliente: Cliente): Promise<Cliente> {
+    const [linhas] = await this.pool.query<LinhaCliente[]>(
+      `SELECT * FROM clientes WHERE ${ClienteRepository.TELEFONE_SO_DIGITOS} = ? ORDER BY id`,
+      [cliente.getTelefoneDigitos()]
+    );
+    const existente = linhas
+      .map((linha) => this.paraCliente(linha))
+      .find((doTelefone) => doTelefone.ehAMesmaPessoaQue(cliente));
+    return existente ?? this.salvar(cliente);
   }
 
   public async buscarPorId(id: number): Promise<Cliente | null> {
