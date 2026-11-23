@@ -244,3 +244,24 @@ export function IconeSino(props: Props) {
     </Icone>
   );
 }
+
+export function IconePaleta(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A1.6 1.6 0 0 1 12 22z" />
+      <circle cx="7.5" cy="10.5" r="1.2" />
+      <circle cx="12" cy="7" r="1.2" />
+      <circle cx="16.5" cy="10.5" r="1.2" />
+    </Icone>
+  );
+}
+
+export function IconeImagem(props: Props) {
+  return (
+    <Icone {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="M21 15l-5-5L5 21" />
+    </Icone>
+  );
+}

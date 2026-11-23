@@ -9,6 +9,7 @@ import { DataAgenda } from "../../models/DataAgenda";
 import { IconeMais } from "../Icones";
 import { Senha } from "../../models/Senha";
 import { OpcaoProfissional } from "../../models/OpcaoProfissional";
+import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 
 const usuarioService = new UsuarioService();
 const profissionalService = new ProfissionalService();
@@ -20,7 +21,15 @@ interface Edicao {
 }
 
 // profissionalId fica como texto do <select>: "" = nenhum (acesso total).
-const CAMPOS_VAZIOS = { email: "", senha: "", confirmacao: "", senhaAtual: "", profissionalId: "" };
+// administrador: "sim" = o profissional vinculado também administra a clínica.
+const CAMPOS_VAZIOS = {
+  email: "",
+  senha: "",
+  confirmacao: "",
+  senhaAtual: "",
+  profissionalId: "",
+  administrador: "",
+};
 
 /** Aba "Configurações" > "Usuários do sistema": criar, editar e-mail, trocar senha e excluir. */
 export function GerenciarUsuarios() {
@@ -77,6 +86,7 @@ export function GerenciarUsuarios() {
     }
     if (modo === "profissional") {
       alterarCampo("profissionalId", OpcaoProfissional.paraValor(usuario.profissionalId));
+      alterarCampo("administrador", usuario.administrador ? "sim" : "");
     }
   }
 
@@ -111,7 +121,8 @@ export function GerenciarUsuarios() {
       const novo = await usuarioService.criar(
         campos.email.trim(),
         campos.senha,
-        OpcaoProfissional.lerId(campos.profissionalId)
+        OpcaoProfissional.lerId(campos.profissionalId),
+        campos.administrador === "sim"
       );
       setUsuarios((lista) => [...lista, novo].sort((a, b) => a.email.localeCompare(b.email)));
     }, "Usuário criado.");
@@ -125,12 +136,24 @@ export function GerenciarUsuarios() {
 
     if (edicao.modo === "profissional") {
       const profissionalId = OpcaoProfissional.lerId(campos.profissionalId);
+      const administrador = profissionalId !== null && campos.administrador === "sim";
       await executar(async () => {
-        const atualizado = await usuarioService.vincularProfissional(usuario.id, profissionalId);
+        const atualizado = await usuarioService.vincularProfissional(
+          usuario.id,
+          profissionalId,
+          administrador
+        );
+        if (usuario.id === idLogado) {
+          // O próprio acesso mudou: recarrega para o menu e as telas seguirem o acesso novo.
+          window.location.reload();
+          return;
+        }
         setUsuarios((lista) => lista.map((item) => (item.id === usuario.id ? atualizado : item)));
       }, profissionalId === null
         ? `${usuario.email} agora tem acesso total.`
-        : `${usuario.email} agora vê só os dados de ${nomeDoProfissional(profissionalId)}.`);
+        : administrador
+          ? `${usuario.email} agora administra a clínica e vê só os agendamentos de ${nomeDoProfissional(profissionalId)}.`
+          : `${usuario.email} agora vê só os dados de ${nomeDoProfissional(profissionalId)}.`);
       return;
     }
 
@@ -241,6 +264,8 @@ export function GerenciarUsuarios() {
               valor={campos.profissionalId}
               opcoes={opcoesDeProfissional(null)}
               onAlterar={(valor) => alterarCampo("profissionalId", valor)}
+              administrador={campos.administrador === "sim"}
+              onAlterarAdministrador={(sim) => alterarCampo("administrador", sim ? "sim" : "")}
             />
           </div>
           <div className="admin-acoes">
@@ -275,10 +300,7 @@ export function GerenciarUsuarios() {
                   key={usuario.id}
                   usuario={usuario}
                   ehVoce={ehVoce}
-                  ehUnico={
-                    usuario.profissionalId === null &&
-                    usuarios.filter((item) => item.profissionalId === null).length <= 1
-                  }
+                  ehUnico={PerfilDeAcesso.ehUnicoAdministrador(usuario, usuarios)}
                   nomeProfissional={
                     usuario.profissionalId === null ? null : nomeDoProfissional(usuario.profissionalId)
                   }
@@ -305,8 +327,11 @@ export function GerenciarUsuarios() {
 
       <p className="admin-dica usuarios-dica-unico">
         Usuários ligados a um profissional só veem os agendamentos, horários e relatórios daquele
-        profissional. Sem profissional, o usuário tem acesso total. Sempre fica pelo menos um
-        usuário com acesso total.
+        profissional. Marcando "também é administrador", o profissional continua vendo só os
+        próprios agendamentos, mas administra o resto da clínica (tratamentos, profissionais,
+        horários, folgas, relatórios, usuários, configurações e personalização). Sem
+        profissional, o usuário tem acesso total. Sempre fica pelo menos um usuário que
+        administra a clínica.
       </p>
     </section>
   );
@@ -315,7 +340,7 @@ export function GerenciarUsuarios() {
 interface LinhaProps {
   usuario: Usuario;
   ehVoce: boolean;
-  /** Único usuário com acesso total: não pode ser excluído nem vinculado. */
+  /** Único usuário que administra a clínica: não pode ser excluído. */
   ehUnico: boolean;
   /** Nome do profissional vinculado; null = acesso total. */
   nomeProfissional: string | null;
@@ -363,7 +388,10 @@ function UsuarioLinha({
         </td>
         <td data-rotulo="Acesso">
           {nomeProfissional ? (
-            <span className="usuarios-acesso profissional">{nomeProfissional}</span>
+            <span className="usuarios-acesso profissional">
+              {nomeProfissional}
+              {usuario.administrador && <span className="admin-etiqueta">Admin</span>}
+            </span>
           ) : (
             <span className="usuarios-acesso">Acesso total</span>
           )}
@@ -388,21 +416,17 @@ function UsuarioLinha({
               <button type="button" className="admin-botao" onClick={() => onEditar("senha")}>
                 {ehVoce ? "Alterar senha" : "Redefinir senha"}
               </button>
-              <button
-                type="button"
-                className="admin-botao"
-                onClick={() => onEditar("profissional")}
-                disabled={ehUnico}
-                title={ehUnico ? "Precisa sobrar pelo menos um usuário com acesso total." : undefined}
-              >
-                Profissional
+              <button type="button" className="admin-botao" onClick={() => onEditar("profissional")}>
+                Acesso
               </button>
               <button
                 type="button"
                 className="admin-botao perigo"
                 onClick={onPedirExclusao}
                 disabled={ehUnico}
-                title={ehUnico ? "Precisa sobrar pelo menos um usuário com acesso total." : undefined}
+                title={
+                  ehUnico ? "Precisa sobrar pelo menos um usuário que administre a clínica." : undefined
+                }
               >
                 Excluir
               </button>
@@ -421,6 +445,8 @@ function UsuarioLinha({
                     valor={campos.profissionalId}
                     opcoes={opcoesDeProfissional}
                     onAlterar={(valor) => onAlterarCampo("profissionalId", valor)}
+                    administrador={campos.administrador === "sim"}
+                    onAlterarAdministrador={(sim) => onAlterarCampo("administrador", sim ? "sim" : "")}
                   />
                 ) : edicao.modo === "email" ? (
                   <label>
@@ -481,7 +507,7 @@ function UsuarioLinha({
                     : edicao.modo === "email"
                       ? "Salvar e-mail"
                       : edicao.modo === "profissional"
-                        ? "Salvar vínculo"
+                        ? "Salvar acesso"
                         : "Salvar senha"}
                 </button>
                 <button type="button" className="admin-botao" onClick={onCancelar}>
@@ -500,23 +526,55 @@ interface SeletorDeVinculoProps {
   valor: string;
   opcoes: { profissional: Profissional; dono?: Usuario }[];
   onAlterar: (valor: string) => void;
+  /** Profissional que também administra a clínica (só aparece com profissional escolhido). */
+  administrador: boolean;
+  onAlterarAdministrador: (administrador: boolean) => void;
 }
 
-/** Escolhe o profissional da conta; "Nenhum" = acesso total. */
-function SeletorDeVinculo({ valor, opcoes, onAlterar }: SeletorDeVinculoProps) {
+/**
+ * Escolhe o profissional da conta ("Nenhum" = acesso total) e, com profissional,
+ * se ele também administra a clínica.
+ */
+function SeletorDeVinculo({
+  valor,
+  opcoes,
+  onAlterar,
+  administrador,
+  onAlterarAdministrador,
+}: SeletorDeVinculoProps) {
   return (
-    <label>
-      Profissional vinculado
-      <select value={valor} onChange={(evento) => onAlterar(evento.target.value)}>
-        <option value="">Nenhum (acesso total)</option>
-        {opcoes.map(({ profissional, dono }) => (
-          <option key={profissional.id} value={profissional.id} disabled={Boolean(dono)}>
-            {profissional.nome}
-            {dono ? ` (já vinculado a ${dono.email})` : ""}
-          </option>
-        ))}
-      </select>
-    </label>
+    <>
+      <label>
+        Profissional vinculado
+        <select value={valor} onChange={(evento) => onAlterar(evento.target.value)}>
+          <option value="">Nenhum (acesso total)</option>
+          {opcoes.map(({ profissional, dono }) => (
+            <option key={profissional.id} value={profissional.id} disabled={Boolean(dono)}>
+              {profissional.nome}
+              {dono ? ` (já vinculado a ${dono.email})` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+      {valor !== "" && (
+        <label className="admin-opcao usuarios-opcao-admin">
+          <input
+            type="checkbox"
+            className="admin-interruptor"
+            checked={administrador}
+            onChange={(evento) => onAlterarAdministrador(evento.target.checked)}
+          />
+          <span>
+            <strong>Também é administrador da clínica</strong>
+            <span className="admin-opcao-descricao">
+              Para o dono ou responsável: continua vendo só os próprios agendamentos, mas
+              gerencia tratamentos, profissionais, horários, folgas, relatórios, usuários,
+              configurações e a personalização do sistema.
+            </span>
+          </span>
+        </label>
+      )}
+    </>
   );
 }
 

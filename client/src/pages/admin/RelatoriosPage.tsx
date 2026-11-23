@@ -34,7 +34,8 @@ interface DadosDoMes {
 
 export function RelatoriosPage() {
   // Conta ligada a um profissional: o relatório é sempre o dele (o servidor também garante isso).
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = new PerfilDeAcesso(useUsuarioLogado()).naGestao().getProfissionalId();
   const [mes, setMes] = useState<MesReferencia>(() => MesReferencia.atual());
   // null = todos os profissionais juntos
   const [profissionalId, setProfissionalId] = useState<number | null>(proprioId);

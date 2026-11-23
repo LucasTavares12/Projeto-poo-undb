@@ -4,6 +4,7 @@ import { ConfiguracaoService } from "../../services/ConfiguracaoService";
 import type { Configuracoes } from "../../services/types";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { GerenciarUsuarios } from "../../components/admin/GerenciarUsuarios";
+import { ConfiguracoesCompartilhadas } from "../../models/ConfiguracoesCompartilhadas";
 
 const configuracaoService = new ConfiguracaoService();
 
@@ -58,6 +59,7 @@ export function ConfiguracoesPage() {
       const atualizadas = await configuracaoService.atualizar(alteradas);
       setConfiguracoes(atualizadas);
       setSalvas(atualizadas);
+      ConfiguracoesCompartilhadas.instancia().publicar(atualizadas);
       setMensagem("Configurações salvas.");
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);

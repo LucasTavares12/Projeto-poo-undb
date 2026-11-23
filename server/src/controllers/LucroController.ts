@@ -17,7 +17,7 @@ export class LucroController extends Controlador {
         await this.servico.calcular(
           String(req.query.mes ?? ""),
           this.lerProfissional(req.query.profissionalId),
-          SessaoDaRequisicao.profissionalId(res)
+          SessaoDaRequisicao.profissionalNaGestao(res)
         )
       );
     } catch (erro) {
@@ -33,7 +33,7 @@ export class LucroController extends Controlador {
           String(req.params.mes),
           req.body?.valor,
           this.lerProfissional(req.body?.profissionalId),
-          SessaoDaRequisicao.profissionalId(res)
+          SessaoDaRequisicao.profissionalNaGestao(res)
         )
       );
     } catch (erro) {
@@ -48,7 +48,7 @@ export class LucroController extends Controlador {
         await this.servico.apagarGasto(
           String(req.params.mes),
           this.lerProfissional(req.query.profissionalId),
-          SessaoDaRequisicao.profissionalId(res)
+          SessaoDaRequisicao.profissionalNaGestao(res)
         )
       );
     } catch (erro) {

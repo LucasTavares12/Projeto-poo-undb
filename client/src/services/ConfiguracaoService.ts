@@ -10,4 +10,9 @@ export class ConfiguracaoService extends ApiClient {
   public atualizar(dados: Partial<Configuracoes>): Promise<Configuracoes> {
     return this.put<Configuracoes>("/configuracoes", dados);
   }
+
+  /** Volta nome, cores e logo para o visual padrão do sistema. */
+  public restaurarVisual(): Promise<Configuracoes> {
+    return this.post<Configuracoes>("/configuracoes/visual/restaurar", {});
+  }
 }

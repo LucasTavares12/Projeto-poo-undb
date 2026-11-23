@@ -35,7 +35,8 @@ interface Aviso {
 
 export function BloqueiosPage() {
   // Conta ligada a profissional: só bloqueia a própria agenda (feriado da clínica é do acesso total).
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = new PerfilDeAcesso(useUsuarioLogado()).naGestao().getProfissionalId();
   const perfil = new PerfilDeAcesso({ profissionalId: proprioId });
   const acessoTotal = perfil.temAcessoTotal();
   const hoje = DataAgenda.hoje().toString();

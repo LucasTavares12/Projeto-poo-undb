@@ -1,14 +1,10 @@
 import { ConfiguracoesClinica } from "../module/ConfiguracoesClinica";
+import type { AlteracaoDeConfiguracoes } from "../module/ConfiguracoesClinica";
 import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
-import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
-export interface AlteracaoDeConfiguracoes {
-  /** undefined = não mexe nessa opção. */
-  botaoEntrarVisivel?: boolean;
-  cadastroLiberado?: boolean;
-}
+export type { AlteracaoDeConfiguracoes };
 
-/** Preferências gerais da clínica (aba "Configurações"). */
+/** Preferências gerais da clínica (abas "Configurações" e "Personalização"). */
 export class ConfiguracaoService {
   private readonly repositorio = new ConfiguracaoRepository();
 
@@ -18,16 +14,16 @@ export class ConfiguracaoService {
 
   /** Altera só as opções informadas; o resto continua como estava. */
   public async atualizar(alteracao: AlteracaoDeConfiguracoes): Promise<ConfiguracoesClinica> {
-    if (alteracao.botaoEntrarVisivel === undefined && alteracao.cadastroLiberado === undefined) {
-      throw new ErroDeValidacao("Nenhuma configuração conhecida foi enviada.");
-    }
     const configuracoes = await this.repositorio.carregar();
-    if (alteracao.botaoEntrarVisivel !== undefined) {
-      configuracoes.setBotaoEntrarVisivel(alteracao.botaoEntrarVisivel);
-    }
-    if (alteracao.cadastroLiberado !== undefined) {
-      configuracoes.setCadastroLiberado(alteracao.cadastroLiberado);
-    }
+    configuracoes.aplicar(alteracao);
+    await this.repositorio.salvar(configuracoes);
+    return configuracoes;
+  }
+
+  /** Volta nome, cores e logo para o visual padrão (as outras opções não mudam). */
+  public async restaurarVisualPadrao(): Promise<ConfiguracoesClinica> {
+    const configuracoes = await this.repositorio.carregar();
+    configuracoes.restaurarVisualPadrao();
     await this.repositorio.salvar(configuracoes);
     return configuracoes;
   }

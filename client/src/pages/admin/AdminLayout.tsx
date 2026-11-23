@@ -12,6 +12,7 @@ import type { UsuarioLogado } from "../../services/types";
 import {
   IconeBloqueio,
   IconeBrilho,
+  IconePaleta,
   IconeCalendario,
   IconeCliente,
   IconeEngrenagem,
@@ -25,6 +26,9 @@ import {
 } from "../../components/Icones";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 import { useNotificacoes } from "../../hooks/useNotificacoes";
+import { useConfiguracoes } from "../../hooks/useConfiguracoes";
+import { LogoDaClinica } from "../../components/MarcaDaClinica";
+import { Clinica } from "../../models/Clinica";
 import {
   BotaoSino,
   ModalDeNotificacoes,
@@ -39,6 +43,9 @@ export function AdminLayout() {
   const logado = SessaoAdmin.estaAtiva();
 
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
+  const configuracoes = useConfiguracoes();
+  const nomeClinica = configuracoes?.nomeClinica ?? Clinica.NOME_PADRAO;
+  const logo = configuracoes?.logo ?? null;
   const [erro, setErro] = useState<string | null>(null);
   // No celular o menu vira uma gaveta. Guarda a página em que foi aberto: ao navegar, fecha sozinho.
   const [menuAbertoEm, setMenuAbertoEm] = useState<string | null>(null);
@@ -109,7 +116,8 @@ export function AdminLayout() {
   }
 
   const perfil = new PerfilDeAcesso(usuario);
-  const acessoTotal = perfil.temAcessoTotal();
+  // Menu da gestão: o profissional administrador vê tudo como quem tem acesso total.
+  const administra = perfil.administraClinica();
   if (!perfil.podeAbrir(pathname)) {
     return <Navigate to="/admin" replace />;
   }
@@ -129,10 +137,8 @@ export function AdminLayout() {
           <IconeMenu tamanho={22} />
         </button>
         <span className="admin-topo-titulo">
-          <span className="admin-marca-logo">
-            <IconeCalendario tamanho={16} />
-          </span>
-          Painel da Clínica
+          <LogoDaClinica logo={logo} tamanho={16} />
+          <span className="admin-topo-nome">{nomeClinica}</span>
         </span>
         <BotaoSino
           naoLidas={naoLidas}
@@ -170,11 +176,11 @@ export function AdminLayout() {
 
       <aside id="admin-lateral" className="admin-lateral">
         <div className="admin-marca">
-          <span className="admin-marca-logo">
-            <IconeCalendario tamanho={20} />
-          </span>
-          <span>
-            <span className="admin-lateral-titulo">Painel da Clínica</span>
+          <LogoDaClinica logo={logo} tamanho={20} />
+          <span className="admin-marca-texto">
+            <span className="admin-lateral-titulo" title={nomeClinica}>
+              {nomeClinica}
+            </span>
             <span className="admin-marca-subtitulo">Gestão de agendamentos</span>
           </span>
           <button
@@ -204,13 +210,13 @@ export function AdminLayout() {
           <NavLink to="/admin/agenda">
             <IconeCalendario /> Agenda
           </NavLink>
-          {acessoTotal && (
+          {administra && (
             <NavLink to="/admin/tratamentos">
               <IconeBrilho /> Tratamentos
             </NavLink>
           )}
           <NavLink to="/admin/profissionais">
-            <IconePessoas /> {acessoTotal ? "Profissionais" : "Meu cadastro"}
+            <IconePessoas /> {administra ? "Profissionais" : "Meu cadastro"}
           </NavLink>
           <NavLink to="/admin/horarios">
             <IconeRelogio /> Horários
@@ -226,10 +232,13 @@ export function AdminLayout() {
           </NavLink>
         </nav>
 
-        {acessoTotal && (
+        {administra && (
           <>
             <span className="admin-nav-secao">Sistema</span>
             <nav className="admin-nav">
+              <NavLink to="/admin/personalizacao">
+                <IconePaleta /> Personalização
+              </NavLink>
               <NavLink to="/admin/configuracoes">
                 <IconeEngrenagem /> Configurações
               </NavLink>
@@ -240,8 +249,8 @@ export function AdminLayout() {
         <div className="admin-usuario">
           <span className="admin-avatar">{(usuario.email.charAt(0) || "A").toUpperCase()}</span>
           <span className="admin-usuario-texto">
-            <span className="admin-usuario-papel" title={usuario.profissionalNome ?? undefined}>
-              {acessoTotal ? "Administrador" : usuario.profissionalNome}
+            <span className="admin-usuario-papel" title={perfil.descreverPapel(usuario.profissionalNome)}>
+              {perfil.descreverPapel(usuario.profissionalNome)}
             </span>
             <span className="admin-usuario-email" title={usuario.email}>
               {usuario.email}

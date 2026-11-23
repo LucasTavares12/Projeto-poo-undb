@@ -58,6 +58,14 @@ export interface Configuracoes {
   botaoEntrarVisivel: boolean;
   /** Botão "Cadastrar" na página de agendamento e criação de contas novas. */
   cadastroLiberado: boolean;
+  /** Nome da clínica (barra lateral, página de agendamento e mensagens). */
+  nomeClinica: string;
+  /** Cor principal no formato "#rrggbb"; null = cor padrão do sistema. */
+  corPrincipal: string | null;
+  /** Cor da barra lateral do painel; null = cor padrão do sistema. */
+  corLateral: string | null;
+  /** Logo da clínica como imagem base64 (data URL); null = ícone padrão. */
+  logo: string | null;
 }
 
 export interface FaturamentoDoDia {
@@ -115,6 +123,8 @@ export interface Usuario {
   criadoEm: string | null;
   /** Profissional a quem a conta pertence; null = acesso total. */
   profissionalId: number | null;
+  /** Profissional que também administra a clínica (vê só os próprios agendamentos). */
+  administrador: boolean;
 }
 
 /** Quem está logado no painel. Com profissional, só vê o que é daquele profissional. */
@@ -123,6 +133,8 @@ export interface UsuarioLogado {
   email: string;
   profissionalId: number | null;
   profissionalNome: string | null;
+  /** Profissional que também administra a clínica. */
+  administrador: boolean;
 }
 
 /** Folga/férias de um profissional ou feriado da clínica (profissionalId null). */

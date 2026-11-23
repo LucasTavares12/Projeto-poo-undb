@@ -19,12 +19,14 @@ export class UsuarioService {
 
   /**
    * Criado por quem já está logado: não depende do cadastro público estar liberado.
-   * `profissionalId` opcional já cria a conta ligada àquele profissional.
+   * `profissionalId` opcional já cria a conta ligada àquele profissional; `administrador`
+   * faz esse profissional também administrar a clínica.
    */
   public async criar(
     email: string,
     senha: string,
-    profissionalId: number | null = null
+    profissionalId: number | null = null,
+    administrador = false
   ): Promise<Administrador> {
     const novo = await Administrador.comSenha(email, senha);
     if (await this.repositorio.buscarPorEmail(novo.getEmail())) {
@@ -32,25 +34,37 @@ export class UsuarioService {
     }
     await this.validarProfissionalLivre(profissionalId, null);
     novo.vincularProfissional(profissionalId);
+    if (profissionalId !== null) {
+      novo.definirAdministrador(administrador);
+    }
     return this.repositorio.salvar(novo);
   }
 
   /**
-   * Liga a conta a um profissional (ela passa a ver só o que é dele) ou desliga
-   * (null: volta a ter acesso total). Sempre sobra ao menos uma conta com acesso total.
+   * Define o acesso da conta: ligada a um profissional (vê só os agendamentos dele) ou sem
+   * profissional (null: acesso total). Com profissional, `administrador` diz se ele também
+   * administra a clínica. Sempre sobra ao menos uma conta que administra a clínica.
    */
-  public async vincularProfissional(id: number, profissionalId: number | null): Promise<Administrador> {
+  public async vincularProfissional(
+    id: number,
+    profissionalId: number | null,
+    administrador = false
+  ): Promise<Administrador> {
     const usuario = await this.buscar(id);
     await this.validarProfissionalLivre(profissionalId, id);
 
-    if (usuario.temAcessoTotal() && profissionalId !== null) {
-      await this.garantirOutroComAcessoTotal(
-        "É preciso manter pelo menos um usuário com acesso total. Crie outro usuário sem " +
-          "profissional antes de vincular este."
+    const continuaAdministrando = profissionalId === null || administrador;
+    if (usuario.administraClinica() && !continuaAdministrando) {
+      await this.garantirOutroAdministrador(
+        "É preciso manter pelo menos um usuário que administre a clínica (acesso total ou " +
+          "profissional administrador). Dê esse acesso a outro usuário antes de tirar deste."
       );
     }
 
     usuario.vincularProfissional(profissionalId);
+    if (profissionalId !== null) {
+      usuario.definirAdministrador(administrador);
+    }
     await this.repositorio.atualizar(usuario);
     return usuario;
   }
@@ -90,14 +104,14 @@ export class UsuarioService {
 
   /**
    * Exclui um usuário, inclusive a própria conta de quem está logado, desde que sobre
-   * pelo menos um usuário com acesso total: senão ninguém mais administraria a clínica.
+   * pelo menos um usuário que administre a clínica: senão ninguém mais a administraria.
    */
   public async excluir(id: number): Promise<void> {
     const usuario = await this.buscar(id);
-    if (usuario.temAcessoTotal()) {
-      await this.garantirOutroComAcessoTotal(
-        "Este é o único usuário com acesso total. Crie outro usuário sem profissional " +
-          "antes de excluí-lo."
+    if (usuario.administraClinica()) {
+      await this.garantirOutroAdministrador(
+        "Este é o único usuário que administra a clínica. Dê acesso total ou de " +
+          "administrador a outro usuário antes de excluí-lo."
       );
     }
     await this.repositorio.deletar(id);
@@ -123,8 +137,8 @@ export class UsuarioService {
     }
   }
 
-  private async garantirOutroComAcessoTotal(mensagem: string): Promise<void> {
-    if ((await this.repositorio.contarComAcessoTotal()) <= 1) {
+  private async garantirOutroAdministrador(mensagem: string): Promise<void> {
+    if ((await this.repositorio.contarAdministradores()) <= 1) {
       throw new ErroAutenticacao(mensagem, 400);
     }
   }

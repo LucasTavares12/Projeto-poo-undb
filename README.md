@@ -78,12 +78,15 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Horários** | Grade semanal de cada profissional: clica-se nos horários (de 30 em 30 minutos) para liberar ou bloquear. Os horários liberados se repetem toda semana. |
 | **Folgas e feriados** | Fecha dias inteiros na agenda de um profissional (folga, férias, atestado) ou da clínica inteira (feriado). Nesses dias nenhum horário aparece livre. Se já houver agendamentos no período, o sistema avisa quais são. |
 | **Relatórios** | Faturamento do mês (com comparação com o mês anterior), número de atendimentos, ticket médio, melhor dia, gráfico de faturamento por dia, tratamentos mais realizados e faturamento por profissional. Na parte **Lucro**, informa-se o gasto do mês e o sistema mostra o lucro (ou prejuízo) e a margem: com "Todos os profissionais", é o lucro da clínica (faturamento total − gasto da clínica); escolhendo um profissional, é o lucro dele (faturamento dele − gasto próprio dele). Cada profissional vê e informa só o próprio; quem tem acesso total vê e informa todos. O gasto pode ser editado ou apagado (se foi informado errado) e, se o mês ainda não tem gasto, o sistema sugere o valor do mês anterior. |
-| **Configurações e usuários** | Liga ou desliga os botões "Entrar" e "Cadastrar" na página pública. Gerencia as contas do painel: criar usuário, trocar e-mail, redefinir senha, excluir e vincular a um profissional. |
+| **Configurações e usuários** | Liga ou desliga os botões "Entrar" e "Cadastrar" na página pública. Gerencia as contas do painel: criar usuário, trocar e-mail, redefinir senha, excluir, vincular a um profissional e marcar o profissional como administrador da clínica. |
+| **Personalização** | Deixa o sistema com a cara da clínica: nome da clínica (barra lateral, página de agendamento, título da aba e mensagens de WhatsApp), logo no lugar do ícone (a imagem é reduzida no navegador antes de enviar) e as cores principal e da barra lateral, com combinações prontas, prévia ao vivo antes de salvar e botão para restaurar o visual padrão. Ao salvar, o painel e a página do cliente mudam na hora. |
 
 ### Contas e permissões
 
 - **Acesso total** (conta sem profissional vinculado): vê e altera tudo da clínica.
-- **Conta de profissional**: só vê e altera o que é daquele profissional (agendamentos, agenda, horários, folgas, clientes e relatório próprios). Não acessa Tratamentos nem Configurações.
+- **Conta de profissional**: só vê e altera o que é daquele profissional (agendamentos, agenda, horários, folgas, clientes e relatório próprios). Não acessa Tratamentos, Configurações nem Personalização.
+- **Profissional administrador** (conta de profissional marcada como "também é administrador da clínica", para o dono ou responsável que também atende): nos **agendamentos** continua vendo só os próprios (quadro, agenda, clientes e avisos), mas **administra o resto da clínica** como o acesso total: tratamentos, profissionais, horários e folgas de todos, feriados, relatórios e lucro da clínica, usuários, configurações e personalização.
+- Sempre fica pelo menos uma conta que administra a clínica (acesso total ou profissional administrador).
 - As regras de permissão são conferidas no servidor, não só na tela.
 
 ### Visual

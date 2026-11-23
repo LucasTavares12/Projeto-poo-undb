@@ -14,7 +14,8 @@ const horarioService = new HorarioDisponivelService();
 const grade = new GradeSemanal();
 
 export function HorariosPage() {
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = new PerfilDeAcesso(useUsuarioLogado()).naGestao().getProfissionalId();
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);

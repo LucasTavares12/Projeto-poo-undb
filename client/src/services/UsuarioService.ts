@@ -8,13 +8,26 @@ export class UsuarioService extends ApiClient {
   }
 
   /** `profissionalId` null = conta com acesso total. */
-  public criar(email: string, senha: string, profissionalId: number | null): Promise<Usuario> {
-    return this.post<Usuario>("/usuarios", { email, senha, profissionalId });
+  /** `administrador` = o profissional vinculado também administra a clínica. */
+  public criar(
+    email: string,
+    senha: string,
+    profissionalId: number | null,
+    administrador = false
+  ): Promise<Usuario> {
+    return this.post<Usuario>("/usuarios", { email, senha, profissionalId, administrador });
   }
 
-  /** Liga a conta a um profissional, ou desliga (null) devolvendo o acesso total. */
-  public vincularProfissional(id: number, profissionalId: number | null): Promise<Usuario> {
-    return this.put<Usuario>(`/usuarios/${id}/profissional`, { profissionalId });
+  /**
+   * Liga a conta a um profissional, ou desliga (null) devolvendo o acesso total.
+   * Com profissional, `administrador` diz se ele também administra a clínica.
+   */
+  public vincularProfissional(
+    id: number,
+    profissionalId: number | null,
+    administrador = false
+  ): Promise<Usuario> {
+    return this.put<Usuario>(`/usuarios/${id}/profissional`, { profissionalId, administrador });
   }
 
   public alterarEmail(id: number, email: string): Promise<Usuario> {

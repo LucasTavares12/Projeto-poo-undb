@@ -36,6 +36,8 @@ Nenhuma biblioteca nova foi adicionada ao projeto.
 | `DataAgenda.test.ts` | `DataAgenda`, `AntecedenciaMinima` | leitura de `YYYY-MM-DD`, mesmo dia, antecedência mínima de 2h (exatamente 2h, 2h − 1 ms) |
 | `Horario.test.ts` | `Horario` | formato `HH:MM`, grade de 30 min, soma de horários passando da meia-noite |
 | `Telefone.test.ts` | `Telefone` | 10 e 11 dígitos, máscara, formatação de fixo e celular |
+| `PerfilDeAcesso.test.ts` | `PerfilDeAcesso`, `Administrador` | profissional administrador: gestão como acesso total, agendamentos só os próprios, marca de administrador |
+| `ConfiguracoesClinica.test.ts` | `ConfiguracoesClinica` | personalização: nome (vazio, 60/61 caracteres), cores `#rrggbb`, logo (tipos aceitos, tamanho), restaurar padrão |
 
 No início de cada arquivo há a lista dos caminhos testados, numerados
 (`[C1]`, `[C2]`, …). Cada teste traz o número do caminho que cobre.

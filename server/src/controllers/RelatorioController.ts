@@ -15,7 +15,7 @@ export class RelatorioController extends Controlador {
       const relatorio = await this.servico.gerarMensal(
         String(req.query.mes ?? ""),
         this.lerIdOpcional(req.query.profissionalId, "Profissional inválido."),
-        SessaoDaRequisicao.profissionalId(res)
+        SessaoDaRequisicao.profissionalNaGestao(res)
       );
       res.json(relatorio);
     } catch (erro) {

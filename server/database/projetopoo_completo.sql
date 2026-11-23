@@ -22,6 +22,7 @@ CREATE TABLE `administradores` (
   `senha_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `criado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `profissional_id` int DEFAULT NULL,
+  `administrador` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `fk_administrador_profissional` (`profissional_id`),
@@ -98,7 +99,7 @@ DROP TABLE IF EXISTS `configuracoes`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `configuracoes` (
   `chave` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `valor` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `valor` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`chave`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

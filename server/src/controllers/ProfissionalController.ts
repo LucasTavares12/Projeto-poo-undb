@@ -24,7 +24,7 @@ export class ProfissionalController extends Controlador {
       const profissional = await this.servico.atualizar(
         this.lerId(req.params.id),
         this.lerDados(req),
-        SessaoDaRequisicao.profissionalId(res)
+        SessaoDaRequisicao.profissionalNaGestao(res)
       );
       res.json(profissional);
     } catch (erro) {

@@ -99,7 +99,7 @@ export class MensagemWhatsApp {
     return [
       `Olá, *${this.primeiroNome()}*! 🌸`,
       "",
-      `Tudo bem? Passando para lembrar ${this.doHorarioDeQuem()} na *${Clinica.NOME}* ✨`,
+      `Tudo bem? Passando para lembrar ${this.doHorarioDeQuem()} na *${Clinica.nome()}* ✨`,
       "",
       MensagemWhatsApp.SEPARADOR,
       `📅 *Data:* ${this.capitalizar(data.formatarPorExtenso())}`,
@@ -116,7 +116,7 @@ export class MensagemWhatsApp {
       `e informar o seu telefone (até ${Clinica.ANTECEDENCIA_MINIMA_HORAS}h antes do horário).`,
       "",
       "Te esperamos! 💕",
-      `_${Clinica.NOME}_`,
+      `_${Clinica.nome()}_`,
     ].join("\n");
   }
 
@@ -124,7 +124,7 @@ export class MensagemWhatsApp {
     return [
       `Olá, *${this.primeiroNome()}*! 💖`,
       "",
-      `Muito obrigado por escolher a *${Clinica.NOME}* ✨`,
+      `Muito obrigado por escolher a *${Clinica.nome()}* ✨`,
       "",
       `Foi um prazer cuidar de ${this.quemFoiAtendido()} ${this.quandoFoiAtendido()} ` +
         `com *${this.tratamentos()}*. ` +
@@ -137,7 +137,7 @@ export class MensagemWhatsApp {
       `👉 ${Clinica.enderecoDeAgendamento()}`,
       "",
       "Até a próxima! 🤗",
-      `_Equipe ${Clinica.NOME}_`,
+      `_Equipe ${Clinica.nome()}_`,
     ].join("\n");
   }
 
