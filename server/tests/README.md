@@ -37,6 +37,7 @@ Nenhuma biblioteca nova foi adicionada ao projeto.
 | `Horario.test.ts` | `Horario` | formato `HH:MM`, grade de 30 min, soma de horários passando da meia-noite |
 | `Telefone.test.ts` | `Telefone` | 10 e 11 dígitos, máscara, formatação de fixo e celular |
 | `PerfilDeAcesso.test.ts` | `PerfilDeAcesso`, `Administrador` | profissional administrador: gestão como acesso total, agendamentos só os próprios, marca de administrador |
+| `FaltasEPagamento.test.ts` | `FormaDePagamento`, `Agendamento`, `HistoricoCliente`, `RelatorioMensal` | forma de pagamento (códigos válidos/inválidos), faltas (só depois do horário, desfazer, arquivar), faltas no histórico e no relatório, faturamento por forma de pagamento |
 | `ConfiguracoesClinica.test.ts` | `ConfiguracoesClinica` | personalização: nome (vazio, 60/61 caracteres), cores `#rrggbb`, logo (tipos aceitos, tamanho), restaurar padrão |
 
 No início de cada arquivo há a lista dos caminhos testados, numerados

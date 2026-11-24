@@ -102,6 +102,21 @@ export class HistoricoCliente {
     );
   }
 
+  /** Horários em que o cliente não compareceu, do mais recente para o mais antigo. */
+  public getFaltas(): Agendamento[] {
+    return this.agendamentos.filter((agendamento) => agendamento.faltou());
+  }
+
+  /**
+   * Em quantos % dos horários encerrados (atendidos + faltas) o cliente faltou, de 0 a 1.
+   * Sem nenhum horário encerrado, 0.
+   */
+  public getTaxaDeFaltas(): number {
+    const faltas = this.getFaltas().length;
+    const encerrados = faltas + this.getAtendimentos().length;
+    return encerrados === 0 ? 0 : faltas / encerrados;
+  }
+
   public getTotalGasto(): number {
     return this.getAtendimentos().reduce(
       (total, agendamento) => total + agendamento.getValorTotal(),
@@ -160,6 +175,7 @@ export class HistoricoCliente {
       telefone: this.telefone,
       nome: this.getNome(),
       atendimentos: this.getAtendimentos().length,
+      faltas: this.getFaltas().length,
       totalGasto: this.getTotalGasto(),
       ultimoAtendimento: ultimo ? DataAgenda.paraTexto(ultimo.getData()) : null,
       proximoAgendamento: proximo
@@ -179,6 +195,7 @@ export class HistoricoCliente {
       responsaveis: this.getResponsaveis(),
       outrasPessoas,
       ticketMedio: this.getTicketMedio(),
+      taxaDeFaltas: this.getTaxaDeFaltas(),
       primeiroAtendimento: primeiro ? DataAgenda.paraTexto(primeiro.getData()) : null,
       proximoAgendamento: this.getProximoAgendamento(hoje),
       tratamentosMaisFeitos: this.getTratamentosMaisFeitos(),

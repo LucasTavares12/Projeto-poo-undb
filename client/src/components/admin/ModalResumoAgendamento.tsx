@@ -1,5 +1,5 @@
 import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Agendamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
@@ -10,6 +10,11 @@ import { FaixaHoraria } from "../../models/FaixaHoraria";
 import { EtapaAgendamento } from "../../models/EtapaAgendamento";
 import { MensagemWhatsApp } from "../../models/MensagemWhatsApp";
 import { BotaoWhatsApp } from "./BotaoWhatsApp";
+import { CampoFormaDePagamento } from "./CampoFormaDePagamento";
+import { AgendamentoService } from "../../services/AgendamentoService";
+import type { CodigoFormaDePagamento } from "../../services/types";
+
+const agendamentoService = new AgendamentoService();
 import {
   IconeBrilho,
   IconeCalendario,
@@ -42,6 +47,19 @@ export function ModalResumoAgendamento({
   onErro,
 }: Props) {
   const fechar = useRef<HTMLButtonElement>(null);
+  const [salvandoPagamento, setSalvandoPagamento] = useState(false);
+
+  /** O cliente mudou de ideia: grava a nova forma de pagamento na hora. */
+  async function alterarFormaDePagamento(forma: CodigoFormaDePagamento | null): Promise<void> {
+    setSalvandoPagamento(true);
+    try {
+      onAtualizado(await agendamentoService.alterarFormaDePagamento(agendamento.id, forma));
+    } catch (erroRequisicao) {
+      onErro((erroRequisicao as Error).message);
+    } finally {
+      setSalvandoPagamento(false);
+    }
+  }
 
   useEffect(() => {
     fechar.current?.focus();
@@ -132,6 +150,13 @@ export function ModalResumoAgendamento({
               </li>
             )}
           </ul>
+
+          <CampoFormaDePagamento
+            className="resumo-agendamento-pagamento"
+            valor={agendamento.formaDePagamento}
+            onAlterar={alterarFormaDePagamento}
+            disabled={salvandoPagamento}
+          />
 
           <div className="resumo-agendamento-servicos">
             <h3>

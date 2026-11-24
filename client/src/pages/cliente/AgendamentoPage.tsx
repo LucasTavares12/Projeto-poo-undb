@@ -17,6 +17,8 @@ import { ResumoAgendamento } from "../../components/cliente/ResumoAgendamento";
 import { ConfirmacaoAgendamento } from "../../components/cliente/ConfirmacaoAgendamento";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { MeusAgendamentos } from "../../components/cliente/MeusAgendamentos";
+import { SeletorFormaDePagamento } from "../../components/cliente/SeletorFormaDePagamento";
+import type { CodigoFormaDePagamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
@@ -98,6 +100,7 @@ export function AgendamentoPage() {
   const [clienteNome, setClienteNome] = useState("");
   const [responsavelNome, setResponsavelNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
+  const [formaDePagamento, setFormaDePagamento] = useState<CodigoFormaDePagamento | null>(null);
   // Só mostra os avisos de campo obrigatório depois da primeira tentativa de confirmar.
   const [tentouConfirmar, setTentouConfirmar] = useState(false);
 
@@ -228,8 +231,10 @@ export function AgendamentoPage() {
   const errosDosDados = {
     ...quemAgenda.erros(),
     dataHorario: data === "" || horarioInicio === null ? "Escolha a data e o horário." : null,
+    formaDePagamento: formaDePagamento ? null : "Escolha como você pretende pagar.",
   };
-  const dadosValidos = quemAgenda.ehValido() && !errosDosDados.dataHorario;
+  const dadosValidos =
+    quemAgenda.ehValido() && !errosDosDados.dataHorario && !errosDosDados.formaDePagamento;
 
   // O que foi escolhido até aqui, no formato do cartão de resumo.
   const resumoEscolhido = {
@@ -240,6 +245,7 @@ export function AgendamentoPage() {
     horario: horarioInicio,
     duracaoMinutos: duracaoTotal,
     valor: valorTotal,
+    formaDePagamento,
   };
 
   const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
@@ -267,6 +273,7 @@ export function AgendamentoPage() {
     setClienteNome("");
     setResponsavelNome("");
     setClienteTelefone("");
+    setFormaDePagamento(null);
     setTentouConfirmar(false);
     setAgendamentoConfirmado(null);
     setErro(null);
@@ -335,6 +342,7 @@ export function AgendamentoPage() {
         tratamentoIds,
         data,
         horarioInicio,
+        formaDePagamento,
       });
       setConferindo(false);
       setAgendamentoConfirmado(agendamento);
@@ -384,6 +392,7 @@ export function AgendamentoPage() {
               horario={agendamentoConfirmado.horarioInicio}
               duracaoMinutos={agendamentoConfirmado.duracaoTotalMinutos}
               valor={agendamentoConfirmado.valorTotal}
+              formaDePagamento={agendamentoConfirmado.formaDePagamento}
             />
             <p className="sucesso-dica">
               Precisa mudar o horário ou cancelar? Use "Remarque ou cancele" na página inicial,
@@ -664,6 +673,11 @@ export function AgendamentoPage() {
                     <span className="campo-erro">{errosDosDados.telefone}</span>
                   )}
                 </label>
+                <SeletorFormaDePagamento
+                  valor={formaDePagamento}
+                  onEscolher={setFormaDePagamento}
+                  erro={tentouConfirmar ? errosDosDados.formaDePagamento : null}
+                />
                 <p className="campo-legenda">
                   <span className="campo-obrigatorio">*</span> Campos obrigatórios
                 </p>

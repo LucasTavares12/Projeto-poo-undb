@@ -21,6 +21,7 @@ import { NotificadorNoPainel } from "./NotificadorNoPainel";
 import { OrigemDaAcao } from "../module/OrigemDaAcao";
 import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+import { FormaDePagamento } from "../module/FormaDePagamento";
 
 export interface DadosNovoAgendamento {
   /** Quem vai ser atendido. */
@@ -33,6 +34,8 @@ export interface DadosNovoAgendamento {
   tratamentoIds: number[];
   data: Date;
   horarioInicio: Horario;
+  /** Como o cliente pretende pagar. Obrigatória pela página do cliente; opcional no painel. */
+  formaDePagamento?: FormaDePagamento | null;
 }
 
 /**
@@ -66,6 +69,9 @@ export class AgendamentoService {
   ): Promise<Agendamento> {
     const novo = await this.montarNovoAgendamento(dados);
 
+    if (peloCliente && !novo.getFormaDePagamento()) {
+      throw new ErroDeValidacao("Escolha a forma de pagamento.");
+    }
     if (peloCliente && !AntecedenciaMinima.permite(dados.data, dados.horarioInicio)) {
       throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAgendar());
     }
@@ -135,6 +141,7 @@ export class AgendamentoService {
       dados.horarioInicio
     );
     agendamento.definirResponsavel(dados.responsavelNome);
+    agendamento.definirFormaDePagamento(dados.formaDePagamento ?? null);
     return agendamento;
   }
 
@@ -152,6 +159,7 @@ export class AgendamentoService {
       novo.getHorarioInicio()
     );
     agendamento.definirResponsavel(novo.getResponsavelNome());
+    agendamento.definirFormaDePagamento(novo.getFormaDePagamento());
     return this.agendamentoRepo.salvar(agendamento);
   }
 
@@ -164,6 +172,23 @@ export class AgendamentoService {
     return profissionalId === null
       ? this.agendamentoRepo.listarNoQuadro()
       : this.agendamentoRepo.listarNoQuadroPorProfissional(profissionalId);
+  }
+
+  /** Quantas vezes cada cliente já faltou (chave = id do cliente), para os cards do Kanban. */
+  public faltasPorCliente(): Promise<Map<number, number>> {
+    return this.agendamentoRepo.contarFaltasPorCliente();
+  }
+
+  /** Painel: muda a forma de pagamento (ex: o cliente mudou de ideia na hora de pagar). */
+  public async alterarFormaDePagamento(
+    id: number,
+    forma: FormaDePagamento | null,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Agendamento> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
+    agendamento.definirFormaDePagamento(forma);
+    await this.agendamentoRepo.salvarFormaDePagamento(agendamento);
+    return agendamento;
   }
 
   /**

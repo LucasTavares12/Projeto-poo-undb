@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Faltas } from "../../models/Faltas";
 import { Link } from "react-router-dom";
 import { ClienteService } from "../../services/ClienteService";
 import type { ClienteResumo } from "../../services/types";
@@ -104,6 +105,15 @@ export function ClientesPage() {
                   <span className="cliente-item-texto">
                     <strong>{cliente.nome}</strong>
                     <span>{new Telefone(cliente.telefone).formatar()}</span>
+                    {new Faltas(cliente.faltas).temFaltas() && (
+                      <span
+                        className={`faltas-cliente ${
+                          new Faltas(cliente.faltas).deveAlertar() ? "alerta" : ""
+                        }`}
+                      >
+                        {new Faltas(cliente.faltas).descrever()}
+                      </span>
+                    )}
                   </span>
                   <span className="cliente-item-numeros">
                     <span>

@@ -226,6 +226,9 @@ export class App {
     this.app.patch("/agendamentos/:id/remarcar", this.exigirAdmin, (req, res) =>
       this.agendamentoController.remarcar(req, res)
     );
+    this.app.patch("/agendamentos/:id/pagamento", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.alterarFormaDePagamento(req, res)
+    );
   }
 
   private configurarRotasDeConfiguracoes(): void {

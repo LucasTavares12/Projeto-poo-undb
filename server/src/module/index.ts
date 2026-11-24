@@ -18,6 +18,7 @@ export * from "./HorarioDisponivel";
 export * from "./BloqueioAgenda";
 export * from "./Agendamento";
 export * from "./StatusAgendamento";
+export * from "./FormaDePagamento";
 export * from "./TipoMensagem";
 export * from "./TipoNotificacao";
 export * from "./OrigemDaAcao";

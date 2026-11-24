@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { CampoFormaDePagamento } from "./CampoFormaDePagamento";
+import type { CodigoFormaDePagamento } from "../../services/types";
 import type { FormEvent } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import { TratamentoService } from "../../services/TratamentoService";
@@ -44,6 +46,8 @@ export function ModalAgendamentoManual({
   const [clienteTelefone, setClienteTelefone] = useState("");
   // Quando a pessoa do telefone marca para outra (a mãe para a filha). Vazio = a própria.
   const [responsavelNome, setResponsavelNome] = useState("");
+  // Opcional no painel: quem liga nem sempre já sabe como vai pagar.
+  const [formaDePagamento, setFormaDePagamento] = useState<CodigoFormaDePagamento | null>(null);
   const profissionalInicial = inicial.profissionalId;
   const [profissionalId, setProfissionalId] = useState<number | null>(
     profissionalFixo ?? profissionalInicial ?? null
@@ -187,6 +191,7 @@ export function ModalAgendamentoManual({
         tratamentoIds,
         data,
         horarioInicio: horarioEscolhido,
+        formaDePagamento,
       });
       onCriado(criado);
     } catch (erroRequisicao) {
@@ -260,6 +265,12 @@ export function ModalAgendamentoManual({
                 onChange={(evento) => setResponsavelNome(evento.target.value)}
               />
             </label>
+            <CampoFormaDePagamento
+              className="admin-campo-largo"
+              rotulo="Forma de pagamento (opcional)"
+              valor={formaDePagamento}
+              onAlterar={setFormaDePagamento}
+            />
             <label className="admin-campo-largo">
               <span>
                 Profissional <span className="campo-obrigatorio">*</span>

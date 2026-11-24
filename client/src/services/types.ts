@@ -31,7 +31,10 @@ export interface HorarioDisponivel {
   horaInicio: string;
 }
 
-export type StatusAgendamento = "AGENDADO" | "EM_ATENDIMENTO" | "FINALIZADO";
+export type StatusAgendamento = "AGENDADO" | "EM_ATENDIMENTO" | "FINALIZADO" | "FALTOU";
+
+/** Como o cliente pretende pagar (ver models/FormaDePagamento). */
+export type CodigoFormaDePagamento = "PIX" | "CARTAO_CREDITO" | "CARTAO_DEBITO" | "DINHEIRO";
 
 export interface Agendamento {
   id: number;
@@ -51,6 +54,10 @@ export interface Agendamento {
   agradecimentoEnviadoEm: string | null;
   /** Só em "Meus agendamentos": se ainda dá para remarcar/cancelar pelo site (antecedência). */
   podeAlterarPeloSite?: boolean;
+  /** Como o cliente pretende pagar (null = não informou). */
+  formaDePagamento: CodigoFormaDePagamento | null;
+  /** Só no Kanban: quantas vezes o cliente já faltou (com qualquer profissional). */
+  faltasDoCliente?: number;
 }
 
 export interface Configuracoes {
@@ -98,6 +105,19 @@ export interface RelatorioMensal {
   faturamentoPorDia: FaturamentoDoDia[];
   tratamentosMaisRealizados: TratamentoRealizado[];
   faturamentoPorProfissional: FaturamentoDoProfissional[];
+  /** Horários do mês em que o cliente não veio. */
+  quantidadeFaltas: number;
+  /** Faltas / (atendidos + faltas), de 0 a 1. */
+  taxaDeFaltas: number;
+  faturamentoPorFormaDePagamento: FaturamentoDaFormaDePagamento[];
+}
+
+export interface FaturamentoDaFormaDePagamento {
+  /** null = o cliente não informou. */
+  formaDePagamento: CodigoFormaDePagamento | null;
+  nome: string;
+  atendimentos: number;
+  faturamento: number;
 }
 
 /** Lucro de um mês (faturamento − gasto informado), da clínica ou de um profissional. */
@@ -159,6 +179,8 @@ export interface ClienteResumo {
   nome: string;
   /** Atendimentos finalizados. */
   atendimentos: number;
+  /** Horários em que não compareceu. */
+  faltas: number;
   totalGasto: number;
   ultimoAtendimento: string | null;
   proximoAgendamento: { data: string; horarioInicio: string } | null;
@@ -167,6 +189,8 @@ export interface ClienteResumo {
 /** Ficha completa do cliente, com o histórico de agendamentos (mais recente primeiro). */
 export interface FichaDoCliente extends Omit<ClienteResumo, "proximoAgendamento"> {
   ticketMedio: number;
+  /** Faltas / (atendidos + faltas), de 0 a 1. */
+  taxaDeFaltas: number;
   primeiroAtendimento: string | null;
   /** Quem já marcou para esta pessoa usando o próprio telefone (ex.: a mãe). */
   responsaveis: string[];
@@ -205,7 +229,10 @@ export interface AgendaSemanal {
   dias: DiaDaAgenda[];
 }
 
-export type TipoNotificacao = "NOVO_AGENDAMENTO" | "AGENDAMENTO_REMARCADO" | "AGENDAMENTO_CANCELADO";
+export type TipoNotificacao =
+  | "NOVO_AGENDAMENTO"
+  | "AGENDAMENTO_REMARCADO"
+  | "AGENDAMENTO_CANCELADO";
 
 /** Aviso do sino do painel. */
 export interface Notificacao {

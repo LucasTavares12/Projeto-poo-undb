@@ -24,6 +24,13 @@ export class HorarioMarcado {
     return `${new DataAgenda(this.data).formatarPorExtenso()} às ${this.horario}`;
   }
 
+  /** true se o horário já começou (ou passou), no relógio do aparelho. */
+  public jaComecou(agora: Date = new Date()): boolean {
+    const [ano, mes, dia] = this.data.split("-").map(Number);
+    const [hora, minuto] = this.horario.split(":").map(Number);
+    return new Date(ano, mes - 1, dia, hora, minuto).getTime() <= agora.getTime();
+  }
+
   /** Negativo se este vem antes do outro. "YYYY-MM-DD HH:MM" ordena certo como texto. */
   public compararCom(outro: HorarioMarcado): number {
     return `${this.data} ${this.horario}`.localeCompare(`${outro.data} ${outro.horario}`);

@@ -4,6 +4,7 @@ import { DataAgenda } from "./DataAgenda";
 import { Duracao } from "./Duracao";
 import { Telefone } from "./Telefone";
 import { PessoasDoAgendamento } from "./PessoasDoAgendamento";
+import { FormaDePagamento } from "./FormaDePagamento";
 
 export type TipoMensagem = "LEMBRETE" | "AGRADECIMENTO";
 
@@ -107,6 +108,7 @@ export class MensagemWhatsApp {
       `💆 *${this.agendamento.tratamentos.length === 1 ? "Serviço" : "Serviços"}:* ${this.tratamentos()}`,
       `⏳ *Duração:* ${new Duracao(this.agendamento.duracaoTotalMinutos).formatar()}`,
       `👤 *Profissional:* ${this.agendamento.profissional.nome}`,
+      ...this.linhaDoPagamento(),
       MensagemWhatsApp.SEPARADOR,
       "",
       "💡 Chegue alguns minutinhos antes para aproveitar o atendimento com tranquilidade.",
@@ -118,6 +120,12 @@ export class MensagemWhatsApp {
       "Te esperamos! 💕",
       `_${Clinica.nome()}_`,
     ].join("\n");
+  }
+
+  /** "💳 Pagamento: Pix" (some quando o cliente não informou). */
+  private linhaDoPagamento(): string[] {
+    const forma = FormaDePagamento.de(this.agendamento.formaDePagamento);
+    return forma ? [`💳 *Pagamento:* ${forma.getNome()}`] : [];
   }
 
   private textoDoAgradecimento(): string {

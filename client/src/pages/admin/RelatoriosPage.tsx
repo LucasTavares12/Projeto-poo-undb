@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Faltas } from "../../models/Faltas";
 import { RelatorioService } from "../../services/RelatorioService";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import type { Profissional, RelatorioMensal } from "../../services/types";
@@ -199,6 +200,30 @@ export function RelatoriosPage() {
               )}
             </article>
 
+            <article className="relatorio-cartao">
+              <header className="relatorio-cartao-cabecalho">
+                <div>
+                  <h2>Formas de pagamento</h2>
+                  <p>Quanto entrou por cada forma informada pelos clientes no mês.</p>
+                </div>
+              </header>
+
+              {dados.atual.faturamentoPorFormaDePagamento.length === 0 ? (
+                <p className="relatorio-vazio">Nenhum atendimento finalizado neste mês.</p>
+              ) : (
+                <GraficoRanking
+                  itens={dados.atual.faturamentoPorFormaDePagamento.map((item, indice) => ({
+                    chave: indice,
+                    nome: item.nome,
+                    medida: item.faturamento,
+                    rotulo: new Dinheiro(item.faturamento).formatar(),
+                    detalhe:
+                      item.atendimentos === 1 ? "1 atendimento" : `${item.atendimentos} atendimentos`,
+                  }))}
+                />
+              )}
+            </article>
+
             {/* Com "Todos" selecionado, mostra cada profissional separadamente. */}
             {dados.atual.profissionalId === null && (
               <article className="relatorio-cartao relatorio-cartao-inteiro">
@@ -274,7 +299,14 @@ function ResumoDoMes({ atual, anterior }: { atual: RelatorioMensal; anterior: Re
         </span>
         <span className="admin-resumo-rotulo">Atendimentos</span>
         <strong className="admin-resumo-valor">{atual.quantidadeAtendimentos}</strong>
-        <span className="admin-resumo-detalhe">finalizados no mês</span>
+        <span className="admin-resumo-detalhe">
+          finalizados no mês
+          {atual.quantidadeFaltas > 0 &&
+            ` · ${atual.quantidadeFaltas} ${atual.quantidadeFaltas === 1 ? "falta" : "faltas"} (${new Faltas(
+              atual.quantidadeFaltas,
+              atual.taxaDeFaltas
+            ).taxaFormatada()})`}
+        </span>
       </div>
 
       <div className="admin-resumo-cartao">

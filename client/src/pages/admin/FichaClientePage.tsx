@@ -1,4 +1,5 @@
 import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
+import { Faltas } from "../../models/Faltas";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ClienteService } from "../../services/ClienteService";
@@ -15,6 +16,7 @@ import {
   IconeCalendario,
   IconeConfirmado,
   IconeDinheiro,
+  IconeFechar,
   IconePessoas,
   IconeSetaEsquerda,
   IconeTelefone,
@@ -81,6 +83,7 @@ export function FichaClientePage() {
   }
 
   const fone = new Telefone(ficha.telefone);
+  const faltas = new Faltas(ficha.faltas, ficha.taxaDeFaltas);
 
   return (
     <section className="pagina">
@@ -166,6 +169,18 @@ export function FichaClientePage() {
             {ficha.proximoAgendamento
               ? `Próximo: ${HorarioMarcado.de(ficha.proximoAgendamento).formatar()}`
               : "nenhum horário marcado"}
+          </span>
+        </div>
+        <div className={`admin-resumo-cartao ${faltas.deveAlertar() ? "alerta-faltas" : ""}`}>
+          <span className="admin-resumo-icone">
+            <IconeFechar />
+          </span>
+          <span className="admin-resumo-rotulo">Faltas</span>
+          <strong className="admin-resumo-valor">{faltas.getQuantidade()}</strong>
+          <span className="admin-resumo-detalhe">
+            {faltas.temFaltas()
+              ? `${faltas.taxaFormatada()} dos horários${faltas.deveAlertar() ? " · costuma faltar" : ""}`
+              : "nunca faltou"}
           </span>
         </div>
       </div>

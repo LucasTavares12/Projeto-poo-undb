@@ -6272,3 +6272,208 @@
     position: static;
   }
 }
+
+/* ---------- Faltas e forma de pagamento ---------- */
+
+/* Cor de "Não compareceu" nos lugares que usam --cor-status (agenda, ficha, resumo). */
+.agenda-legenda .faltou::before {
+  background: #dc2626;
+}
+
+.agenda-bloco.agendamento.faltou,
+.ficha-historico-item.faltou,
+.resumo-agendamento.faltou {
+  --cor-status: #dc2626;
+  --cor-texto: #b91c1c;
+}
+
+.agenda-bloco.agendamento.faltou {
+  opacity: 0.8;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--cor-status) 60%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .agenda-bloco.agendamento.faltou {
+    --cor-status: #f87171;
+    --cor-texto: var(--cor-status);
+  }
+}
+
+/* Card do Kanban de quem não compareceu: fica na coluna "Finalizados", com borda vermelha. */
+.kanban-cartao.faltou {
+  border-left: 3px solid #dc2626;
+  background: color-mix(in srgb, #dc2626 4%, var(--superficie));
+}
+
+.kanban-cartao-selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Selos do card: "Não compareceu" e quantas vezes o cliente já faltou. */
+.presenca,
+.faltas-cliente {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.presenca.faltou {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.faltas-cliente {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.faltas-cliente.alerta {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.faltas-cliente.alerta::before {
+  content: "⚠";
+}
+
+@media (prefers-color-scheme: dark) {
+  .presenca.faltou,
+  .faltas-cliente.alerta {
+    color: #f87171;
+  }
+
+  .faltas-cliente {
+    color: #fbbf24;
+  }
+}
+
+/* Lista de clientes: o selo de faltas fica abaixo do telefone. */
+.cliente-item-texto .faltas-cliente {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* Ficha do cliente: cartão de faltas em destaque quando o cliente costuma faltar. */
+.admin-resumo-cartao.alerta-faltas {
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.admin-resumo-cartao.alerta-faltas .admin-resumo-icone {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* Resumo do agendamento (agenda): troca da forma de pagamento. */
+.resumo-agendamento-pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.resumo-agendamento-pagamento select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 15px;
+}
+
+.resumo-agendamento-pagamento select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Página do cliente: escolha da forma de pagamento. */
+.pagamento {
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.pagamento legend {
+  margin-bottom: 4px;
+  padding: 0;
+  color: var(--cliente-texto);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pagamento-dica {
+  margin: 0 0 10px;
+  color: var(--cliente-texto);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pagamento-opcoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pagamento-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--cliente-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.pagamento-opcao strong {
+  color: var(--principal-escuro);
+  font-size: 15px;
+}
+
+.pagamento-opcao small {
+  font-size: 12.5px;
+}
+
+.pagamento-opcao:hover {
+  background: var(--principal-claro);
+}
+
+.pagamento-opcao.selecionada {
+  border-color: var(--principal);
+  background: var(--principal-claro);
+  box-shadow: 0 0 0 1px var(--principal);
+}
+
+.pagamento-opcao:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+.pagamento-opcoes.invalido .pagamento-opcao {
+  border-color: #dc2626;
+}
+
+@media (max-width: 480px) {
+  .pagamento-opcoes {
+    grid-template-columns: 1fr;
+  }
+}
