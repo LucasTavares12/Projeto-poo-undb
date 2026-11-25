@@ -73,6 +73,29 @@ export interface Configuracoes {
   corLateral: string | null;
   /** Logo da clínica como imagem base64 (data URL); null = ícone padrão. */
   logo: string | null;
+  /** Endereço por extenso (null = não mostra). */
+  endereco: string | null;
+  /** Link do Google Maps (null = busca pelo endereço). */
+  linkMapa: string | null;
+  /** Usuário do Instagram, sem "@". */
+  instagram: string | null;
+  /** WhatsApp da clínica, só números com DDD. */
+  whatsapp: string | null;
+  /** Dias e horários de funcionamento; null = ainda não definido. */
+  horarioFuncionamento: HorarioFuncionamentoJSON | null;
+}
+
+/** Um dia em que a clínica abre ("HH:MM"; o fechamento é exclusivo). */
+export interface ExpedienteJSON {
+  /** 0 = domingo ... 6 = sábado. */
+  diaSemana: number;
+  abertura: string;
+  fechamento: string;
+}
+
+/** Só os dias em que a clínica abre; os que não aparecem são fechados. */
+export interface HorarioFuncionamentoJSON {
+  dias: ExpedienteJSON[];
 }
 
 export interface FaturamentoDoDia {

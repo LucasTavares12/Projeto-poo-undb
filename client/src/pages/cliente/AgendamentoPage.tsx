@@ -18,6 +18,8 @@ import { ConfirmacaoAgendamento } from "../../components/cliente/ConfirmacaoAgen
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { MeusAgendamentos } from "../../components/cliente/MeusAgendamentos";
 import { SeletorFormaDePagamento } from "../../components/cliente/SeletorFormaDePagamento";
+import { InfoDaClinica } from "../../components/cliente/InfoDaClinica";
+import { useConfiguracoes } from "../../hooks/useConfiguracoes";
 import type { CodigoFormaDePagamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
@@ -76,6 +78,8 @@ export function AgendamentoPage() {
   const [carregandoCadastros, setCarregandoCadastros] = useState(true);
 
   const [modo, setModo] = useState<Modo>("inicio");
+  // Horário de funcionamento e contatos da clínica (cartão da tela inicial).
+  const configuracoes = useConfiguracoes();
   const [etapa, setEtapa] = useState<Etapa>("profissional");
 
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
@@ -399,10 +403,19 @@ export function AgendamentoPage() {
               com o telefone informado.
             </p>
           </div>
-          <footer className="passo-rodape">
-            <span />
+          <footer className="passo-rodape sucesso-rodape">
             <button type="button" className="botao-primario" onClick={voltarAoInicio}>
-              Fazer novo agendamento
+              Voltar para o início
+            </button>
+            <button
+              type="button"
+              className="botao-link"
+              onClick={() => {
+                voltarAoInicio();
+                iniciarFluxo("agendar");
+              }}
+            >
+              Fazer outro agendamento
             </button>
           </footer>
         </section>
@@ -440,6 +453,7 @@ export function AgendamentoPage() {
               Remarque ou cancele
             </button>
           </p>
+          {configuracoes && <InfoDaClinica configuracoes={configuracoes} />}
         </section>
 
         <section className="como-funciona">
@@ -505,7 +519,7 @@ export function AgendamentoPage() {
 
           {etapa === "profissional" && (
             <>
-              <h3>Selecione o Profissional</h3>
+              <p className="passo-dica">Com quem você quer ser atendido(a)?</p>
               <SeletorProfissional
                 profissionais={profissionais}
                 selecionadoId={profissionalId}
@@ -516,7 +530,7 @@ export function AgendamentoPage() {
 
           {etapa === "servico" && (
             <>
-              <h3>Selecione o(s) Serviço(s)</h3>
+              <p className="passo-dica">Você pode escolher mais de um.</p>
               <SeletorTratamentos
                 tratamentos={tratamentosDoProfissional}
                 selecionadosIds={tratamentoIds}
@@ -538,23 +552,17 @@ export function AgendamentoPage() {
 
           {etapa === "data" && (
             <>
-              <h3>
-                Selecione a Data <span className="campo-obrigatorio">*</span>
-              </h3>
               <SeletorData data={data} onSelecionar={setData} estaBloqueada={dataEstaBloqueada} />
             </>
           )}
 
           {etapa === "horarios" && (
             <>
-              <h3>
-                Horários em {new DataAgenda(data).formatar()}{" "}
-                {modo === "agendar" && <span className="campo-obrigatorio">*</span>}
-              </h3>
+              <p className="passo-data">{new DataAgenda(data).formatarPorExtenso()}</p>
               <p className="passo-dica">
                 {modo === "ver" ? "Horários livres para atendimentos. " : ""}
-                Pelo site, os agendamentos são feitos com pelo menos{" "}
-                {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas de antecedência.
+                Agendamentos pelo site com pelo menos {Clinica.ANTECEDENCIA_MINIMA_HORAS}h de
+                antecedência.
               </p>
               <SeletorHorario
                 horarios={horariosDisponiveis}
@@ -578,7 +586,7 @@ export function AgendamentoPage() {
                   onConfirmar={confirmarAgendamento}
                 />
               )}
-              <h3>Preencha seus Dados</h3>
+              <h3 className="passo-secao">Seus dados</h3>
               {tentouConfirmar && errosDosDados.dataHorario && (
                 <p className="mensagem-erro">{errosDosDados.dataHorario}</p>
               )}

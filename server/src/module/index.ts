@@ -25,6 +25,7 @@ export * from "./OrigemDaAcao";
 export * from "./Notificacao";
 export * from "./DiaSemana";
 export * from "./Horario";
+export * from "./HorarioDeFuncionamento";
 export * from "./DataAgenda";
 export * from "./RelogioClinica";
 export * from "./AntecedenciaMinima";

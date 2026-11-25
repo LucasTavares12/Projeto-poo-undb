@@ -20,8 +20,19 @@ export class ConfiguracaoController extends Controlador {
   /** Abas "Configurações" e "Personalização": altera só as opções enviadas no corpo. */
   public async atualizar(req: Request, res: Response): Promise<void> {
     try {
-      const { botaoEntrarVisivel, cadastroLiberado, nomeClinica, corPrincipal, corLateral, logo } =
-        req.body ?? {};
+      const {
+        botaoEntrarVisivel,
+        cadastroLiberado,
+        nomeClinica,
+        corPrincipal,
+        corLateral,
+        logo,
+        endereco,
+        linkMapa,
+        instagram,
+        whatsapp,
+        horarioFuncionamento,
+      } = req.body ?? {};
       res.json(
         await this.servico.atualizar({
           botaoEntrarVisivel,
@@ -30,6 +41,11 @@ export class ConfiguracaoController extends Controlador {
           corPrincipal,
           corLateral,
           logo,
+          endereco,
+          linkMapa,
+          instagram,
+          whatsapp,
+          horarioFuncionamento,
         })
       );
     } catch (erro) {

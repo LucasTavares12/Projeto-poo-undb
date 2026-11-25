@@ -36,6 +36,11 @@ export class GradeSemanal {
 
   /** Linhas da grade; `extras` garante que horários já liberados fora da faixa padrão apareçam. */
   public getHoras(extras: string[] = []): string[] {
-    return [...new Set([...this.horas, ...extras])].sort();
+    return GradeSemanal.unir(this.horas, extras);
+  }
+
+  /** As horas das duas listas, sem repetir e em ordem. */
+  public static unir(horas: string[], extras: string[]): string[] {
+    return [...new Set([...horas, ...extras])].sort();
   }
 }

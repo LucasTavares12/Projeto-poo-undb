@@ -140,6 +140,11 @@ describe("ConfiguracoesClinica — restaurar e toJSON", () => {
       corPrincipal: null,
       corLateral: "#445566",
       logo: null,
+      endereco: null,
+      linkMapa: null,
+      instagram: null,
+      whatsapp: null,
+      horarioFuncionamento: null,
     });
   });
 });

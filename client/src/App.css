@@ -5018,18 +5018,29 @@
     font-size: 17px;
   }
 
-  /* Botões principais empilhados e com a largura toda: fáceis de tocar. */
+  /* Botões principais lado a lado, mais baixos: compactos, mas ainda fáceis de tocar. */
   .acoes-inicio {
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 24px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 22px;
   }
 
   .acoes-inicio .botao-primario,
   .acoes-inicio .botao-contorno {
-    min-height: 50px;
+    flex: 1 1 0;
+    gap: 6px;
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px 10px;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 14.5px;
+    white-space: nowrap;
+  }
+
+  .acoes-inicio svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
   .como-funciona {
@@ -5245,6 +5256,7 @@
   .inicio h1 {
     font-size: 30px;
   }
+
 
   .cliente-cabecalho {
     font-size: 15px;
@@ -6475,5 +6487,878 @@
 @media (max-width: 480px) {
   .pagamento-opcoes {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Funcionamento da clínica e contatos ---------- */
+
+/* Texto só para leitores de tela. */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Aba "Horários": editor dos dias e horários de funcionamento. */
+.funcionamento-dica {
+  margin: -8px 0 12px;
+}
+
+.funcionamento-dias,
+.funcionamento-resumo {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.funcionamento-dias li {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.funcionamento-dias li:last-child {
+  border-bottom: none;
+}
+
+.funcionamento-dia {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-h);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.funcionamento-dias li.fechado .funcionamento-dia span {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.funcionamento-intervalo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.funcionamento-intervalo select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.funcionamento-intervalo select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.funcionamento-fechado {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.funcionamento-acoes {
+  flex-wrap: wrap;
+}
+
+.funcionamento-resumo li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.funcionamento-resumo li.fechado {
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .funcionamento-dias li {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .funcionamento-intervalo {
+    padding-left: 52px;
+  }
+
+  .funcionamento-intervalo select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .funcionamento-fechado {
+    padding-left: 52px;
+  }
+}
+
+/* Grade de horários: dias fechados e horários fora do funcionamento. */
+.admin-grade th.dia-fechado {
+  color: var(--text);
+}
+
+.admin-grade th small {
+  display: block;
+  color: var(--perigo);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-grade-celula.fora {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--superficie-alt) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.admin-grade-celula.fora:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-grade-celula.fora:disabled:hover {
+  border-color: transparent;
+}
+
+.admin-grade-celula.liberado.fora {
+  background: var(--text);
+  opacity: 0.6;
+}
+
+.grade-aviso-fora {
+  color: var(--perigo);
+}
+
+.personalizacao-contatos-dica {
+  margin: -8px 0 16px;
+}
+
+/* Página do cliente: cartão discreto com aberto/fechado, endereço e contatos. */
+.clinica-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+  margin: 28px auto 0;
+  padding: 14px 16px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 1px 2px rgba(107, 84, 88, 0.04);
+  text-align: left;
+}
+
+.clinica-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cliente-texto);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clinica-status strong {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clinica-status.aberto strong {
+  color: #15803d;
+}
+
+.clinica-status.fechado strong {
+  color: #b91c1c;
+}
+
+.clinica-status-ponto {
+  position: relative;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+}
+
+.clinica-status.aberto .clinica-status-ponto {
+  background: #16a34a;
+}
+
+/* "Aberto agora": o ponto verde pulsa de leve. */
+.clinica-status.aberto .clinica-status-ponto::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.3);
+  animation: clinica-pulso 2.4s ease-out infinite;
+}
+
+@keyframes clinica-pulso {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.clinica-status-detalhe {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clinica-status-detalhe::before {
+  content: "·";
+  margin-right: 8px;
+  opacity: 0.5;
+}
+
+.clinica-status-seta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  border-radius: 50%;
+  color: var(--principal);
+  transition: transform 0.25s ease, background 0.15s;
+}
+
+.clinica-status:hover .clinica-status-seta {
+  background: var(--principal-claro);
+}
+
+.clinica-status[aria-expanded="true"] .clinica-status-seta {
+  transform: rotate(180deg);
+}
+
+.clinica-status:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Lista dos dias: abre e fecha deslizando (a altura vai de 0 ao conteúdo). */
+.clinica-horarios {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -4px;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.clinica-horarios.aberta {
+  grid-template-rows: 1fr;
+}
+
+.clinica-horarios ul {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.clinica-horarios.aberta ul {
+  margin-top: 8px;
+}
+
+.clinica-horarios li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: var(--cliente-texto);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clinica-horarios li small {
+  margin-left: 6px;
+  color: var(--principal);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.clinica-horarios li.hoje {
+  background: var(--principal-claro);
+  color: var(--principal-escuro);
+  font-weight: 600;
+}
+
+.clinica-horarios li.fechado {
+  opacity: 0.55;
+}
+
+.clinica-endereco {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--cliente-texto);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.clinica-endereco svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--principal);
+}
+
+.clinica-endereco:hover span {
+  color: var(--principal-escuro);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Endereço e ícones de contato lado a lado. */
+.clinica-local {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clinica-funcionamento + .clinica-local {
+  padding-top: 12px;
+  border-top: 1px solid var(--cliente-borda);
+}
+
+.clinica-local .clinica-endereco {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Sem endereço, os ícones ficam à direita mesmo assim. */
+.clinica-local .clinica-contatos {
+  margin-left: auto;
+}
+
+/* Contatos: só os ícones, em botões redondos com as cores da clínica. */
+.clinica-contatos {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.clinica-contato {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--principal);
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.clinica-contato svg,
+.clinica-contato .icone-whatsapp {
+  color: inherit;
+}
+
+.clinica-contato:hover {
+  background: var(--principal-escuro);
+  transform: translateY(-1px);
+}
+
+.clinica-contato:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .clinica-info {
+    margin-top: 24px;
+    padding: 12px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clinica-status.aberto .clinica-status-ponto::after {
+    animation: none;
+  }
+
+  .clinica-horarios,
+  .clinica-status-seta,
+  .clinica-contato {
+    transition: none;
+  }
+}
+
+/* Telas bem estreitas (até 340px): os botões principais ficam só com o texto. */
+@media (max-width: 340px) {
+  .acoes-inicio svg {
+    display: none;
+  }
+
+  .acoes-inicio .botao-primario,
+  .acoes-inicio .botao-contorno {
+    font-size: 14px;
+  }
+}
+
+/* ---------- Etapas do agendamento: visual mais leve e compacto (foco no celular) ---------- */
+
+.passo-dica {
+  margin: 0 0 14px;
+  color: var(--cliente-texto);
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+/* Etapa de horários: a data escolhida em destaque, por extenso. */
+.passo-data {
+  margin: 0 0 4px;
+  color: var(--principal-escuro);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.passo-data::first-letter {
+  text-transform: uppercase;
+}
+
+.passo-secao {
+  margin: 22px 0 12px;
+  font-size: 16px;
+}
+
+/* Marca de selecionado (círculo no profissional, quadrado nos serviços). */
+.marca-selecao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--cliente-borda);
+  border-radius: 50%;
+  background: #fff;
+  color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.marca-selecao.quadrada {
+  border-radius: 7px;
+}
+
+.selecionado > .marca-selecao {
+  border-color: var(--principal);
+  background: var(--principal);
+  color: #fff;
+}
+
+/* Profissionais */
+.cartao {
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cartao .marca-selecao {
+  margin-left: auto;
+}
+
+.cartao-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cartao.selecionado .cartao-avatar {
+  background: var(--principal);
+  color: #fff;
+}
+
+.cartao-texto {
+  min-width: 0;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.cartao-texto strong {
+  color: #3f2f32;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cartao:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+/* Serviços */
+.lista-tratamentos {
+  gap: 8px;
+}
+
+.item-tratamento {
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.item-tratamento:has(input:focus-visible) {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+.item-tratamento-descricao {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-tratamento-descricao strong {
+  color: #3f2f32;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.item-tratamento-descricao small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.item-tratamento-info {
+  gap: 2px;
+  font-size: 12.5px;
+}
+
+.item-tratamento-info strong {
+  color: var(--principal-escuro);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.selecao-resumo {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.selecao-resumo strong {
+  font-size: 16px;
+}
+
+/* Data */
+.dia-rapido {
+  min-width: 56px;
+  padding: 8px 4px;
+  border-radius: 12px;
+}
+
+.dia-rapido strong {
+  font-size: 19px;
+}
+
+.dia-rapido-semana,
+.dia-rapido-mes {
+  font-size: 11.5px;
+}
+
+.dia-rapido.selecionado {
+  box-shadow: 0 3px 8px var(--tema-principal-sombra, rgba(160, 92, 104, 0.25));
+}
+
+.outra-data {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.data-escolhida,
+.data-fechada {
+  font-size: 14px;
+}
+
+/* Horários */
+.periodos-horarios {
+  gap: 16px;
+}
+
+.periodo-horarios h4 {
+  margin-bottom: 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.grade-horarios {
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.botao-horario {
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.botao-horario:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+/* Resumo (etapa de dados e tela de sucesso): mais compacto. */
+.resumo {
+  margin-bottom: 4px;
+  border-radius: 12px;
+}
+
+.resumo-itens {
+  gap: 10px 16px;
+  padding: 14px;
+}
+
+.resumo-itens li {
+  gap: 10px;
+}
+
+.resumo-itens svg {
+  width: 16px;
+  height: 16px;
+  padding: 7px;
+  border-radius: 9px;
+}
+
+.resumo-itens small {
+  font-size: 11.5px;
+}
+
+.resumo-itens strong {
+  font-size: 14.5px;
+}
+
+.resumo-total {
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.resumo-total strong {
+  font-size: 19px;
+}
+
+/* Seus dados */
+.formulario-cliente {
+  gap: 14px;
+}
+
+.para-quem-opcao {
+  min-height: 38px;
+  font-size: 14px;
+}
+
+/* Forma de pagamento: 2 colunas, cada opção com o símbolo ao lado do nome. */
+.pagamento legend {
+  font-size: 14px;
+}
+
+.pagamento-dica {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.pagamento-opcoes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pagamento-opcao {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: #3f2f32;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pagamento-opcao.selecionada {
+  box-shadow: none;
+}
+
+.pagamento-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--principal-claro);
+  color: var(--principal);
+  transition: background 0.15s, color 0.15s;
+}
+
+.pagamento-opcao.selecionada .pagamento-icone {
+  background: var(--principal);
+  color: #fff;
+}
+
+/* Tela de sucesso: "Voltar para o início" em destaque e outra opção discreta embaixo. */
+.sucesso-icone {
+  width: 60px;
+  height: 60px;
+}
+
+.sucesso-cabecalho h2 {
+  font-size: 22px;
+}
+
+.sucesso-cabecalho p {
+  font-size: 15px;
+}
+
+.sucesso-dica {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.passo-rodape.sucesso-rodape {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.sucesso-rodape .botao-link {
+  align-self: center;
+  padding: 4px 8px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .passo-cabecalho h2 {
+    font-size: 18px;
+  }
+
+  .passo-indicador {
+    padding: 2px 9px;
+    font-size: 12px;
+  }
+
+  .passo-corpo {
+    padding: 16px 16px 18px;
+  }
+
+  .passo-rodape {
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .passo-rodape .botao-primario,
+  .passo-rodape .botao-contorno {
+    min-height: 44px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  /* "Voltar" só do tamanho do texto: o botão de avançar fica com o resto (e numa linha só). */
+  .passo-rodape .botao-contorno {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+  }
+
+  .passo-rodape .botao-primario {
+    min-width: 0;
+    padding: 8px 12px;
+  }
+
+  .cartao {
+    min-height: 0;
+  }
+
+  .item-tratamento {
+    align-items: center;
+    padding: 12px;
+  }
+
+  .botao-horario {
+    min-height: 42px;
+  }
+
+  .campo {
+    min-height: 46px;
+  }
+
+  .sucesso-cabecalho {
+    padding: 24px 16px 0;
+  }
+}
+
+/* Celulares bem estreitos: as formas de pagamento ficam uma por linha. */
+@media (max-width: 330px) {
+  .pagamento-opcoes {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marca-selecao,
+  .cartao,
+  .cartao-avatar,
+  .item-tratamento,
+  .botao-horario,
+  .pagamento-icone {
+    transition: none;
   }
 }

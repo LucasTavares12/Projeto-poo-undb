@@ -38,6 +38,7 @@ Nenhuma biblioteca nova foi adicionada ao projeto.
 | `Telefone.test.ts` | `Telefone` | 10 e 11 dígitos, máscara, formatação de fixo e celular |
 | `PerfilDeAcesso.test.ts` | `PerfilDeAcesso`, `Administrador` | profissional administrador: gestão como acesso total, agendamentos só os próprios, marca de administrador |
 | `FaltasEPagamento.test.ts` | `FormaDePagamento`, `Agendamento`, `HistoricoCliente`, `RelatorioMensal` | forma de pagamento (códigos válidos/inválidos), faltas (só depois do horário, desfazer, arquivar), faltas no histórico e no relatório, faturamento por forma de pagamento |
+| `FuncionamentoEContatos.test.ts` | `HorarioDeFuncionamento`, `ConfiguracoesClinica` | dias e horários de funcionamento (formato, dia repetido, fechamento antes da abertura, horário dentro/fora, dia fechado, filtro da grade), Instagram, WhatsApp, link do mapa e endereço |
 | `ConfiguracoesClinica.test.ts` | `ConfiguracoesClinica` | personalização: nome (vazio, 60/61 caracteres), cores `#rrggbb`, logo (tipos aceitos, tamanho), restaurar padrão |
 
 No início de cada arquivo há a lista dos caminhos testados, numerados

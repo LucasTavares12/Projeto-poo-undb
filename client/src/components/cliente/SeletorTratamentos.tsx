@@ -1,5 +1,7 @@
 import type { Tratamento } from "../../services/types";
 import { Dinheiro } from "../../models/Dinheiro";
+import { Duracao } from "../../models/Duracao";
+import { IconeCheck } from "../Icones";
 
 interface Props {
   tratamentos: Tratamento[];
@@ -7,9 +9,10 @@ interface Props {
   onAlternar: (id: number) => void;
 }
 
+/** Lista de serviços para marcar (dá para escolher mais de um). */
 export function SeletorTratamentos({ tratamentos, selecionadosIds, onAlternar }: Props) {
   if (tratamentos.length === 0) {
-    return <p>Nenhum tratamento cadastrado ainda.</p>;
+    return <p className="aviso-vazio">Nenhum serviço cadastrado ainda.</p>;
   }
 
   return (
@@ -23,17 +26,21 @@ export function SeletorTratamentos({ tratamentos, selecionadosIds, onAlternar }:
           >
             <input
               type="checkbox"
+              className="visualmente-oculto"
               checked={selecionado}
               onChange={() => onAlternar(tratamento.id)}
             />
-            <div className="item-tratamento-descricao">
+            <span className="marca-selecao quadrada" aria-hidden="true">
+              <IconeCheck tamanho={14} />
+            </span>
+            <span className="item-tratamento-descricao">
               <strong>{tratamento.nome}</strong>
-              <p>{tratamento.descricao}</p>
-            </div>
-            <div className="item-tratamento-info">
-              <span>{tratamento.duracaoMinutos} min</span>
-              <span>{new Dinheiro(tratamento.valor).formatar()}</span>
-            </div>
+              {tratamento.descricao && <small>{tratamento.descricao}</small>}
+            </span>
+            <span className="item-tratamento-info">
+              <strong>{new Dinheiro(tratamento.valor).formatar()}</strong>
+              <span>{new Duracao(tratamento.duracaoMinutos).formatar()}</span>
+            </span>
           </label>
         );
       })}

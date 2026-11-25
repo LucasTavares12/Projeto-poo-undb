@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Telefone } from "../../models/Telefone";
 import type { CSSProperties, ChangeEvent, FormEvent } from "react";
 import { ConfiguracaoService } from "../../services/ConfiguracaoService";
 import type { Configuracoes } from "../../services/types";
@@ -123,7 +124,7 @@ export function PersonalizacaoPage() {
     <section className="pagina">
       <CabecalhoPagina
         titulo="Personalização"
-        descricao="Deixe o sistema com a cara da sua clínica: nome, logo e cores."
+        descricao="Deixe o sistema com a cara da sua clínica: nome, logo, cores e contatos."
       />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
@@ -239,6 +240,71 @@ export function PersonalizacaoPage() {
                   onAlterar={(cor) => alterar((atual) => atual.comCorLateral(cor))}
                 />
               </div>
+            </section>
+
+            <section className="admin-formulario">
+              <h2>Contato e localização</h2>
+              <p className="admin-dica personalizacao-contatos-dica">
+                Aparecem na página de agendamento como botões de WhatsApp, Instagram e mapa, com o
+                endereço por extenso. Deixe em branco o que não quiser mostrar.
+              </p>
+              <div className="admin-campos">
+                <label>
+                  WhatsApp da clínica
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="(00) 00000-0000"
+                    value={new Telefone(visual.contato("whatsapp")).formatar()}
+                    onChange={(evento) =>
+                      alterar((atual) =>
+                        atual.comContato("whatsapp", new Telefone(evento.target.value).getDigitos())
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Instagram
+                  <input
+                    type="text"
+                    placeholder="@suaclinica"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    value={visual.contato("instagram")}
+                    onChange={(evento) =>
+                      alterar((atual) => atual.comContato("instagram", evento.target.value))
+                    }
+                  />
+                </label>
+                <label className="admin-campo-largo">
+                  Endereço
+                  <input
+                    type="text"
+                    maxLength={200}
+                    placeholder="Rua das Flores, 123 - Centro, São Luís - MA"
+                    value={visual.contato("endereco")}
+                    onChange={(evento) =>
+                      alterar((atual) => atual.comContato("endereco", evento.target.value))
+                    }
+                  />
+                </label>
+                <label className="admin-campo-largo">
+                  Link do Google Maps (opcional)
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://maps.app.goo.gl/..."
+                    value={visual.contato("linkMapa")}
+                    onChange={(evento) =>
+                      alterar((atual) => atual.comContato("linkMapa", evento.target.value))
+                    }
+                  />
+                </label>
+              </div>
+              <p className="admin-dica">
+                No Google Maps, abra o local, toque em "Compartilhar" e copie o link. Sem link, o
+                botão do mapa procura pelo endereço.
+              </p>
             </section>
           </div>
 
