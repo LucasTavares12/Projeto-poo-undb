@@ -319,7 +319,7 @@ docker compose down
 
 Atenção: `docker compose down -v` também apaga os dados do banco.
 
-O banco é criado com as tabelas do arquivo `server/database/schema.sql`, mas começa sem registros. Os dados (profissionais, tratamentos, horários) precisam ser cadastrados pelo sistema.
+O banco é criado com as tabelas do arquivo `server/database/projetopoo_completo.sql`, mas começa sem registros. Os dados (profissionais, tratamentos, horários) precisam ser cadastrados pelo sistema.
 
 | Serviço | Função | Porta no computador |
 |---|---|---|
