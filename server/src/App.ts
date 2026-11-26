@@ -125,6 +125,10 @@ export class App {
     this.app.post("/tratamentos", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.tratamentoController.criar(req, res)
     );
+    // Antes de "/tratamentos/:id", senão "ordem" seria lido como o id de um tratamento.
+    this.app.put("/tratamentos/ordem", this.exigirAdmin, this.soAdministracao, (req, res) =>
+      this.tratamentoController.reordenar(req, res)
+    );
     this.app.put("/tratamentos/:id", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.tratamentoController.atualizar(req, res)
     );

@@ -987,7 +987,6 @@
   }
 }
 
-
 /* Cards de resumo no topo do Kanban */
 
 .admin-resumo {
@@ -4503,79 +4502,7 @@
   }
 }
 
-/* Escolha da data: faixa dos próximos dias + calendário para datas mais distantes. */
-.faixa-dias {
-  display: flex;
-  gap: 8px;
-  margin: 0 -24px;
-  padding: 2px 24px 10px;
-  overflow-x: auto;
-  scroll-padding: 0 24px;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
-}
-
-.dia-rapido {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 1px;
-  min-width: 64px;
-  padding: 10px 6px;
-  border: 1px solid var(--cliente-borda);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--cliente-texto);
-  font: inherit;
-  cursor: pointer;
-  scroll-snap-align: start;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-}
-
-.dia-rapido:hover {
-  border-color: var(--principal);
-}
-
-.dia-rapido strong {
-  color: #3f2f32;
-  font-size: 22px;
-  line-height: 1.15;
-}
-
-.dia-rapido-semana,
-.dia-rapido-mes {
-  font-size: 12px;
-  text-transform: capitalize;
-}
-
-.dia-rapido.selecionado {
-  border-color: var(--principal);
-  background: var(--principal);
-  box-shadow: 0 4px 12px var(--tema-principal-sombra, rgba(160, 92, 104, 0.3));
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.dia-rapido.selecionado strong {
-  color: #fff;
-}
-
 /* Dia sem atendimento (folga, férias, feriado): riscado e sem clique. */
-.dia-rapido.fechado {
-  border-style: dashed;
-  background: #faf6f5;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.dia-rapido.fechado:hover {
-  border-color: var(--cliente-borda);
-}
-
-.dia-rapido.fechado strong {
-  color: var(--cliente-texto);
-  text-decoration: line-through;
-}
 
 .data-fechada {
   margin-top: 16px;
@@ -4585,16 +4512,6 @@
   background: rgba(194, 65, 12, 0.07);
   color: #9a3412;
   font-size: 15px;
-}
-
-.outra-data {
-  margin-top: 14px;
-  font-weight: 400;
-}
-
-.outra-data.ativa .campo {
-  border-color: var(--principal);
-  background: var(--principal-claro);
 }
 
 .data-escolhida {
@@ -4822,13 +4739,6 @@
   margin: 8px 0 8px;
   color: var(--principal);
   font-size: 15px;
-}
-
-/* A faixa de dias vai até a borda do cartão (16px de respiro menos 1px da borda). */
-.remarcar .faixa-dias {
-  margin: 0 -15px;
-  padding: 2px 15px 10px;
-  scroll-padding: 0 15px;
 }
 
 .remarcar .periodos-horarios {
@@ -5214,21 +5124,6 @@
     padding: 12px 14px;
   }
 
-  .faixa-dias {
-    margin: 0 -16px;
-    padding: 2px 16px 10px;
-    scroll-padding: 0 16px;
-    scrollbar-width: none;
-  }
-
-  .faixa-dias::-webkit-scrollbar {
-    display: none;
-  }
-
-  .dia-rapido {
-    min-width: 60px;
-  }
-
   .sucesso-cabecalho {
     padding: 28px 16px 4px;
   }
@@ -5256,7 +5151,6 @@
   .inicio h1 {
     font-size: 30px;
   }
-
 
   .cliente-cabecalho {
     font-size: 15px;
@@ -7097,29 +6991,6 @@
 }
 
 /* Data */
-.dia-rapido {
-  min-width: 56px;
-  padding: 8px 4px;
-  border-radius: 12px;
-}
-
-.dia-rapido strong {
-  font-size: 19px;
-}
-
-.dia-rapido-semana,
-.dia-rapido-mes {
-  font-size: 11.5px;
-}
-
-.dia-rapido.selecionado {
-  box-shadow: 0 3px 8px var(--tema-principal-sombra, rgba(160, 92, 104, 0.25));
-}
-
-.outra-data {
-  margin-top: 6px;
-  font-size: 13px;
-}
 
 .data-escolhida,
 .data-fechada {
@@ -7360,5 +7231,693 @@
   .botao-horario,
   .pagamento-icone {
     transition: none;
+  }
+}
+
+/* ---------- Aba "Tratamentos": uma tabela por profissional, com ordem arrastável ---------- */
+
+.tratamentos-dica {
+  margin: 0 0 16px;
+}
+
+.grupo-tratamentos {
+  margin-bottom: 28px;
+}
+
+.grupo-tratamentos-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.grupo-tratamentos-cabecalho > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.grupo-tratamentos-cabecalho h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.grupo-tratamentos-cabecalho p {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.grupo-tratamentos-cabecalho .admin-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.grupo-tratamentos-vazio {
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: var(--raio);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Coluna da alça + posição (1º, 2º...). */
+.tabela-ordenavel .coluna-ordem {
+  width: 72px;
+  padding-right: 4px;
+  white-space: nowrap;
+}
+
+.alca-arrastar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  margin-right: 4px;
+  border-radius: 6px;
+  color: var(--text);
+  vertical-align: middle;
+  cursor: grab;
+}
+
+.alca-arrastar:hover {
+  background: var(--superficie-alt);
+  color: var(--accent);
+}
+
+.alca-arrastar.desativada {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tabela-ordenavel tr[draggable="true"]:active .alca-arrastar {
+  cursor: grabbing;
+}
+
+.posicao {
+  display: inline-block;
+  min-width: 26px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+/* Linha sendo arrastada: fica "levantada" e as outras abrem espaço. */
+.tabela-ordenavel tbody tr {
+  transition: background 0.12s;
+}
+
+.tabela-ordenavel tbody tr.arrastando td {
+  background: var(--accent-bg);
+}
+
+.tabela-ordenavel tbody tr.arrastando .alca-arrastar {
+  color: var(--accent);
+}
+
+.tratamento-nome {
+  display: block;
+  font-weight: 600;
+}
+
+.tratamento-descricao {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 2px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.botoes-ordem {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.admin-tabela-acoes .admin-botao.icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  padding: 6px 0;
+}
+
+/* Computador: a célula dos botões segue a grade da tabela (as linhas divisórias vão até o fim). */
+@media (min-width: 961px) {
+  .tabela-ordenavel td.admin-tabela-acoes {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+
+  .tabela-ordenavel td.admin-tabela-acoes > * + * {
+    margin-left: 4px;
+  }
+
+  .tabela-ordenavel td {
+    vertical-align: middle;
+  }
+
+  .tabela-ordenavel .botoes-ordem {
+    vertical-align: middle;
+  }
+
+  /* Mesmas larguras em todas as tabelas: as colunas ficam alinhadas de um profissional ao outro. */
+  .tabela-ordenavel {
+    table-layout: fixed;
+  }
+
+  .tabela-ordenavel th:nth-child(3) {
+    width: 110px;
+  }
+
+  .tabela-ordenavel th:nth-child(4) {
+    width: 120px;
+  }
+
+  .tabela-ordenavel th:nth-child(5) {
+    width: 250px;
+  }
+}
+
+/* Celular: cada linha vira cartão; a alça some (arrastar no toque não funciona) e ficam as setas. */
+@media (max-width: 960px) {
+  .tabela-ordenavel .coluna-ordem {
+    display: flex;
+    align-items: center;
+    width: auto;
+    padding: 0 0 4px;
+    border: none;
+  }
+
+  .tabela-ordenavel .alca-arrastar {
+    display: none;
+  }
+
+  .tabela-ordenavel .posicao {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent-forte);
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabela-ordenavel tbody tr {
+    transition: none;
+  }
+}
+
+/* ---------- Foto dos tratamentos (opcional) ---------- */
+
+/* Painel: campo da foto no formulário */
+.tratamento-foto-campo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tratamento-foto-campo strong {
+  color: var(--text-h);
+}
+
+.tratamento-foto-campo .admin-dica {
+  margin-top: 4px;
+}
+
+.tratamento-foto-previa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--superficie-alt);
+  color: var(--text);
+}
+
+.tratamento-foto-previa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tratamento-foto-acoes {
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* Painel: miniatura na tabela */
+.tratamento-celula {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tratamento-miniatura {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Cliente: foto ao lado do serviço (só quando a clínica colocou uma) */
+.item-tratamento-foto {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 10px;
+  background: #f3eef0;
+  cursor: zoom-in;
+}
+
+.item-tratamento-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.item-tratamento-foto:hover img {
+  transform: scale(1.06);
+}
+
+.item-tratamento-foto:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .item-tratamento-foto {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* Cliente: foto ampliada */
+.foto-ampliada-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 12, 16, 0.78);
+  animation: modal-surgir 0.15s ease-out;
+}
+
+.foto-ampliada {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: min(720px, 100%);
+  max-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+.foto-ampliada img {
+  display: block;
+  min-height: 0;
+  max-width: 100%;
+  max-height: calc(100vh - 110px);
+  object-fit: contain;
+}
+
+.foto-ampliada figcaption {
+  padding: 12px 16px;
+  color: #3f2f32;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.foto-ampliada-fechar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #3f2f32;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item-tratamento-foto img,
+  .foto-ampliada-fundo {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ---------- Valor no cartão de crédito (opcional, por tratamento) ---------- */
+
+/* Painel */
+.tratamento-dica-credito {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.tratamento-valor-credito {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* Cliente: lista de serviços */
+.item-tratamento-info .item-tratamento-credito {
+  color: var(--cliente-texto, #6b5a5e);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* Cliente: botão "Cartão de crédito" e aviso do novo valor */
+.pagamento-opcao .pagamento-acrescimo {
+  color: var(--principal-escuro);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pagamento-novo-valor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--principal);
+  border-radius: 12px;
+  background: var(--principal-claro);
+  color: var(--principal-escuro);
+  animation: aparecer 0.2s ease-out;
+}
+
+.pagamento-novo-valor-titulo {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pagamento-novo-valor-precos {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pagamento-novo-valor-precos s {
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+.pagamento-novo-valor-precos strong {
+  color: var(--principal);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.pagamento-novo-valor small {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.pagamento-total {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+.pagamento-total strong {
+  color: var(--principal-escuro);
+}
+
+.pagamento-total small {
+  font-size: 12.5px;
+}
+
+/* Cliente: resumo com o total no crédito */
+.resumo-total small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.resumo-aviso-credito {
+  margin: 0;
+  padding: 0 16px 14px;
+  background: #fff;
+  font-size: 12.5px;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagamento-novo-valor {
+    animation: none;
+  }
+}
+
+/* ---------- Escolha da data: lista vertical dos próximos dias ---------- */
+
+.lista-dias-moldura {
+  position: relative;
+}
+
+.lista-dias {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  padding: 4px 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y proximity;
+  scrollbar-width: thin;
+}
+
+.lista-dias-mes {
+  position: sticky;
+  top: -4px;
+  z-index: 1;
+  margin: 6px 0 0;
+  padding: 6px 2px;
+  background: var(--cliente-fundo-cartao, #fff);
+  color: var(--principal-escuro);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.lista-dias-mes:first-child {
+  margin-top: 0;
+}
+
+.dia-lista {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 14px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--cliente-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.dia-lista:hover {
+  border-color: var(--principal);
+}
+
+.dia-lista:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+.dia-lista-numero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--principal-claro);
+  line-height: 1.05;
+}
+
+.dia-lista-numero strong {
+  color: var(--principal-escuro);
+  font-size: 18px;
+}
+
+.dia-lista-numero small {
+  font-size: 11px;
+  text-transform: lowercase;
+}
+
+.dia-lista-semana {
+  flex: 1;
+  color: #3f2f32;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.dia-lista-etiqueta {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--principal-claro);
+  color: var(--principal-escuro);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dia-lista.selecionado {
+  border-color: var(--principal);
+  background: var(--principal);
+  box-shadow: 0 4px 12px var(--tema-principal-sombra, rgba(160, 92, 104, 0.3));
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dia-lista.selecionado .dia-lista-numero {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dia-lista.selecionado .dia-lista-numero strong,
+.dia-lista.selecionado .dia-lista-semana {
+  color: #fff;
+}
+
+.dia-lista.selecionado .dia-lista-etiqueta {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* Dia sem atendimento (folga, férias, feriado): riscado e sem clique. */
+.dia-lista.fechado {
+  border-style: dashed;
+  background: #faf6f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dia-lista.fechado:hover {
+  border-color: var(--cliente-borda);
+}
+
+.dia-lista.fechado .dia-lista-numero strong,
+.dia-lista.fechado .dia-lista-semana {
+  color: var(--cliente-texto);
+  text-decoration: line-through;
+}
+
+.dia-lista-etiqueta.fechado {
+  background: transparent;
+  color: var(--cliente-texto);
+  font-weight: 500;
+}
+
+/* Setinhas: aparecem quando há mais datas para aquele lado (e rolam a lista ao tocar). */
+.lista-dias-seta {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--cliente-borda);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(31, 19, 24, 0.15);
+  color: var(--principal);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.2s;
+}
+
+.lista-dias-seta.visivel {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lista-dias-seta.acima {
+  top: -12px;
+}
+
+.lista-dias-seta.abaixo {
+  bottom: -12px;
+  animation: seta-convite 1.6s ease-in-out 3;
+}
+
+.lista-dias-seta:hover {
+  background: var(--principal-claro);
+}
+
+.lista-dias-seta:focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+}
+
+@keyframes seta-convite {
+  50% {
+    transform: translate(-50%, 4px);
+  }
+}
+
+.lista-dias-dica {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dia-lista,
+  .lista-dias-seta {
+    transition: none;
+    animation: none;
   }
 }

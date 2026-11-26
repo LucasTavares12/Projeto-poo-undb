@@ -180,6 +180,9 @@ CREATE TABLE `tratamentos` (
   `valor` decimal(10,2) NOT NULL,
   `duracao_minutos` int NOT NULL,
   `profissional_id` int DEFAULT NULL,
+  `ordem` int NOT NULL DEFAULT '0',
+  `foto` mediumtext COLLATE utf8mb4_unicode_ci,
+  `valor_cartao_credito` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_tratamento_profissional` (`profissional_id`),
   CONSTRAINT `fk_tratamento_profissional` FOREIGN KEY (`profissional_id`) REFERENCES `profissionais` (`id`)

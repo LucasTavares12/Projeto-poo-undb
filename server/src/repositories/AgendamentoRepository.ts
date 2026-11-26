@@ -5,6 +5,7 @@ import { Cliente } from "../module/Cliente";
 import { Responsavel } from "../module/Responsavel";
 import { Profissional } from "../module/Profissional";
 import { Tratamento } from "../module/Tratamento";
+import { TratamentoRepository } from "./TratamentoRepository";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
 import { DataAgenda } from "../module/DataAgenda";
@@ -46,6 +47,7 @@ interface LinhaTratamento extends RowDataPacket {
   valor: string;
   duracao_minutos: number;
   profissional_id?: number | null;
+  valor_cartao_credito: string | null;
 }
 
 export class AgendamentoRepository extends Repositorio {
@@ -65,8 +67,10 @@ export class AgendamentoRepository extends Repositorio {
   private static readonly TELEFONE_SO_DIGITOS =
     "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')";
 
+  // Sem a foto do tratamento: o agendamento não a usa e ela deixaria as listas pesadas.
   private static readonly SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
-    SELECT t.*
+    SELECT t.id, t.nome, t.descricao, t.valor, t.duracao_minutos, t.profissional_id,
+           t.valor_cartao_credito
     FROM tratamentos t
     JOIN agendamento_tratamentos at ON at.tratamento_id = t.id
     WHERE at.agendamento_id = ?
@@ -434,17 +438,23 @@ export class AgendamentoRepository extends Repositorio {
       AgendamentoRepository.SELECT_TRATAMENTOS_DO_AGENDAMENTO,
       [agendamentoId]
     );
-    return linhas.map(
-      (linha) =>
-        new Tratamento(
-          linha.nome,
-          linha.descricao ?? "",
-          Number(linha.valor),
-          linha.duracao_minutos,
-          linha.id,
-          linha.profissional_id ?? null
-        )
-    );
+    return linhas.map((linha) => {
+      const tratamento = new Tratamento(
+        linha.nome,
+        linha.descricao ?? "",
+        Number(linha.valor),
+        linha.duracao_minutos,
+        linha.id,
+        linha.profissional_id ?? null
+      );
+      // O total do agendamento no cartão de crédito usa este valor.
+      tratamento.setValorCartaoCredito(
+        linha.valor_cartao_credito === null || linha.valor_cartao_credito === undefined
+          ? null
+          : Number(linha.valor_cartao_credito)
+      );
+      return tratamento;
+    });
   }
 
   private async garantirEstrutura(): Promise<void> {
@@ -476,6 +486,12 @@ export class AgendamentoRepository extends Repositorio {
         AgendamentoRepository.ADICIONAR_FORMA_PAGAMENTO
       ),
       this.garantirTabela(AgendamentoRepository.ACEITAR_FALTA),
+      // Os tratamentos do agendamento são lidos com o valor no cartão de crédito.
+      this.garantirColuna(
+        "tratamentos",
+        "valor_cartao_credito",
+        TratamentoRepository.ADICIONAR_VALOR_CREDITO
+      ),
     ]);
   }
 

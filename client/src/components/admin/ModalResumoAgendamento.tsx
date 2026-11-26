@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { Agendamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
+import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
 import { Duracao } from "../../models/Duracao";
 import { Telefone } from "../../models/Telefone";
 import { FaixaHoraria } from "../../models/FaixaHoraria";
@@ -170,7 +171,11 @@ export function ModalResumoAgendamento({
                     {tratamento.nome}
                     <small>{new Duracao(tratamento.duracaoMinutos).formatar()}</small>
                   </span>
-                  <b>{new Dinheiro(tratamento.valor).formatar()}</b>
+                  <b>
+                    {new Dinheiro(
+                      SelecaoDeTratamentos.valorDe(tratamento, agendamento.formaDePagamento)
+                    ).formatar()}
+                  </b>
                 </li>
               ))}
             </ul>

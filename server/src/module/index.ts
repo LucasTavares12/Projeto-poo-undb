@@ -14,6 +14,7 @@ export * from "./HistoricoCliente";
 export * from "./AgendaSemanal";
 export * from "./Profissional";
 export * from "./Tratamento";
+export * from "./OrdemDosTratamentos";
 export * from "./HorarioDisponivel";
 export * from "./BloqueioAgenda";
 export * from "./Agendamento";

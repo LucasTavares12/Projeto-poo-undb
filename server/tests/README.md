@@ -31,14 +31,16 @@ Nenhuma biblioteca nova foi adicionada ao projeto.
 | Arquivo | Classe(s) | Principais caminhos |
 |---|---|---|
 | `Agendamento.test.ts` | `Agendamento` | passagem de status (Agendado → Em atendimento → Finalizado), remarcar, mensagens de WhatsApp, arquivar/desarquivar, `moverPara`, `toJSON` |
-| `Tratamento.test.ts` | `Tratamento` | valor (negativo, `NaN`, zero), duração múltipla de 30 min, nome (vazio, 150 e 151 caracteres), vínculo com profissional |
+| `Tratamento.test.ts` | `Tratamento` | valor (negativo, `NaN`, zero), duração múltipla de 30 min, nome (vazio, 150 e 151 caracteres), vínculo com profissional, foto (PNG/JPG/WebP em base64, remover, formato inválido, limite de tamanho) |
 | `BloqueioAgenda.test.ts` | `BloqueioAgenda` | datas inválidas, fim antes do início, limite de 366 dias, profissional × clínica inteira, primeiro/último dia |
 | `DataAgenda.test.ts` | `DataAgenda`, `AntecedenciaMinima` | leitura de `YYYY-MM-DD`, mesmo dia, antecedência mínima de 2h (exatamente 2h, 2h − 1 ms) |
 | `Horario.test.ts` | `Horario` | formato `HH:MM`, grade de 30 min, soma de horários passando da meia-noite |
 | `Telefone.test.ts` | `Telefone` | 10 e 11 dígitos, máscara, formatação de fixo e celular |
 | `PerfilDeAcesso.test.ts` | `PerfilDeAcesso`, `Administrador` | profissional administrador: gestão como acesso total, agendamentos só os próprios, marca de administrador |
 | `FaltasEPagamento.test.ts` | `FormaDePagamento`, `Agendamento`, `HistoricoCliente`, `RelatorioMensal` | forma de pagamento (códigos válidos/inválidos), faltas (só depois do horário, desfazer, arquivar), faltas no histórico e no relatório, faturamento por forma de pagamento |
+| `ValorNoCartaoDeCredito.test.ts` | `Tratamento`, `Agendamento`, `RelatorioMensal` | valor no cartão de crédito (padrão, zero, remover, inválido), valor conforme a forma de pagamento, total do agendamento ao trocar a forma, faturamento no relatório |
 | `FuncionamentoEContatos.test.ts` | `HorarioDeFuncionamento`, `ConfiguracoesClinica` | dias e horários de funcionamento (formato, dia repetido, fechamento antes da abertura, horário dentro/fora, dia fechado, filtro da grade), Instagram, WhatsApp, link do mapa e endereço |
+| `OrdemDosTratamentos.test.ts` | `Tratamento`, `OrdemDosTratamentos` | posição do tratamento (padrão, inválida), mesmo grupo, nova ordem (lista vazia, id inválido/repetido, faltando ou sobrando tratamento do grupo) |
 | `ConfiguracoesClinica.test.ts` | `ConfiguracoesClinica` | personalização: nome (vazio, 60/61 caracteres), cores `#rrggbb`, logo (tipos aceitos, tamanho), restaurar padrão |
 
 No início de cada arquivo há a lista dos caminhos testados, numerados

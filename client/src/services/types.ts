@@ -21,6 +21,12 @@ export interface Tratamento {
   duracaoMinutos: number;
   /** Profissional que realiza o tratamento; null = todos os profissionais. */
   profissionalId: number | null;
+  /** Posição na lista do seu grupo: a ordem em que o cliente vê os serviços. */
+  ordem: number;
+  /** Valor se o cliente pagar no cartão de crédito; null = o mesmo valor das outras formas. */
+  valorCartaoCredito: number | null;
+  /** Foto que demonstra o tratamento (data URL); null = sem foto (o cliente vê só o texto). */
+  foto: string | null;
   quantidadeSlots: number;
 }
 

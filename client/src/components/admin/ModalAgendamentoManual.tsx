@@ -334,7 +334,7 @@ export function ModalAgendamentoManual({
               <p className="modal-total">
                 Total:{" "}
                 <strong>{new Duracao(selecionados.getDuracaoTotalMinutos()).formatar()}</strong> ·{" "}
-                <strong>{new Dinheiro(selecionados.getValorTotal()).formatar()}</strong>
+                <strong>{new Dinheiro(selecionados.getValorTotal(formaDePagamento)).formatar()}</strong>
               </p>
             )}
           </fieldset>

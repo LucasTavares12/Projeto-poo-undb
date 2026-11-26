@@ -227,7 +227,9 @@ export function AgendamentoPage() {
       ),
     [tratamentos, tratamentoIds]
   );
-  const valorTotal = tratamentosSelecionados.getValorTotal();
+  // No cartão de crédito, os tratamentos com valor próprio no crédito mudam o total.
+  const valorTotal = tratamentosSelecionados.getValorTotal(formaDePagamento);
+  const valorSemCredito = tratamentosSelecionados.getValorTotal(null);
   const duracaoTotal = tratamentosSelecionados.getDuracaoTotalMinutos();
 
   // Campos obrigatórios do agendamento: quem agenda (nomes e telefone), data e horário.
@@ -250,6 +252,7 @@ export function AgendamentoPage() {
     duracaoMinutos: duracaoTotal,
     valor: valorTotal,
     formaDePagamento,
+    valorSemCredito,
   };
 
   const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
@@ -685,6 +688,10 @@ export function AgendamentoPage() {
                   valor={formaDePagamento}
                   onEscolher={setFormaDePagamento}
                   erro={tentouConfirmar ? errosDosDados.formaDePagamento : null}
+                  totais={{
+                    normal: valorSemCredito,
+                    credito: tratamentosSelecionados.getValorTotal("CARTAO_CREDITO"),
+                  }}
                 />
                 <p className="campo-legenda">
                   <span className="campo-obrigatorio">*</span> Campos obrigatórios

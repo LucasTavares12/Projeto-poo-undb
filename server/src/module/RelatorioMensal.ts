@@ -179,7 +179,7 @@ export class RelatorioMensal {
           faturamento: 0,
         };
         item.quantidade += 1;
-        item.faturamento += tratamento.getValor();
+        item.faturamento += agendamento.getValorDo(tratamento);
         porTratamento.set(id, item);
       }
     }

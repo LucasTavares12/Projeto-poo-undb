@@ -325,3 +325,26 @@ export function IconeCheck(props: Props) {
     </Icone>
   );
 }
+
+/** Alça de arrastar (seis pontinhos). */
+export function IconeArrastar(props: Props) {
+  return (
+    <Icone {...props}>
+      <circle cx="9" cy="6" r="1" fill="currentColor" />
+      <circle cx="15" cy="6" r="1" fill="currentColor" />
+      <circle cx="9" cy="12" r="1" fill="currentColor" />
+      <circle cx="15" cy="12" r="1" fill="currentColor" />
+      <circle cx="9" cy="18" r="1" fill="currentColor" />
+      <circle cx="15" cy="18" r="1" fill="currentColor" />
+    </Icone>
+  );
+}
+
+/** Setinha para cima. */
+export function IconeSetaCima(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="m6 15 6-6 6 6" />
+    </Icone>
+  );
+}

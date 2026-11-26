@@ -147,9 +147,17 @@ export class Agendamento {
     return this.tratamentos;
   }
 
-  /** Soma os valores de todos os tratamentos escolhidos neste agendamento. */
+  /**
+   * Soma os valores de todos os tratamentos escolhidos neste agendamento, na forma de
+   * pagamento escolhida (no cartão de crédito vale o valor do crédito de cada tratamento).
+   */
   public getValorTotal(): number {
-    return this.tratamentos.reduce((total, tratamento) => total + tratamento.getValor(), 0);
+    return this.tratamentos.reduce((total, tratamento) => total + this.getValorDo(tratamento), 0);
+  }
+
+  /** Quanto este tratamento custa neste agendamento (depende da forma de pagamento). */
+  public getValorDo(tratamento: Tratamento): number {
+    return tratamento.getValorPara(this.formaDePagamento);
   }
 
   /** Soma a duração (em minutos) de todos os tratamentos escolhidos. */

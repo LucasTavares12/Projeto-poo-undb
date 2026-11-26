@@ -26,6 +26,21 @@ export class TratamentoController extends Controlador {
     }
   }
 
+  /** Aba "Tratamentos": nova ordem de um grupo ({ profissionalId: número | null, ids: [...] }). */
+  public async reordenar(req: Request, res: Response): Promise<void> {
+    try {
+      const { profissionalId, ids } = req.body ?? {};
+      res.json(
+        await this.servico.reordenar(
+          this.lerIdOpcional(profissionalId, "Profissional inválido."),
+          ids
+        )
+      );
+    } catch (erro) {
+      this.responderErro(res, erro);
+    }
+  }
+
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
       await this.servico.remover(this.lerId(req.params.id));
@@ -36,14 +51,22 @@ export class TratamentoController extends Controlador {
   }
 
   private lerDados(req: Request): DadosTratamento {
-    const { nome, descricao, valor, duracaoMinutos, profissionalId } = req.body ?? {};
+    const { nome, descricao, valor, valorCartaoCredito, duracaoMinutos, profissionalId, foto } =
+      req.body ?? {};
     return {
       nome,
       descricao,
       valor: Number(valor),
+      // Vazio/null = no cartão de crédito vale o mesmo valor.
+      valorCartaoCredito:
+        valorCartaoCredito === undefined || valorCartaoCredito === null || valorCartaoCredito === ""
+          ? null
+          : Number(valorCartaoCredito),
       duracaoMinutos: Number(duracaoMinutos),
       // Vazio/null = tratamento de todos os profissionais.
       profissionalId: this.lerIdOpcional(profissionalId, "Profissional inválido."),
+      // Sem foto (ou vazia) = o tratamento aparece para o cliente sem imagem.
+      foto: foto ?? null,
     };
   }
 }
