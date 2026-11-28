@@ -34,8 +34,8 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 1. Escolhe o profissional.
 2. Escolhe um ou mais serviços (tratamentos) que aquele profissional realiza.
 3. Escolhe a data e um dos horários livres daquele dia.
-4. Informa nome e telefone, confere o resumo e confirma o agendamento.
-5. Se precisar, depois remarca ou cancela o próprio agendamento informando o telefone usado.
+4. Diz se o atendimento é **para ele** ou **para outra pessoa** (ex.: a mãe marcando para a filha com o próprio telefone), informa os nomes, o telefone e a **forma de pagamento** que vai usar, confere o resumo e confirma o agendamento.
+5. Se precisar, depois remarca ou cancela informando o telefone usado. Quem marcou para outras pessoas vê todos os agendamentos daquele telefone.
 
 **Para a clínica (administrador):**
 
@@ -45,7 +45,7 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 - Vê a semana de cada profissional numa agenda, horário a horário.
 - Consulta a ficha e o histórico de cada cliente.
 - Manda lembretes e agradecimentos pelo WhatsApp.
-- Acompanha o faturamento nos relatórios.
+- Acompanha o faturamento e o lucro nos relatórios (informando o gasto de cada mês).
 
 ---
 
@@ -58,9 +58,11 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Agendar** | Passo a passo com barra de progresso: profissional → serviço(s) → data → horário → dados. Mostra o total (valor e duração) dos serviços escolhidos. |
 | **Escolha da data** | Faixa com os próximos 14 dias para tocar e escolher. Dias de folga ou feriado aparecem riscados como "fechado". Para datas mais distantes, há um calendário. |
 | **Horários disponíveis** | Só aparecem horários realmente livres: dentro da grade do profissional, sem outro agendamento e com espaço para a duração de todos os serviços. Ficam separados em Manhã, Tarde e Noite. |
-| **Confirmação** | Antes de gravar, abre a janela "Está tudo certo?" com o resumo completo (data, profissional, serviços, valor, nome e telefone). |
+| **Forma de pagamento** | Na etapa "Seus dados", o cliente escolhe como vai pagar: Pix, cartão de crédito, cartão de débito ou dinheiro (obrigatório). A clínica já fica sabendo e agiliza a hora do pagamento. |
+| **Confirmação** | Antes de gravar, abre a janela "Está tudo certo?" com o resumo completo (data, profissional, serviços, valor, forma de pagamento, nome e telefone; e quem marcou, quando é para outra pessoa). |
+| **Informações da clínica** | Na tela inicial, um cartão mostra se a clínica está **aberta ou fechada agora** ("Aberto agora · Fecha às 18:00" / "Fechado agora · Abre amanhã às 08:00"). A setinha abre os dias e horários da semana, com o dia de hoje em destaque. Abaixo vêm o endereço por extenso (abre o Google Maps) e botões de WhatsApp, Instagram e Localização. É só informativo: pelo site dá para agendar a qualquer hora. |
 | **Ver horários** | Consulta os horários livres de um profissional sem precisar agendar. |
-| **Meus agendamentos** | O cliente informa o telefone usado no agendamento e vê os agendamentos em aberto. Pode **remarcar** (só para horários livres, com confirmação "De / Para") ou **cancelar**. |
+| **Meus agendamentos** | O cliente informa o telefone usado no agendamento e vê os agendamentos em aberto, inclusive os que marcou para outras pessoas com o próprio telefone (cada um diz para quem é, e dá para filtrar por pessoa). Pode **remarcar** (só para horários livres, com confirmação "De / Para") ou **cancelar**. O aviso que chega ao painel diz quem fez e de quem era o horário ("Maria cancelou o horário de Ana"). |
 | **Antecedência mínima** | Pelo site, agendar, remarcar e cancelar só com pelo menos **2 horas** de antecedência. |
 
 ### Painel da clínica (área administrativa)
@@ -70,20 +72,24 @@ Facilitar e organizar o processo de agendamento de procedimentos. O cliente esco
 | **Agendamentos (quadro Kanban)** | Colunas Agendado, Em atendimento e Finalizado. Os cards são arrastados (ou movidos por botões) de uma etapa para outra. Cards agendados podem ser cancelados ou remarcados. Mostra resumo do dia: agendamentos de hoje, fila, em atendimento e faturado no dia. |
 | **Finalizados somem sozinhos** | Atendimentos finalizados há 2 dias saem do quadro automaticamente e vão para "Mostrar ocultos". Continuam nos relatórios e no histórico. Também há o botão "Limpar". Agendamentos esquecidos são finalizados sozinhos 2 dias depois da data. |
 | **Agenda** | A semana de um profissional horário a horário: atendimentos (com a cor da etapa e a duração), horários livres, horários que já passaram e dias fechados. Clicar num horário livre abre o "Novo agendamento" já preenchido. Clicar num atendimento abre o resumo, com atalhos para a ficha do cliente, WhatsApp e remarcar. No celular, mostra um dia por vez. |
-| **Novo agendamento** | A equipe agenda pelo painel (ex: cliente que ligou ou chegou na hora), sem a regra de antecedência mínima. |
-| **Lembretes e agradecimentos pelo WhatsApp** | Nos agendados, o botão "Enviar lembrete" abre o WhatsApp do cliente com a mensagem pronta (data, horário, serviços, profissional). Nos finalizados, o botão "Agradecer" abre uma mensagem de agradecimento. O card mostra quando cada mensagem foi enviada. |
-| **Clientes** | Lista de todos os clientes, com busca por nome ou telefone. A ficha mostra atendimentos, total gasto, ticket médio, último atendimento, próximo horário, tratamentos mais feitos, profissionais que atenderam e o histórico completo em linha do tempo. |
-| **Tratamentos** | Cadastro de procedimentos com descrição, valor, duração e o profissional que realiza (ou todos). |
+| **Novo agendamento** | A equipe agenda pelo painel (ex: cliente que ligou ou chegou na hora), sem a regra de antecedência mínima. A forma de pagamento é opcional aqui e pode ser trocada depois no resumo do agendamento (ex.: o cliente mudou de ideia na hora de pagar). |
+| **Faltas** | Cada card mostra a forma de pagamento. Depois que o horário começa, aparece o botão **"Não compareceu"**: o card vai para a coluna dos finalizados marcado como falta (dá para desfazer). Faltas não entram no faturamento e não são finalizadas sozinhas. O card avisa quando o cliente já faltou antes ("Faltou 2 vezes", em destaque a partir de 2). |
+| **Lembretes e agradecimentos pelo WhatsApp** | Nos agendados, o botão "Enviar lembrete" abre o WhatsApp do cliente com a mensagem pronta (data, horário, serviços, profissional e forma de pagamento). Nos finalizados, o botão "Agradecer" abre uma mensagem de agradecimento. O card mostra quando cada mensagem foi enviada. |
+| **Clientes** | Lista de todos os clientes, com busca por nome ou telefone. A ficha mostra atendimentos, faltas (com a taxa e um alerta para quem costuma faltar), total gasto, ticket médio, último atendimento, próximo horário, tratamentos mais feitos, profissionais que atenderam e o histórico completo em linha do tempo. Um mesmo telefone pode ter várias pessoas (ex.: mãe e filha): cada uma tem a sua ficha, e a ficha mostra quem marcou e as outras pessoas do telefone. |
+| **Tratamentos** | Cadastro de procedimentos com descrição, valor, duração e o profissional que realiza (ou todos). Os tratamentos ficam separados em uma tabela por profissional (e uma para "Todos os profissionais"). A ordem das linhas é a ordem em que o cliente vê os serviços ao agendar: dá para **arrastar** as linhas pela alça ou usar as setas ↑/↓ (no celular, só as setas). Assim, os mais procurados, combos e promoções ficam no topo. Para cada profissional, o cliente vê primeiro os tratamentos dele e depois os de "Todos". Tratamento novo entra no fim da lista. |
 | **Profissionais** | Cadastro de quem realiza os atendimentos. |
-| **Horários** | Grade semanal de cada profissional: clica-se nos horários (de 30 em 30 minutos) para liberar ou bloquear. Os horários liberados se repetem toda semana. |
+| **Horários** | Primeiro, o **funcionamento da clínica**: os dias da semana em que ela abre e o horário de cada dia (ex.: segunda a sexta das 08:00 às 18:00, sábado até 12:00, domingo fechado). Só os administradores alteram. Depois, a grade semanal de cada profissional: clica-se nos horários (de 30 em 30 minutos) para liberar ou bloquear, sempre dentro do funcionamento (dias fechados e horários fora ficam bloqueados). Os horários liberados se repetem toda semana. Um atendimento só é oferecido ao cliente se couber inteiro dentro do funcionamento. |
 | **Folgas e feriados** | Fecha dias inteiros na agenda de um profissional (folga, férias, atestado) ou da clínica inteira (feriado). Nesses dias nenhum horário aparece livre. Se já houver agendamentos no período, o sistema avisa quais são. |
-| **Relatórios** | Faturamento do mês (com comparação com o mês anterior), número de atendimentos, ticket médio, melhor dia, gráfico de faturamento por dia, tratamentos mais realizados e faturamento por profissional. |
-| **Configurações e usuários** | Liga ou desliga os botões "Entrar" e "Cadastrar" na página pública. Gerencia as contas do painel: criar usuário, trocar e-mail, redefinir senha, excluir e vincular a um profissional. |
+| **Relatórios** | Faturamento do mês (com comparação com o mês anterior), número de atendimentos e de faltas (com a taxa de faltas), ticket médio, melhor dia, gráfico de faturamento por dia, tratamentos mais realizados, faturamento por forma de pagamento e faturamento por profissional. Na parte **Lucro**, informa-se o gasto do mês e o sistema mostra o lucro (ou prejuízo) e a margem: com "Todos os profissionais", é o lucro da clínica (faturamento total − gasto da clínica); escolhendo um profissional, é o lucro dele (faturamento dele − gasto próprio dele). Cada profissional vê e informa só o próprio; quem tem acesso total vê e informa todos. O gasto pode ser editado ou apagado (se foi informado errado) e, se o mês ainda não tem gasto, o sistema sugere o valor do mês anterior. |
+| **Configurações e usuários** | Liga ou desliga os botões "Entrar" e "Cadastrar" na página pública. Gerencia as contas do painel: criar usuário, trocar e-mail, redefinir senha, excluir, vincular a um profissional e marcar o profissional como administrador da clínica. |
+| **Personalização** | Deixa o sistema com a cara da clínica: nome da clínica (barra lateral, página de agendamento, título da aba e mensagens de WhatsApp), logo no lugar do ícone (a imagem é reduzida no navegador antes de enviar), as cores principal e da barra lateral e os **contatos** (WhatsApp, Instagram, endereço e link do Google Maps, mostrados na página do cliente), com combinações prontas, prévia ao vivo antes de salvar e botão para restaurar o visual padrão. Ao salvar, o painel e a página do cliente mudam na hora. |
 
 ### Contas e permissões
 
 - **Acesso total** (conta sem profissional vinculado): vê e altera tudo da clínica.
-- **Conta de profissional**: só vê e altera o que é daquele profissional (agendamentos, agenda, horários, folgas, clientes e relatório próprios). Não acessa Tratamentos nem Configurações.
+- **Conta de profissional**: só vê e altera o que é daquele profissional (agendamentos, agenda, horários, folgas, clientes e relatório próprios). Não acessa Tratamentos, Configurações nem Personalização.
+- **Profissional administrador** (conta de profissional marcada como "também é administrador da clínica", para o dono ou responsável que também atende): nos **agendamentos** continua vendo só os próprios (quadro, agenda, clientes e avisos), mas **administra o resto da clínica** como o acesso total: tratamentos, profissionais, horários e folgas de todos, feriados, relatórios e lucro da clínica, usuários, configurações e personalização.
+- Sempre fica pelo menos uma conta que administra a clínica (acesso total ou profissional administrador).
 - As regras de permissão são conferidas no servidor, não só na tela.
 
 ### Visual
@@ -136,9 +142,9 @@ O backend é todo organizado em classes, separadas em camadas:
 
 Exemplos dos pilares da orientação a objetos no projeto:
 
-- **Encapsulamento:** atributos privados com métodos que aplicam as regras (ex: `Agendamento.remarcar()`, `Agendamento.registrarMensagem()`).
-- **Herança:** `Pessoa` → `Cliente` e `Profissional`; `Repositorio` → repositórios; `Controlador` → controllers; `ErroDaAplicacao` → tipos de erro.
-- **Polimorfismo:** cada subclasse de `Pessoa` implementa `papel()` e `apresentar()` do seu jeito; cada tipo de erro define o seu `status`.
+- **Encapsulamento:** atributos privados com métodos que aplicam as regras (ex: `Agendamento.remarcar()`, `Agendamento.registrarMensagem()`, `Agendamento.pertenceAoTelefone()`, que decide quem pode remarcar e cancelar pelo site).
+- **Herança:** `Pessoa` → `Cliente`, `Profissional` e `Responsavel` (quem marca para outra pessoa); `Repositorio` → repositórios; `Controlador` → controllers; `ErroDaAplicacao` → tipos de erro.
+- **Polimorfismo:** cada subclasse de `Pessoa` implementa `papel()` e `apresentar()` do seu jeito; `Agendamento.getContato()` devolve uma `Pessoa`, que é o `Responsavel` ou o próprio `Cliente`; cada tipo de erro define o seu `status`.
 - **Abstração:** classes abstratas (`Pessoa`, `Repositorio`, `Controlador`, `ErroDaAplicacao`) e objetos de valor (`Horario`, `Telefone`, `DataAgenda`).
 
 O frontend segue a mesma ideia: as regras de exibição ficam em classes de modelo (`client/src/models`) e o acesso à API em classes de serviço (`client/src/services`), que herdam de `ApiClient`.
@@ -151,15 +157,17 @@ O frontend segue a mesma ideia: as regras de exibição ficam em classes de mode
 
 | Entidade | Papel no sistema |
 |---|---|
-| **Pessoa** | Representa as pessoas relacionadas ao sistema. Serve como base para o cliente e o profissional. |
-| **Cliente** | Pessoa que realiza o agendamento. É identificado pelo telefone. |
+| **Pessoa** | Representa as pessoas relacionadas ao sistema. Serve como base para o cliente, o profissional e o responsável. |
+| **Cliente** | Pessoa que recebe o atendimento. É identificada pelo telefone + nome: o telefone é o contato de quem marcou, que pode ser outra pessoa (o agendamento guarda quem marcou). |
 | **Profissional** | Pessoa que realiza os tratamentos na clínica. |
+| **Responsável** | Pessoa que marcou o horário para outra usando o próprio telefone (ex.: a mãe para a filha). Recebe os avisos e pode remarcar ou cancelar com esse telefone. |
 | **Tratamento** | Procedimento oferecido pela clínica, com valor, duração e o profissional que realiza. |
 | **Agendamento** | Registro que reúne as informações de um atendimento: cliente, profissional, tratamentos, data, horário, etapa e as mensagens de WhatsApp enviadas. |
 | **Horário** | Um horário da grade de 30 em 30 minutos (09:00, 09:30...). |
 | **Horário disponível** | Um horário que a clínica liberou para um profissional num dia da semana. |
 | **Bloqueio de agenda** | Período de folga, férias ou feriado em que a agenda fica fechada. |
-| **Status do agendamento** | Situação do atendimento: agendado, em atendimento ou finalizado. |
+| **Status do agendamento** | Situação do atendimento: agendado, em atendimento, finalizado ou não compareceu (falta). |
+| **Forma de pagamento** | Como o cliente pretende pagar: Pix, cartão de crédito, cartão de débito ou dinheiro. |
 | **Dia da semana** | Os dias em que a clínica realiza atendimentos. |
 | **Histórico do cliente** | Reúne os agendamentos de um cliente e calcula total gasto, visitas, tratamentos mais feitos etc. |
 | **Agenda semanal** | Monta a semana de um profissional, dizendo o que há em cada horário de cada dia. |
@@ -174,7 +182,7 @@ As entidades se conectam entre si para que o sistema funcione de forma organizad
 
 | Elementos | Como se relacionam | Explicação |
 |---|---|---|
-| Cliente e Agendamento | Um cliente pode realizar vários agendamentos | O mesmo cliente pode voltar à clínica e marcar novos atendimentos. O histórico junta todos pelo telefone. |
+| Cliente e Agendamento | Um cliente pode realizar vários agendamentos | O mesmo cliente pode voltar à clínica e marcar novos atendimentos. O histórico junta todos pelo telefone e pelo nome de quem foi atendido. |
 | Profissional e Agendamento | Um profissional pode realizar vários atendimentos | Cada profissional atende diversos clientes em diferentes dias e horários. |
 | Tratamento e Profissional | Um tratamento pode ser de um profissional ou de todos | O tratamento pode ser exclusivo de um profissional ou oferecido por qualquer um da clínica. |
 | Agendamento e Tratamento | Um agendamento pode ter vários tratamentos | O cliente pode fazer mais de um procedimento no mesmo horário; a duração e o valor são somados. |

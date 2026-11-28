@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { AutenticacaoService } from "../services/AutenticacaoService";
 import { SessaoDaRequisicao } from "./SessaoDaRequisicao";
-import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 
 /**
  * Protege as rotas do painel admin: só deixa a requisição seguir se vier
  * com um token válido no cabeçalho "Authorization: Bearer <token>" de uma
- * conta que ainda existe. Deixa em `res.locals` quem está logado (adminId) e,
- * se a conta for de um profissional, qual (profissionalId).
+ * conta que ainda existe. Deixa em `res.locals` quem está logado (adminId),
+ * se a conta for de um profissional, qual (profissionalId) e se ele também administra a
+ * clínica (administrador).
  */
 export class AutenticacaoMiddleware {
   constructor(private readonly servico: AutenticacaoService) {}
@@ -25,6 +25,7 @@ export class AutenticacaoMiddleware {
 
       res.locals.adminId = usuario.getId();
       res.locals.profissionalId = usuario.getProfissionalId();
+      res.locals.administrador = usuario.ehProfissionalAdministrador();
       next();
     } catch (erro) {
       next(erro);
@@ -43,6 +44,7 @@ export class AutenticacaoMiddleware {
       if (usuario) {
         res.locals.adminId = usuario.getId();
         res.locals.profissionalId = usuario.getProfissionalId();
+        res.locals.administrador = usuario.ehProfissionalAdministrador();
       }
       next();
     } catch {
@@ -52,12 +54,13 @@ export class AutenticacaoMiddleware {
   }
 
   /**
-   * Depois de `verificar`: só deixa passar quem tem acesso total (conta sem profissional).
-   * Usado no que é da clínica inteira: usuários, configurações, tratamentos, cadastro de profissionais.
+   * Depois de `verificar`: só deixa passar quem administra a clínica (conta sem profissional
+   * ou profissional administrador). Usado no que é da clínica inteira: usuários,
+   * configurações, personalização, tratamentos, cadastro de profissionais.
    */
-  public exigirAcessoTotal(req: Request, res: Response, next: NextFunction): void {
-    if (!new PerfilDeAcesso(SessaoDaRequisicao.profissionalId(res)).temAcessoTotal()) {
-      res.status(403).json({ erro: "Esta área é só para usuários com acesso total." });
+  public exigirAdministracao(req: Request, res: Response, next: NextFunction): void {
+    if (!SessaoDaRequisicao.perfil(res).administraClinica()) {
+      res.status(403).json({ erro: "Esta área é só para administradores da clínica." });
       return;
     }
     next();

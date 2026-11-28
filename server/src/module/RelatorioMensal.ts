@@ -1,6 +1,8 @@
 import { Agendamento } from "./Agendamento";
 import { StatusAgendamento } from "./StatusAgendamento";
 import { DataAgenda } from "./DataAgenda";
+import { MesReferencia } from "./MesReferencia";
+import { FormaDePagamento } from "./FormaDePagamento";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
 
 interface FaturamentoDoDia {
@@ -11,6 +13,14 @@ interface FaturamentoDoDia {
 
 interface FaturamentoDoProfissional {
   profissionalId: number;
+  nome: string;
+  atendimentos: number;
+  faturamento: number;
+}
+
+interface FaturamentoDaFormaDePagamento {
+  /** Código da forma ("PIX"...); null = o cliente não informou. */
+  formaDePagamento: string | null;
   nome: string;
   atendimentos: number;
   faturamento: number;
@@ -29,39 +39,40 @@ interface TratamentoRealizado {
  * (agendados e em atendimento ainda podem não acontecer).
  */
 export class RelatorioMensal {
-  private static readonly FORMATO_MES = /^(\d{4})-(0[1-9]|1[0-2])$/;
-
-  private readonly mes: string; // "YYYY-MM"
+  private readonly mes: MesReferencia;
   private readonly profissionalId: number | null; // null = todos os profissionais juntos
   private readonly finalizados: Agendamento[];
+  /** Horários do mês em que o cliente não veio. */
+  private readonly faltas: Agendamento[];
 
+  /** `mes` = "AAAA-MM" (o `MesReferencia` valida). */
   constructor(mes: string, agendamentosDoMes: Agendamento[], profissionalId: number | null = null) {
-    if (!RelatorioMensal.FORMATO_MES.test(mes)) {
-      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
-    }
+    const referencia = new MesReferencia(mes);
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
       throw new ErroDeValidacao("Profissional inválido.");
     }
 
-    this.mes = mes;
+    this.mes = referencia;
     this.profissionalId = profissionalId;
-    this.finalizados = agendamentosDoMes.filter(
+    const doFiltro = agendamentosDoMes.filter(
       (agendamento) =>
-        agendamento.getStatus() === StatusAgendamento.FINALIZADO &&
-        RelatorioMensal.dataDe(agendamento).startsWith(mes) &&
+        referencia.contem(RelatorioMensal.dataDe(agendamento)) &&
         (profissionalId === null || agendamento.getProfissional().getId() === profissionalId)
     );
+    this.finalizados = doFiltro.filter(
+      (agendamento) => agendamento.getStatus() === StatusAgendamento.FINALIZADO
+    );
+    this.faltas = doFiltro.filter((agendamento) => agendamento.faltou());
   }
 
-  /** Primeiro e último dia do mês, no formato usado nas consultas ("YYYY-MM-DD"). */
-  public static periodo(mes: string): { inicio: string; fim: string } {
-    const correspondencia = RelatorioMensal.FORMATO_MES.exec(mes);
-    if (!correspondencia) {
-      throw new ErroDeValidacao('Mês inválido. Use o formato "AAAA-MM".');
-    }
-    const [, ano, mesNumero] = correspondencia;
-    const ultimoDia = new Date(Date.UTC(Number(ano), Number(mesNumero), 0)).getUTCDate();
-    return { inicio: `${mes}-01`, fim: `${mes}-${String(ultimoDia).padStart(2, "0")}` };
+  /** "AAAA-MM". */
+  public getMes(): string {
+    return this.mes.toString();
+  }
+
+  /** null = soma de todos os profissionais (clínica inteira). */
+  public getProfissionalId(): number | null {
+    return this.profissionalId;
   }
 
   private static dataDe(agendamento: Agendamento): string {
@@ -81,13 +92,44 @@ export class RelatorioMensal {
     return quantidade === 0 ? 0 : this.getFaturamentoTotal() / quantidade;
   }
 
+  public getQuantidadeFaltas(): number {
+    return this.faltas.length;
+  }
+
+  /** Faltas sobre os horários encerrados do mês (atendidos + faltas), de 0 a 1. */
+  public getTaxaDeFaltas(): number {
+    const encerrados = this.faltas.length + this.finalizados.length;
+    return encerrados === 0 ? 0 : this.faltas.length / encerrados;
+  }
+
+  /** Quanto entrou por cada forma de pagamento (inclusive "Não informada"), do maior para o menor. */
+  public getFaturamentoPorFormaDePagamento(): FaturamentoDaFormaDePagamento[] {
+    const porForma = new Map<string | null, FaturamentoDaFormaDePagamento>();
+
+    for (const agendamento of this.finalizados) {
+      const forma: FormaDePagamento | null = agendamento.getFormaDePagamento();
+      const codigo = forma?.getCodigo() ?? null;
+      const item = porForma.get(codigo) ?? {
+        formaDePagamento: codigo,
+        nome: forma?.getNome() ?? "Não informada",
+        atendimentos: 0,
+        faturamento: 0,
+      };
+      item.atendimentos += 1;
+      item.faturamento += agendamento.getValorTotal();
+      porForma.set(codigo, item);
+    }
+
+    return [...porForma.values()].sort(
+      (a, b) => b.faturamento - a.faturamento || b.atendimentos - a.atendimentos
+    );
+  }
+
   /** Um item para cada dia do mês, inclusive os dias sem atendimento (valor 0). */
   public getFaturamentoPorDia(): FaturamentoDoDia[] {
-    const { fim } = RelatorioMensal.periodo(this.mes);
-    const totalDias = Number(fim.slice(8, 10));
-
-    const dias: FaturamentoDoDia[] = Array.from({ length: totalDias }, (_, indice) => ({
-      data: `${this.mes}-${String(indice + 1).padStart(2, "0")}`,
+    const quantidadeDeDias = this.mes.getQuantidadeDeDias();
+    const dias: FaturamentoDoDia[] = Array.from({ length: quantidadeDeDias }, (_, indice) => ({
+      data: this.mes.dia(indice + 1),
       valor: 0,
       atendimentos: 0,
     }));
@@ -137,7 +179,7 @@ export class RelatorioMensal {
           faturamento: 0,
         };
         item.quantidade += 1;
-        item.faturamento += tratamento.getValor();
+        item.faturamento += agendamento.getValorDo(tratamento);
         porTratamento.set(id, item);
       }
     }
@@ -149,7 +191,7 @@ export class RelatorioMensal {
 
   public toJSON() {
     return {
-      mes: this.mes,
+      mes: this.getMes(),
       profissionalId: this.profissionalId,
       faturamentoTotal: this.getFaturamentoTotal(),
       quantidadeAtendimentos: this.getQuantidadeAtendimentos(),
@@ -157,6 +199,9 @@ export class RelatorioMensal {
       faturamentoPorDia: this.getFaturamentoPorDia(),
       tratamentosMaisRealizados: this.getTratamentosMaisRealizados(),
       faturamentoPorProfissional: this.getFaturamentoPorProfissional(),
+      quantidadeFaltas: this.getQuantidadeFaltas(),
+      taxaDeFaltas: this.getTaxaDeFaltas(),
+      faturamentoPorFormaDePagamento: this.getFaturamentoPorFormaDePagamento(),
     };
   }
 }

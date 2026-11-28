@@ -52,6 +52,16 @@ export class DataAgenda {
     return DataAgenda.MES.format(this.paraDate()).replace(".", "");
   }
 
+  /** Dia da semana por extenso (ex: "terça-feira"). */
+  public getDiaDaSemana(): string {
+    return DataAgenda.DIA_DA_SEMANA_LONGO.format(this.paraDate());
+  }
+
+  /** Nome do mês com o ano (ex: "outubro de 2026"). */
+  public getNomeDoMes(): string {
+    return DataAgenda.MES_E_ANO.format(this.paraDate());
+  }
+
   /** Por extenso, para títulos (ex: "terça-feira, 21 de outubro"). */
   public formatarPorExtenso(): string {
     return DataAgenda.POR_EXTENSO.format(this.paraDate());
@@ -63,6 +73,17 @@ export class DataAgenda {
   });
 
   private static readonly MES = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" });
+
+  private static readonly DIA_DA_SEMANA_LONGO = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    timeZone: "UTC",
+  });
+
+  private static readonly MES_E_ANO = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 
   private static readonly POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",

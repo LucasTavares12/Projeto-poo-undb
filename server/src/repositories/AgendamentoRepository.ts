@@ -2,11 +2,14 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { Repositorio } from "./Repositorio";
 import { Agendamento } from "../module/Agendamento";
 import { Cliente } from "../module/Cliente";
+import { Responsavel } from "../module/Responsavel";
 import { Profissional } from "../module/Profissional";
 import { Tratamento } from "../module/Tratamento";
+import { TratamentoRepository } from "./TratamentoRepository";
 import { Horario } from "../module/Horario";
 import { StatusAgendamento } from "../module/StatusAgendamento";
 import { DataAgenda } from "../module/DataAgenda";
+import { FormaDePagamento } from "../module/FormaDePagamento";
 
 interface LinhaAgendamentoBase extends RowDataPacket {
   id: number;
@@ -17,6 +20,8 @@ interface LinhaAgendamentoBase extends RowDataPacket {
   lembrete_enviado_em: Date | null;
   agradecimento_enviado_em: Date | null;
   finalizado_em: Date | null;
+  responsavel_nome: string | null;
+  forma_pagamento: string | null;
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
@@ -30,6 +35,11 @@ interface LinhaContagem extends RowDataPacket {
   total: number;
 }
 
+interface LinhaFaltasDoCliente extends RowDataPacket {
+  cliente_id: number;
+  faltas: number;
+}
+
 interface LinhaTratamento extends RowDataPacket {
   id: number;
   nome: string;
@@ -37,13 +47,15 @@ interface LinhaTratamento extends RowDataPacket {
   valor: string;
   duracao_minutos: number;
   profissional_id?: number | null;
+  valor_cartao_credito: string | null;
 }
 
 export class AgendamentoRepository extends Repositorio {
   private static readonly SELECT_BASE = `
     SELECT
       a.id, a.data, a.hora_inicio, a.status, a.arquivado,
-      a.lembrete_enviado_em, a.agradecimento_enviado_em, a.finalizado_em,
+      a.lembrete_enviado_em, a.agradecimento_enviado_em, a.finalizado_em, a.responsavel_nome,
+      a.forma_pagamento,
       c.id AS cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
       p.id AS profissional_id, p.nome AS profissional_nome, p.telefone AS profissional_telefone, p.especialidade
     FROM agendamentos a
@@ -55,8 +67,10 @@ export class AgendamentoRepository extends Repositorio {
   private static readonly TELEFONE_SO_DIGITOS =
     "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')";
 
+  // Sem a foto do tratamento: o agendamento não a usa e ela deixaria as listas pesadas.
   private static readonly SELECT_TRATAMENTOS_DO_AGENDAMENTO = `
-    SELECT t.*
+    SELECT t.id, t.nome, t.descricao, t.valor, t.duracao_minutos, t.profissional_id,
+           t.valor_cartao_credito
     FROM tratamentos t
     JOIN agendamento_tratamentos at ON at.tratamento_id = t.id
     WHERE at.agendamento_id = ?
@@ -82,17 +96,41 @@ export class AgendamentoRepository extends Repositorio {
     ALTER TABLE agendamentos ADD COLUMN finalizado_em DATETIME NULL
   `;
 
+  // Quem marcou, quando o atendimento é para outra pessoa (null = a própria pessoa marcou).
+  private static readonly ADICIONAR_RESPONSAVEL = `
+    ALTER TABLE agendamentos ADD COLUMN responsavel_nome VARCHAR(150) NULL
+  `;
+
+  // Como o cliente pretende pagar (null = não informou).
+  private static readonly ADICIONAR_FORMA_PAGAMENTO = `
+    ALTER TABLE agendamentos ADD COLUMN forma_pagamento VARCHAR(20) NULL
+  `;
+
+  /**
+   * A coluna `status` é um ENUM: bancos de antes das faltas não aceitam "FALTOU".
+   * Redefinir o ENUM com os mesmos valores + o novo é seguro e pode rodar sempre.
+   */
+  private static readonly ACEITAR_FALTA = `
+    ALTER TABLE agendamentos
+      MODIFY status ENUM('AGENDADO', 'EM_ATENDIMENTO', 'FINALIZADO', 'FALTOU')
+      NOT NULL DEFAULT 'AGENDADO'
+  `;
+
   public async salvar(agendamento: Agendamento): Promise<Agendamento> {
     await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
-      `INSERT INTO agendamentos (cliente_id, profissional_id, data, hora_inicio, status)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO agendamentos
+         (cliente_id, profissional_id, data, hora_inicio, status, responsavel_nome,
+          forma_pagamento)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         agendamento.getCliente().getId(),
         agendamento.getProfissional().getId(),
         DataAgenda.paraTexto(agendamento.getData()),
         agendamento.getHorarioInicio().toString(),
         agendamento.getStatus(),
+        agendamento.getResponsavelNome(),
+        agendamento.getFormaDePagamento()?.getCodigo() ?? null,
       ]
     );
 
@@ -113,6 +151,19 @@ export class AgendamentoRepository extends Repositorio {
       [id]
     );
     return linhas.length > 0 ? await this.montarAgendamento(linhas[0]) : null;
+  }
+
+  /**
+   * Quantas vezes cada cliente faltou (de todos os profissionais): o card do Kanban avisa
+   * quem costuma faltar. Chave = id do cliente.
+   */
+  public async contarFaltasPorCliente(): Promise<Map<number, number>> {
+    await this.garantirEstrutura();
+    const [linhas] = await this.pool.query<LinhaFaltasDoCliente[]>(
+      "SELECT cliente_id, COUNT(*) AS faltas FROM agendamentos WHERE status = ? GROUP BY cliente_id",
+      [StatusAgendamento.FALTOU]
+    );
+    return new Map(linhas.map((linha) => [linha.cliente_id, Number(linha.faltas)]));
   }
 
   /** Kanban: tudo o que ainda está no quadro (os arquivados não aparecem). */
@@ -276,6 +327,15 @@ export class AgendamentoRepository extends Repositorio {
     );
   }
 
+  /** Grava a forma de pagamento escolhida. */
+  public async salvarFormaDePagamento(agendamento: Agendamento): Promise<void> {
+    await this.garantirEstrutura();
+    await this.pool.query("UPDATE agendamentos SET forma_pagamento = ? WHERE id = ?", [
+      agendamento.getFormaDePagamento()?.getCodigo() ?? null,
+      agendamento.getId(),
+    ]);
+  }
+
   /** Grava quando o lembrete e o agradecimento de WhatsApp foram mandados. */
   public async salvarMensagensEnviadas(agendamento: Agendamento): Promise<void> {
     await this.garantirEstrutura();
@@ -300,39 +360,45 @@ export class AgendamentoRepository extends Repositorio {
   }
 
   /**
-   * Passa para "Finalizado" tudo o que ainda não foi finalizado e cuja data marcada
-   * já ficou `dias` dias (ou mais) para trás. Devolve quantos foram finalizados.
+   * Passa para "Finalizado" o que ficou em "Agendado" ou "Em atendimento" e cuja data marcada
+   * já ficou `dias` dias (ou mais) para trás. Faltas não mudam: o cliente não veio.
+   * Devolve quantos foram finalizados.
    */
   public async finalizarAtrasados(dias: number): Promise<number> {
     await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
       `UPDATE agendamentos SET status = ?, finalizado_em = NOW()
-       WHERE status <> ? AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY)`,
-      [StatusAgendamento.FINALIZADO, StatusAgendamento.FINALIZADO, dias]
+       WHERE status IN (?, ?) AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY)`,
+      [
+        StatusAgendamento.FINALIZADO,
+        StatusAgendamento.AGENDADO,
+        StatusAgendamento.EM_ATENDIMENTO,
+        dias,
+      ]
     );
     return resultado.affectedRows;
   }
 
-  /** Grava se cada um destes agendamentos está dentro ou fora do Kanban (nada é apagado). */
   /**
-   * Tira do Kanban, sozinhos, os finalizados há `dias` dias ou mais (vão para os ocultos e
-   * continuam nos relatórios). Os finalizados antes de existir a coluna `finalizado_em` contam
-   * pela data do agendamento. Devolve quantos saíram do quadro.
+   * Tira do Kanban, sozinhos, os encerrados (finalizados ou faltas) há `dias` dias ou mais
+   * (vão para os ocultos e continuam nos relatórios). Os finalizados antes de existir a coluna
+   * `finalizado_em` contam pela data do agendamento. Devolve quantos saíram do quadro.
    */
   public async ocultarFinalizadosAntigos(dias: number): Promise<number> {
     await this.garantirEstrutura();
     const [resultado] = await this.pool.query<ResultSetHeader>(
       `UPDATE agendamentos SET arquivado = 1
-       WHERE status = ? AND arquivado = 0
+       WHERE status IN (?, ?) AND arquivado = 0
          AND (
            (finalizado_em IS NOT NULL AND finalizado_em <= NOW() - INTERVAL ? DAY)
            OR (finalizado_em IS NULL AND data <= DATE_SUB(CURDATE(), INTERVAL ? DAY))
          )`,
-      [StatusAgendamento.FINALIZADO, dias, dias]
+      [StatusAgendamento.FINALIZADO, StatusAgendamento.FALTOU, dias, dias]
     );
     return resultado.affectedRows;
   }
 
+  /** Grava se cada um destes agendamentos está dentro ou fora do Kanban (nada é apagado). */
   public async salvarArquivamento(agendamentos: Agendamento[]): Promise<void> {
     await this.garantirEstrutura();
     for (const agendamento of agendamentos) {
@@ -372,17 +438,23 @@ export class AgendamentoRepository extends Repositorio {
       AgendamentoRepository.SELECT_TRATAMENTOS_DO_AGENDAMENTO,
       [agendamentoId]
     );
-    return linhas.map(
-      (linha) =>
-        new Tratamento(
-          linha.nome,
-          linha.descricao ?? "",
-          Number(linha.valor),
-          linha.duracao_minutos,
-          linha.id,
-          linha.profissional_id ?? null
-        )
-    );
+    return linhas.map((linha) => {
+      const tratamento = new Tratamento(
+        linha.nome,
+        linha.descricao ?? "",
+        Number(linha.valor),
+        linha.duracao_minutos,
+        linha.id,
+        linha.profissional_id ?? null
+      );
+      // O total do agendamento no cartão de crédito usa este valor.
+      tratamento.setValorCartaoCredito(
+        linha.valor_cartao_credito === null || linha.valor_cartao_credito === undefined
+          ? null
+          : Number(linha.valor_cartao_credito)
+      );
+      return tratamento;
+    });
   }
 
   private async garantirEstrutura(): Promise<void> {
@@ -402,6 +474,23 @@ export class AgendamentoRepository extends Repositorio {
         "agendamentos",
         "finalizado_em",
         AgendamentoRepository.ADICIONAR_FINALIZADO_EM
+      ),
+      this.garantirColuna(
+        "agendamentos",
+        "responsavel_nome",
+        AgendamentoRepository.ADICIONAR_RESPONSAVEL
+      ),
+      this.garantirColuna(
+        "agendamentos",
+        "forma_pagamento",
+        AgendamentoRepository.ADICIONAR_FORMA_PAGAMENTO
+      ),
+      this.garantirTabela(AgendamentoRepository.ACEITAR_FALTA),
+      // Os tratamentos do agendamento são lidos com o valor no cartão de crédito.
+      this.garantirColuna(
+        "tratamentos",
+        "valor_cartao_credito",
+        TratamentoRepository.ADICIONAR_VALOR_CREDITO
       ),
     ]);
   }
@@ -427,7 +516,20 @@ export class AgendamentoRepository extends Repositorio {
       Boolean(linha.arquivado),
       linha.lembrete_enviado_em,
       linha.agradecimento_enviado_em,
-      linha.finalizado_em
+      linha.finalizado_em,
+      linha.responsavel_nome ? new Responsavel(linha.responsavel_nome, cliente) : null,
+      {
+        formaDePagamento: AgendamentoRepository.lerFormaDePagamento(linha.forma_pagamento),
+      }
     );
+  }
+
+  /** Um código gravado que não exista mais vira "não informada" (nunca derruba a tela). */
+  private static lerFormaDePagamento(codigo: string | null): FormaDePagamento | null {
+    try {
+      return FormaDePagamento.lerOpcional(codigo);
+    } catch {
+      return null;
+    }
   }
 }

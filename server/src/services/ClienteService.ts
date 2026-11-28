@@ -1,4 +1,5 @@
 import { HistoricoCliente } from "../module/HistoricoCliente";
+import { ClientesDoTelefone } from "../module/ClientesDoTelefone";
 import { Telefone } from "../module/Telefone";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
@@ -22,16 +23,18 @@ export class ClienteService {
       .sort((a, b) => a.getNome().localeCompare(b.getNome(), "pt-BR"));
   }
 
-  public async buscar(
+  /**
+   * As pessoas atendidas com um telefone, cada uma com a sua ficha (a ficha certa sai
+   * de `ClientesDoTelefone.pessoa(nome)`).
+   */
+  public async buscarDoTelefone(
     telefone: string,
     profissionalDoUsuario: number | null
-  ): Promise<HistoricoCliente> {
+  ): Promise<ClientesDoTelefone> {
     const digitos = this.lerTelefone(telefone);
+    // Vêm do mais recente para o mais antigo: a primeira pessoa é a atendida mais recentemente.
     const agendamentos = await this.agendamentoRepo.listarHistorico(profissionalDoUsuario, digitos);
-    if (agendamentos.length === 0) {
-      throw new ErroNaoEncontrado("Cliente não encontrado.");
-    }
-    return new HistoricoCliente(digitos, agendamentos);
+    return new ClientesDoTelefone(agendamentos);
   }
 
   /** Telefone inválido na URL = cliente que não existe. */

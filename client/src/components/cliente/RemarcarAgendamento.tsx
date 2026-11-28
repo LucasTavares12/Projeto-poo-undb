@@ -7,6 +7,7 @@ import { SeletorData } from "./SeletorData";
 import { SeletorHorario } from "./SeletorHorario";
 import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 
 const agendamentoService = new AgendamentoService();
 const bloqueioService = new BloqueioAgendaService();
@@ -114,6 +115,7 @@ export function RemarcarAgendamento({ agendamento, telefone, onRemarcado, onDesi
 
   const deQuando = HorarioMarcado.de(agendamento).formatarPorExtenso();
   const paraQuando = horario ? new HorarioMarcado(data, horario).formatarPorExtenso() : "";
+  const pessoas = new PessoasDoAgendamento(agendamento);
 
   return (
     <div className="remarcar">
@@ -139,6 +141,11 @@ export function RemarcarAgendamento({ agendamento, telefone, onRemarcado, onDesi
 
       {confirmando && horario ? (
         <div className="remarcar-confirmacao" role="alertdialog" aria-label="Confirmar remarcação">
+          {pessoas.foiMarcadoPorOutraPessoa() && (
+            <p>
+              Remarcando o horário de <strong>{pessoas.atendido().toString()}</strong>.
+            </p>
+          )}
           <p className="remarcar-de-para">
             <span>
               <small>De</small>

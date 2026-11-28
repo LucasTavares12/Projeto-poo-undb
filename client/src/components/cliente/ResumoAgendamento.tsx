@@ -1,7 +1,9 @@
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
-import { IconeBrilho, IconeCalendario, IconePessoas, IconeRelogio } from "../Icones";
+import { IconeBrilho, IconeCalendario, IconeDinheiro, IconePessoas, IconeRelogio } from "../Icones";
+import { FormaDePagamento } from "../../models/FormaDePagamento";
+import type { CodigoFormaDePagamento } from "../../services/types";
 
 interface Props {
   profissional: string;
@@ -10,6 +12,10 @@ interface Props {
   horario: string | null;
   duracaoMinutos: number;
   valor: number;
+  /** Como o cliente vai pagar (ausente = não mostra a linha; null = ainda não escolheu). */
+  formaDePagamento?: CodigoFormaDePagamento | null;
+  /** Total nas outras formas de pagamento: no crédito, se for diferente, aparece para comparar. */
+  valorSemCredito?: number;
 }
 
 /** Cartão com tudo o que foi escolhido: usado antes de confirmar e na tela de sucesso. */
@@ -20,7 +26,13 @@ export function ResumoAgendamento({
   horario,
   duracaoMinutos,
   valor,
+  formaDePagamento,
+  valorSemCredito,
 }: Props) {
+  const valorMudouNoCredito =
+    formaDePagamento === "CARTAO_CREDITO" &&
+    valorSemCredito !== undefined &&
+    Math.abs(valorSemCredito - valor) >= 0.005;
   return (
     <div className="resumo">
       <ul className="resumo-itens">
@@ -55,11 +67,28 @@ export function ResumoAgendamento({
             <strong>{new Duracao(duracaoMinutos).formatar()}</strong>
           </span>
         </li>
+        {formaDePagamento !== undefined && (
+          <li>
+            <IconeDinheiro tamanho={18} />
+            <span>
+              <small>Forma de pagamento</small>
+              <strong>{FormaDePagamento.de(formaDePagamento)?.getNome() ?? "A escolher"}</strong>
+            </span>
+          </li>
+        )}
       </ul>
       <div className="resumo-total">
-        <span>Valor total</span>
+        <span>
+          Valor total
+          {valorMudouNoCredito && <small>no cartão de crédito</small>}
+        </span>
         <strong>{new Dinheiro(valor).formatar()}</strong>
       </div>
+      {valorMudouNoCredito && (
+        <p className="resumo-aviso-credito">
+          No Pix, débito ou dinheiro: {new Dinheiro(valorSemCredito).formatar()}
+        </p>
+      )}
     </div>
   );
 }

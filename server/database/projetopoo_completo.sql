@@ -1,4 +1,4 @@
-
+  
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -22,6 +22,7 @@ CREATE TABLE `administradores` (
   `senha_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `criado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `profissional_id` int DEFAULT NULL,
+  `administrador` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `fk_administrador_profissional` (`profissional_id`),
@@ -51,12 +52,14 @@ CREATE TABLE `agendamentos` (
   `profissional_id` int NOT NULL,
   `data` date NOT NULL,
   `hora_inicio` time NOT NULL,
-  `status` enum('AGENDADO','EM_ATENDIMENTO','FINALIZADO') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AGENDADO',
+  `status` enum('AGENDADO','EM_ATENDIMENTO','FINALIZADO','FALTOU') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AGENDADO',
   `criado_em` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `arquivado` tinyint(1) NOT NULL DEFAULT '0',
   `lembrete_enviado_em` datetime DEFAULT NULL,
   `agradecimento_enviado_em` datetime DEFAULT NULL,
   `finalizado_em` datetime DEFAULT NULL,
+  `responsavel_nome` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `forma_pagamento` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   KEY `profissional_id` (`profissional_id`),
@@ -97,10 +100,19 @@ DROP TABLE IF EXISTS `configuracoes`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `configuracoes` (
   `chave` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `valor` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `valor` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`chave`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `gastos_mensais`;
+CREATE TABLE `gastos_mensais` (
+  `mes` char(7) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `profissional_id` int NOT NULL DEFAULT '0' COMMENT '0 = gasto da clínica inteira',
+  `valor` decimal(12,2) NOT NULL,
+  `atualizado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`mes`,`profissional_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `notificacoes_fechadas`;
 DROP TABLE IF EXISTS `notificacoes`;
@@ -168,6 +180,9 @@ CREATE TABLE `tratamentos` (
   `valor` decimal(10,2) NOT NULL,
   `duracao_minutos` int NOT NULL,
   `profissional_id` int DEFAULT NULL,
+  `ordem` int NOT NULL DEFAULT '0',
+  `foto` mediumtext COLLATE utf8mb4_unicode_ci,
+  `valor_cartao_credito` decimal(10,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_tratamento_profissional` (`profissional_id`),
   CONSTRAINT `fk_tratamento_profissional` FOREIGN KEY (`profissional_id`) REFERENCES `profissionais` (`id`)

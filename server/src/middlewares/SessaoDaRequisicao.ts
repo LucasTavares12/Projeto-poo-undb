@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 
 /**
  * Quem fez a requisição no painel, como o AutenticacaoMiddleware deixou em `res.locals`.
@@ -23,9 +24,29 @@ export class SessaoDaRequisicao {
     return SessaoDaRequisicao.ehDaEquipe(res) ? SessaoDaRequisicao.adminId(res) : null;
   }
 
-  /** Profissional do usuário logado; null = acesso total (vê tudo da clínica). */
+  /**
+   * Profissional do usuário logado; null = acesso total (vê tudo da clínica).
+   * Use nos AGENDAMENTOS (Kanban, agenda, clientes, avisos): o profissional administrador
+   * continua vendo só os dele.
+   */
   public static profissionalId(res: Response): number | null {
     const valor = res.locals.profissionalId;
     return typeof valor === "number" ? valor : null;
+  }
+
+  /** Perfil completo do usuário logado (inclui se ele administra a clínica). */
+  public static perfil(res: Response): PerfilDeAcesso {
+    return new PerfilDeAcesso(
+      SessaoDaRequisicao.profissionalId(res),
+      res.locals.administrador === true
+    );
+  }
+
+  /**
+   * Como `profissionalId`, mas para a GESTÃO da clínica (horários, folgas, cadastro de
+   * profissionais, relatórios): o profissional administrador vale como acesso total (null).
+   */
+  public static profissionalNaGestao(res: Response): number | null {
+    return SessaoDaRequisicao.perfil(res).naGestao().getProfissionalId();
   }
 }

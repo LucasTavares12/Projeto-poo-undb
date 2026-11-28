@@ -8,6 +8,7 @@ import { AgendamentoController } from "./controllers/AgendamentoController";
 import { AutenticacaoController } from "./controllers/AutenticacaoController";
 import { ConfiguracaoController } from "./controllers/ConfiguracaoController";
 import { RelatorioController } from "./controllers/RelatorioController";
+import { LucroController } from "./controllers/LucroController";
 import { UsuarioController } from "./controllers/UsuarioController";
 import { BloqueioAgendaController } from "./controllers/BloqueioAgendaController";
 import { ClienteController } from "./controllers/ClienteController";
@@ -33,6 +34,7 @@ export class App {
   private readonly agendamentoController = new AgendamentoController();
   private readonly configuracaoController = new ConfiguracaoController();
   private readonly relatorioController = new RelatorioController();
+  private readonly lucroController = new LucroController();
   private readonly usuarioController = new UsuarioController();
   private readonly bloqueioAgendaController = new BloqueioAgendaController();
   private readonly clienteController = new ClienteController();
@@ -55,10 +57,11 @@ export class App {
 
   /**
    * Depois de `exigirAdmin`, nas áreas da clínica inteira (usuários, configurações,
-   * tratamentos, cadastro e exclusão de profissionais): conta ligada a profissional não entra.
+   * personalização, tratamentos, cadastro e exclusão de profissionais): só quem administra
+   * a clínica (acesso total ou profissional administrador).
    */
-  private readonly soAcessoTotal: express.RequestHandler = (req, res, next) =>
-    this.autenticacaoMiddleware.exigirAcessoTotal(req, res, next);
+  private readonly soAdministracao: express.RequestHandler = (req, res, next) =>
+    this.autenticacaoMiddleware.exigirAdministracao(req, res, next);
 
   constructor() {
     this.app = express();
@@ -70,7 +73,8 @@ export class App {
 
   private configurarMiddlewares(): void {
     this.app.use(cors());
-    this.app.use(express.json());
+    // A logo da clínica (personalização) vai no corpo como imagem em base64.
+    this.app.use(express.json({ limit: "3mb" }));
   }
 
   /** Precisa ser registrado DEPOIS das rotas: só assim o Express sabe que é um error handler. */
@@ -105,26 +109,30 @@ export class App {
 
   private configurarRotasDeProfissionais(): void {
     this.app.get("/profissionais", (req, res) => this.profissionalController.listar(req, res));
-    this.app.post("/profissionais", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.post("/profissionais", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.profissionalController.criar(req, res)
     );
     this.app.put("/profissionais/:id", this.exigirAdmin, (req, res) =>
       this.profissionalController.atualizar(req, res)
     );
-    this.app.delete("/profissionais/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.delete("/profissionais/:id", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.profissionalController.deletar(req, res)
     );
   }
 
   private configurarRotasDeTratamentos(): void {
     this.app.get("/tratamentos", (req, res) => this.tratamentoController.listar(req, res));
-    this.app.post("/tratamentos", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.post("/tratamentos", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.tratamentoController.criar(req, res)
     );
-    this.app.put("/tratamentos/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    // Antes de "/tratamentos/:id", senão "ordem" seria lido como o id de um tratamento.
+    this.app.put("/tratamentos/ordem", this.exigirAdmin, this.soAdministracao, (req, res) =>
+      this.tratamentoController.reordenar(req, res)
+    );
+    this.app.put("/tratamentos/:id", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.tratamentoController.atualizar(req, res)
     );
-    this.app.delete("/tratamentos/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.delete("/tratamentos/:id", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.tratamentoController.deletar(req, res)
     );
   }
@@ -222,12 +230,21 @@ export class App {
     this.app.patch("/agendamentos/:id/remarcar", this.exigirAdmin, (req, res) =>
       this.agendamentoController.remarcar(req, res)
     );
+    this.app.patch("/agendamentos/:id/pagamento", this.exigirAdmin, (req, res) =>
+      this.agendamentoController.alterarFormaDePagamento(req, res)
+    );
   }
 
   private configurarRotasDeConfiguracoes(): void {
     this.app.get("/configuracoes", (req, res) => this.configuracaoController.obter(req, res));
-    this.app.put("/configuracoes", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.put("/configuracoes", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.configuracaoController.atualizar(req, res)
+    );
+    this.app.post(
+      "/configuracoes/visual/restaurar",
+      this.exigirAdmin,
+      this.soAdministracao,
+      (req, res) => this.configuracaoController.restaurarVisual(req, res)
     );
   }
 
@@ -235,25 +252,36 @@ export class App {
     this.app.get("/relatorios/mensal", this.exigirAdmin, (req, res) =>
       this.relatorioController.mensal(req, res)
     );
+    // Lucro e gasto do mês: da clínica (acesso total) ou de um profissional. Conta ligada a
+    // um profissional só vê e altera o dela (o serviço garante).
+    this.app.get("/relatorios/lucro", this.exigirAdmin, (req, res) =>
+      this.lucroController.mensal(req, res)
+    );
+    this.app.put("/relatorios/gastos/:mes", this.exigirAdmin, (req, res) =>
+      this.lucroController.informarGasto(req, res)
+    );
+    this.app.delete("/relatorios/gastos/:mes", this.exigirAdmin, (req, res) =>
+      this.lucroController.apagarGasto(req, res)
+    );
   }
 
   private configurarRotasDeUsuarios(): void {
-    this.app.get("/usuarios", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.get("/usuarios", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.listar(req, res)
     );
-    this.app.post("/usuarios", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.post("/usuarios", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.criar(req, res)
     );
-    this.app.put("/usuarios/:id/email", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.put("/usuarios/:id/email", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.alterarEmail(req, res)
     );
-    this.app.put("/usuarios/:id/senha", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.put("/usuarios/:id/senha", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.alterarSenha(req, res)
     );
-    this.app.put("/usuarios/:id/profissional", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.put("/usuarios/:id/profissional", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.vincularProfissional(req, res)
     );
-    this.app.delete("/usuarios/:id", this.exigirAdmin, this.soAcessoTotal, (req, res) =>
+    this.app.delete("/usuarios/:id", this.exigirAdmin, this.soAdministracao, (req, res) =>
       this.usuarioController.excluir(req, res)
     );
   }

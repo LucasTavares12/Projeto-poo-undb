@@ -20,19 +20,28 @@ export class Administrador {
    * com um profissional, a conta só vê e altera o que é daquele profissional.
    */
   private profissionalId: number | null;
+  /**
+   * Só vale para conta de profissional: true = o profissional também administra a clínica
+   * (ex: o dono). Continua vendo só os próprios agendamentos, mas gerencia o resto do
+   * sistema (tratamentos, profissionais, horários, folgas, relatórios, usuários,
+   * configurações e personalização).
+   */
+  private administrador: boolean;
 
   constructor(
     email: string,
     senhaHash: string,
     id?: number,
     criadoEm?: Date,
-    profissionalId: number | null = null
+    profissionalId: number | null = null,
+    administrador = false
   ) {
     this.email = Administrador.validarEmail(email);
     this.senhaHash = senhaHash;
     this.id = id;
     this.criadoEm = criadoEm;
     this.profissionalId = profissionalId;
+    this.administrador = profissionalId !== null && administrador;
   }
 
   /** Cria um administrador novo a partir da senha digitada no cadastro. */
@@ -115,12 +124,44 @@ export class Administrador {
     return this.profissionalId === null;
   }
 
-  /** Liga a conta a um profissional (ou desliga, com null, voltando ao acesso total). */
+  /** Profissional que também administra a clínica (só faz sentido em conta de profissional). */
+  public ehProfissionalAdministrador(): boolean {
+    return this.administrador;
+  }
+
+  /**
+   * Pode gerenciar a clínica (áreas de administração): conta de acesso total ou
+   * profissional marcado como administrador.
+   */
+  public administraClinica(): boolean {
+    return this.temAcessoTotal() || this.administrador;
+  }
+
+  /**
+   * Liga a conta a um profissional (ou desliga, com null, voltando ao acesso total).
+   * Sem profissional, a marca de "administrador" deixa de existir: o acesso total já inclui tudo.
+   */
   public vincularProfissional(profissionalId: number | null): void {
     if (profissionalId !== null && (!Number.isInteger(profissionalId) || profissionalId <= 0)) {
       throw new ErroDeValidacao("Profissional inválido.");
     }
     this.profissionalId = profissionalId;
+    if (profissionalId === null) {
+      this.administrador = false;
+    }
+  }
+
+  /** Dá (ou tira) do profissional da conta o poder de administrar a clínica. */
+  public definirAdministrador(administrador: boolean): void {
+    if (typeof administrador !== "boolean") {
+      throw new ErroDeValidacao("Informe se o profissional é administrador (sim ou não).");
+    }
+    if (administrador && this.profissionalId === null) {
+      throw new ErroDeValidacao(
+        "Esta conta já tem acesso total. A opção de administrador é para contas de profissional."
+      );
+    }
+    this.administrador = administrador;
   }
 
   /** Nunca expõe o hash da senha nas respostas da API. */
@@ -130,6 +171,7 @@ export class Administrador {
       email: this.email,
       criadoEm: this.criadoEm?.toISOString() ?? null,
       profissionalId: this.profissionalId,
+      administrador: this.administrador,
     };
   }
 }

@@ -9,6 +9,7 @@ interface LinhaAdministrador extends RowDataPacket {
   senha_hash: string;
   criado_em: Date;
   profissional_id: number | null;
+  administrador: number;
 }
 
 interface LinhaContagem extends RowDataPacket {
@@ -23,6 +24,7 @@ export class AdministradorRepository extends Repositorio {
       senha_hash VARCHAR(255) NOT NULL,
       criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       profissional_id INT NULL,
+      administrador TINYINT(1) NOT NULL DEFAULT 0,
       CONSTRAINT fk_administrador_profissional
         FOREIGN KEY (profissional_id) REFERENCES profissionais (id)
     )
@@ -38,19 +40,32 @@ export class AdministradorRepository extends Repositorio {
         FOREIGN KEY (profissional_id) REFERENCES profissionais (id)
   `;
 
+  // Bancos criados antes do "profissional administrador".
+  private static readonly ADICIONAR_ADMINISTRADOR = `
+    ALTER TABLE administradores
+      ADD COLUMN administrador TINYINT(1) NOT NULL DEFAULT 0
+  `;
+
   public async salvar(administrador: Administrador): Promise<Administrador> {
     await this.garantirEstrutura();
     try {
       const [resultado] = await this.pool.query<ResultSetHeader>(
-        "INSERT INTO administradores (email, senha_hash, profissional_id) VALUES (?, ?, ?)",
-        [administrador.getEmail(), administrador.getSenhaHash(), administrador.getProfissionalId()]
+        "INSERT INTO administradores (email, senha_hash, profissional_id, administrador) " +
+          "VALUES (?, ?, ?, ?)",
+        [
+          administrador.getEmail(),
+          administrador.getSenhaHash(),
+          administrador.getProfissionalId(),
+          administrador.ehProfissionalAdministrador(),
+        ]
       );
       return new Administrador(
         administrador.getEmail(),
         administrador.getSenhaHash(),
         resultado.insertId,
         new Date(),
-        administrador.getProfissionalId()
+        administrador.getProfissionalId(),
+        administrador.ehProfissionalAdministrador()
       );
     } catch (erro) {
       this.tratarEmailRepetido(erro);
@@ -74,11 +89,15 @@ export class AdministradorRepository extends Repositorio {
     return linhas.length > 0 ? this.paraAdministrador(linhas[0]) : null;
   }
 
-  /** Quantos usuários têm acesso total (sem profissional vinculado). */
-  public async contarComAcessoTotal(): Promise<number> {
+  /**
+   * Quantos usuários administram a clínica: os de acesso total (sem profissional) e os
+   * profissionais marcados como administradores.
+   */
+  public async contarAdministradores(): Promise<number> {
     await this.garantirEstrutura();
     const [linhas] = await this.pool.query<LinhaContagem[]>(
-      "SELECT COUNT(*) AS total FROM administradores WHERE profissional_id IS NULL"
+      "SELECT COUNT(*) AS total FROM administradores " +
+        "WHERE profissional_id IS NULL OR administrador = 1"
     );
     return Number(linhas[0].total);
   }
@@ -93,16 +112,18 @@ export class AdministradorRepository extends Repositorio {
     return linhas.length > 0 ? this.paraAdministrador(linhas[0]) : null;
   }
 
-  /** Grava e-mail e senha (hash) do administrador. */
+  /** Grava e-mail, senha (hash), profissional e se ele administra a clínica. */
   public async atualizar(administrador: Administrador): Promise<void> {
     await this.garantirEstrutura();
     try {
       await this.pool.query(
-        "UPDATE administradores SET email = ?, senha_hash = ?, profissional_id = ? WHERE id = ?",
+        "UPDATE administradores SET email = ?, senha_hash = ?, profissional_id = ?, " +
+          "administrador = ? WHERE id = ?",
         [
           administrador.getEmail(),
           administrador.getSenhaHash(),
           administrador.getProfissionalId(),
+          administrador.ehProfissionalAdministrador(),
           administrador.getId(),
         ]
       );
@@ -122,6 +143,11 @@ export class AdministradorRepository extends Repositorio {
       "administradores",
       "profissional_id",
       AdministradorRepository.ADICIONAR_VINCULO
+    );
+    await this.garantirColuna(
+      "administradores",
+      "administrador",
+      AdministradorRepository.ADICIONAR_ADMINISTRADOR
     );
   }
 
@@ -148,7 +174,8 @@ export class AdministradorRepository extends Repositorio {
       linha.senha_hash,
       linha.id,
       linha.criado_em,
-      linha.profissional_id
+      linha.profissional_id,
+      Boolean(linha.administrador)
     );
   }
 }

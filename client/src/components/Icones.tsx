@@ -244,3 +244,107 @@ export function IconeSino(props: Props) {
     </Icone>
   );
 }
+
+export function IconePaleta(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A1.6 1.6 0 0 1 12 22z" />
+      <circle cx="7.5" cy="10.5" r="1.2" />
+      <circle cx="12" cy="7" r="1.2" />
+      <circle cx="16.5" cy="10.5" r="1.2" />
+    </Icone>
+  );
+}
+
+export function IconeImagem(props: Props) {
+  return (
+    <Icone {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="M21 15l-5-5L5 21" />
+    </Icone>
+  );
+}
+
+/** Logo do Instagram (contorno: câmera arredondada). */
+export function IconeInstagram(props: Props) {
+  return (
+    <Icone {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+    </Icone>
+  );
+}
+
+/** Alfinete de mapa (localização). */
+export function IconeMapa(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </Icone>
+  );
+}
+
+/** Setinha para baixo (abrir/fechar uma lista). */
+export function IconeSetaBaixo(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Icone>
+  );
+}
+
+/** Símbolo do Pix (losango com o "X" ao centro), desenhado em traço como os outros ícones. */
+export function IconePix(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M12 2.8 21.2 12 12 21.2 2.8 12Z" />
+      <path d="M6.6 8.2h1.6c.8 0 1.5.3 2 .8L12 10.8 13.8 9c.5-.5 1.2-.8 2-.8h1.6" />
+      <path d="M6.6 15.8h1.6c.8 0 1.5-.3 2-.8l1.8-1.8 1.8 1.8c.5.5 1.2.8 2 .8h1.6" />
+    </Icone>
+  );
+}
+
+/** Cartão (crédito/débito). */
+export function IconeCartao(props: Props) {
+  return (
+    <Icone {...props}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <path d="M2.5 10h19M6.5 15h4" />
+    </Icone>
+  );
+}
+
+/** Marca de "selecionado" (só o traço do check). */
+export function IconeCheck(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="M5 12.5 10 17.5 19 7.5" />
+    </Icone>
+  );
+}
+
+/** Alça de arrastar (seis pontinhos). */
+export function IconeArrastar(props: Props) {
+  return (
+    <Icone {...props}>
+      <circle cx="9" cy="6" r="1" fill="currentColor" />
+      <circle cx="15" cy="6" r="1" fill="currentColor" />
+      <circle cx="9" cy="12" r="1" fill="currentColor" />
+      <circle cx="15" cy="12" r="1" fill="currentColor" />
+      <circle cx="9" cy="18" r="1" fill="currentColor" />
+      <circle cx="15" cy="18" r="1" fill="currentColor" />
+    </Icone>
+  );
+}
+
+/** Setinha para cima. */
+export function IconeSetaCima(props: Props) {
+  return (
+    <Icone {...props}>
+      <path d="m6 15 6-6 6 6" />
+    </Icone>
+  );
+}

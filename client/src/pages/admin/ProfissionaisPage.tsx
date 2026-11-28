@@ -13,7 +13,8 @@ const FORMULARIO_VAZIO: DadosProfissional = { nome: "", telefone: "", especialid
 
 export function ProfissionaisPage() {
   // Conta ligada a um profissional: só o próprio cadastro, sem criar nem excluir.
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = new PerfilDeAcesso(useUsuarioLogado()).naGestao().getProfissionalId();
   const acessoTotal = new PerfilDeAcesso({ profissionalId: proprioId }).temAcessoTotal();
 
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);

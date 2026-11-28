@@ -6,6 +6,7 @@ import { DiaSemana } from "../module/DiaSemana";
 import { RelogioClinica } from "../module/RelogioClinica";
 import { DataAgenda } from "../module/DataAgenda";
 import { AntecedenciaMinima } from "../module/AntecedenciaMinima";
+import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
 
 /**
  * Calcula, para um profissional e uma data específica, quais horários
@@ -26,6 +27,7 @@ export class DisponibilidadeService {
   private readonly horarioRepo = new HorarioDisponivelRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
   private readonly bloqueioRepo = new BloqueioAgendaRepository();
+  private readonly configuracaoRepo = new ConfiguracaoRepository();
 
   /**
    * Retorna os horários em que o profissional pode COMEÇAR um atendimento
@@ -51,7 +53,13 @@ export class DisponibilidadeService {
 
     const diaSemana = data.getUTCDay() as DiaSemana;
 
-    const horariosLiberados = await this.horarioRepo.listarPorProfissional(profissionalId);
+    // Só valem os horários liberados dentro do funcionamento da clínica (se definido).
+    const [grade, configuracoes] = await Promise.all([
+      this.horarioRepo.listarPorProfissional(profissionalId),
+      this.configuracaoRepo.carregar(),
+    ]);
+    const funcionamento = configuracoes.getHorarioFuncionamento();
+    const horariosLiberados = funcionamento ? funcionamento.filtrarGrade(grade) : grade;
     const horariosDoDiaSemana = horariosLiberados
       .filter((horario) => horario.getDiaSemana() === diaSemana)
       .map((horario) => horario.getHoraInicio());

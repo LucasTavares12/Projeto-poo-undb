@@ -17,6 +17,10 @@ import { ResumoAgendamento } from "../../components/cliente/ResumoAgendamento";
 import { ConfirmacaoAgendamento } from "../../components/cliente/ConfirmacaoAgendamento";
 import { LayoutCliente } from "../../components/cliente/LayoutCliente";
 import { MeusAgendamentos } from "../../components/cliente/MeusAgendamentos";
+import { SeletorFormaDePagamento } from "../../components/cliente/SeletorFormaDePagamento";
+import { InfoDaClinica } from "../../components/cliente/InfoDaClinica";
+import { useConfiguracoes } from "../../hooks/useConfiguracoes";
+import type { CodigoFormaDePagamento } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Duracao } from "../../models/Duracao";
@@ -33,6 +37,8 @@ import {
 import { DiasSemAtendimento } from "../../models/DiasSemAtendimento";
 import { SelecaoDeTratamentos } from "../../models/SelecaoDeTratamentos";
 import { Clinica } from "../../models/Clinica";
+import { QuemAgenda } from "../../models/QuemAgenda";
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 
 const profissionalService = new ProfissionalService();
 const tratamentoService = new TratamentoService();
@@ -72,6 +78,8 @@ export function AgendamentoPage() {
   const [carregandoCadastros, setCarregandoCadastros] = useState(true);
 
   const [modo, setModo] = useState<Modo>("inicio");
+  // Horário de funcionamento e contatos da clínica (cartão da tela inicial).
+  const configuracoes = useConfiguracoes();
   const [etapa, setEtapa] = useState<Etapa>("profissional");
 
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
@@ -90,8 +98,13 @@ export function AgendamentoPage() {
   // Horário que o cliente escolheu em "Ver horários": volta pré-selecionado ao agendar, se couber.
   const horarioPreferido = useRef<string | null>(null);
 
+  // "Para mim" ou "Para outra pessoa" (ex.: a mãe que marca para a filha com o próprio
+  // telefone). clienteNome é sempre quem vai ser atendido; o telefone é de quem está marcando.
+  const [paraOutraPessoa, setParaOutraPessoa] = useState(false);
   const [clienteNome, setClienteNome] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
+  const [formaDePagamento, setFormaDePagamento] = useState<CodigoFormaDePagamento | null>(null);
   // Só mostra os avisos de campo obrigatório depois da primeira tentativa de confirmar.
   const [tentouConfirmar, setTentouConfirmar] = useState(false);
 
@@ -214,21 +227,20 @@ export function AgendamentoPage() {
       ),
     [tratamentos, tratamentoIds]
   );
-  const valorTotal = tratamentosSelecionados.getValorTotal();
+  // No cartão de crédito, os tratamentos com valor próprio no crédito mudam o total.
+  const valorTotal = tratamentosSelecionados.getValorTotal(formaDePagamento);
+  const valorSemCredito = tratamentosSelecionados.getValorTotal(null);
   const duracaoTotal = tratamentosSelecionados.getDuracaoTotalMinutos();
 
-  // Campos obrigatórios do agendamento: nome, telefone, data e horário.
+  // Campos obrigatórios do agendamento: quem agenda (nomes e telefone), data e horário.
+  const quemAgenda = new QuemAgenda(paraOutraPessoa, clienteNome, responsavelNome, clienteTelefone);
   const errosDosDados = {
-    nome: clienteNome.trim() === "" ? "Informe seu nome." : null,
-    telefone:
-      clienteTelefone.trim() === ""
-        ? "Informe um telefone para contato."
-        : !new Telefone(clienteTelefone).ehValido()
-          ? "Telefone incompleto: informe o DDD e o número."
-          : null,
+    ...quemAgenda.erros(),
     dataHorario: data === "" || horarioInicio === null ? "Escolha a data e o horário." : null,
+    formaDePagamento: formaDePagamento ? null : "Escolha como você pretende pagar.",
   };
-  const dadosValidos = !errosDosDados.nome && !errosDosDados.telefone && !errosDosDados.dataHorario;
+  const dadosValidos =
+    quemAgenda.ehValido() && !errosDosDados.dataHorario && !errosDosDados.formaDePagamento;
 
   // O que foi escolhido até aqui, no formato do cartão de resumo.
   const resumoEscolhido = {
@@ -239,6 +251,8 @@ export function AgendamentoPage() {
     horario: horarioInicio,
     duracaoMinutos: duracaoTotal,
     valor: valorTotal,
+    formaDePagamento,
+    valorSemCredito,
   };
 
   const etapas = ETAPAS_POR_MODO[modo === "agendar" ? "agendar" : "ver"];
@@ -262,8 +276,11 @@ export function AgendamentoPage() {
     horarioPreferido.current = null;
     setTratamentoIds([]);
     setSelecaoHorario(null);
+    setParaOutraPessoa(false);
     setClienteNome("");
+    setResponsavelNome("");
     setClienteTelefone("");
+    setFormaDePagamento(null);
     setTentouConfirmar(false);
     setAgendamentoConfirmado(null);
     setErro(null);
@@ -327,12 +344,12 @@ export function AgendamentoPage() {
     setErro(null);
     try {
       const agendamento = await agendamentoService.criar({
-        clienteNome: clienteNome.trim(),
-        clienteTelefone: clienteTelefone.trim(),
+        ...quemAgenda.paraEnvio(),
         profissionalId,
         tratamentoIds,
         data,
         horarioInicio,
+        formaDePagamento,
       });
       setConferindo(false);
       setAgendamentoConfirmado(agendamento);
@@ -352,6 +369,7 @@ export function AgendamentoPage() {
   }
 
   if (agendamentoConfirmado) {
+    const pessoasConfirmadas = new PessoasDoAgendamento(agendamentoConfirmado);
     return (
       <LayoutCliente>
         <section className="passo passo-sucesso">
@@ -360,10 +378,18 @@ export function AgendamentoPage() {
               <IconeConfirmado tamanho={34} />
             </span>
             <h2>Agendamento confirmado!</h2>
-            <p>
-              <strong>{agendamentoConfirmado.cliente.nome.split(" ")[0]}</strong>, seu horário está
-              marcado. Te esperamos!
-            </p>
+            {pessoasConfirmadas.foiMarcadoPorOutraPessoa() ? (
+              <p>
+                <strong>{pessoasConfirmadas.contato().primeiroNome()}</strong>, o horário de{" "}
+                <strong>{pessoasConfirmadas.atendido().toString()}</strong> está marcado.
+                Esperamos vocês!
+              </p>
+            ) : (
+              <p>
+                <strong>{pessoasConfirmadas.atendido().primeiroNome()}</strong>, seu horário
+                está marcado. Te esperamos!
+              </p>
+            )}
           </header>
           <div className="passo-corpo">
             <ResumoAgendamento
@@ -373,16 +399,26 @@ export function AgendamentoPage() {
               horario={agendamentoConfirmado.horarioInicio}
               duracaoMinutos={agendamentoConfirmado.duracaoTotalMinutos}
               valor={agendamentoConfirmado.valorTotal}
+              formaDePagamento={agendamentoConfirmado.formaDePagamento}
             />
             <p className="sucesso-dica">
               Precisa mudar o horário ou cancelar? Use "Remarque ou cancele" na página inicial,
               com o telefone informado.
             </p>
           </div>
-          <footer className="passo-rodape">
-            <span />
+          <footer className="passo-rodape sucesso-rodape">
             <button type="button" className="botao-primario" onClick={voltarAoInicio}>
-              Fazer novo agendamento
+              Voltar para o início
+            </button>
+            <button
+              type="button"
+              className="botao-link"
+              onClick={() => {
+                voltarAoInicio();
+                iniciarFluxo("agendar");
+              }}
+            >
+              Fazer outro agendamento
             </button>
           </footer>
         </section>
@@ -420,6 +456,7 @@ export function AgendamentoPage() {
               Remarque ou cancele
             </button>
           </p>
+          {configuracoes && <InfoDaClinica configuracoes={configuracoes} />}
         </section>
 
         <section className="como-funciona">
@@ -485,7 +522,7 @@ export function AgendamentoPage() {
 
           {etapa === "profissional" && (
             <>
-              <h3>Selecione o Profissional</h3>
+              <p className="passo-dica">Com quem você quer ser atendido(a)?</p>
               <SeletorProfissional
                 profissionais={profissionais}
                 selecionadoId={profissionalId}
@@ -496,7 +533,7 @@ export function AgendamentoPage() {
 
           {etapa === "servico" && (
             <>
-              <h3>Selecione o(s) Serviço(s)</h3>
+              <p className="passo-dica">Você pode escolher mais de um.</p>
               <SeletorTratamentos
                 tratamentos={tratamentosDoProfissional}
                 selecionadosIds={tratamentoIds}
@@ -518,23 +555,17 @@ export function AgendamentoPage() {
 
           {etapa === "data" && (
             <>
-              <h3>
-                Selecione a Data <span className="campo-obrigatorio">*</span>
-              </h3>
               <SeletorData data={data} onSelecionar={setData} estaBloqueada={dataEstaBloqueada} />
             </>
           )}
 
           {etapa === "horarios" && (
             <>
-              <h3>
-                Horários em {new DataAgenda(data).formatar()}{" "}
-                {modo === "agendar" && <span className="campo-obrigatorio">*</span>}
-              </h3>
+              <p className="passo-data">{new DataAgenda(data).formatarPorExtenso()}</p>
               <p className="passo-dica">
                 {modo === "ver" ? "Horários livres para atendimentos. " : ""}
-                Pelo site, os agendamentos são feitos com pelo menos{" "}
-                {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas de antecedência.
+                Agendamentos pelo site com pelo menos {Clinica.ANTECEDENCIA_MINIMA_HORAS}h de
+                antecedência.
               </p>
               <SeletorHorario
                 horarios={horariosDisponiveis}
@@ -551,28 +582,77 @@ export function AgendamentoPage() {
               {conferindo && (
                 <ConfirmacaoAgendamento
                   resumo={resumoEscolhido}
-                  clienteNome={clienteNome}
-                  clienteTelefone={clienteTelefone}
+                  quemAgenda={quemAgenda}
                   enviando={enviando}
                   erro={erro}
                   onRevisar={fecharConferencia}
                   onConfirmar={confirmarAgendamento}
                 />
               )}
-              <h3>Preencha seus Dados</h3>
+              <h3 className="passo-secao">Seus dados</h3>
               {tentouConfirmar && errosDosDados.dataHorario && (
                 <p className="mensagem-erro">{errosDosDados.dataHorario}</p>
               )}
               <div className="formulario-cliente">
+                <fieldset className="para-quem">
+                  <legend>Para quem é o atendimento?</legend>
+                  <div className="para-quem-opcoes" role="radiogroup">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={!paraOutraPessoa}
+                      className={`para-quem-opcao ${!paraOutraPessoa ? "selecionada" : ""}`}
+                      onClick={() => setParaOutraPessoa(false)}
+                    >
+                      Para mim
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={paraOutraPessoa}
+                      className={`para-quem-opcao ${paraOutraPessoa ? "selecionada" : ""}`}
+                      onClick={() => setParaOutraPessoa(true)}
+                    >
+                      Para outra pessoa
+                    </button>
+                  </div>
+                  {paraOutraPessoa && (
+                    <p className="para-quem-dica">
+                      Ex.: um filho, a mãe ou uma amiga. Os avisos chegam no seu WhatsApp e você
+                      pode remarcar ou cancelar com o seu telefone.
+                    </p>
+                  )}
+                </fieldset>
+                {paraOutraPessoa && (
+                  <label className="campo-rotulo">
+                    <span>
+                      Seu nome <span className="campo-obrigatorio">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      className={`campo ${tentouConfirmar && errosDosDados.responsavel ? "invalido" : ""}`}
+                      placeholder="Quem está agendando"
+                      autoComplete="name"
+                      required
+                      aria-invalid={tentouConfirmar && Boolean(errosDosDados.responsavel)}
+                      value={responsavelNome}
+                      onChange={(evento) => setResponsavelNome(evento.target.value)}
+                    />
+                    {tentouConfirmar && errosDosDados.responsavel && (
+                      <span className="campo-erro">{errosDosDados.responsavel}</span>
+                    )}
+                  </label>
+                )}
                 <label className="campo-rotulo">
                   <span>
-                    Nome <span className="campo-obrigatorio">*</span>
+                    {paraOutraPessoa ? "Nome de quem vai ser atendido" : "Nome"}{" "}
+                    <span className="campo-obrigatorio">*</span>
                   </span>
                   <input
                     type="text"
                     className={`campo ${tentouConfirmar && errosDosDados.nome ? "invalido" : ""}`}
-                    placeholder="Seu nome completo"
-                    autoComplete="name"
+                    placeholder={paraOutraPessoa ? "Nome completo da pessoa" : "Seu nome completo"}
+                    autoComplete={paraOutraPessoa ? "off" : "name"}
                     required
                     aria-invalid={tentouConfirmar && Boolean(errosDosDados.nome)}
                     value={clienteNome}
@@ -584,7 +664,8 @@ export function AgendamentoPage() {
                 </label>
                 <label className="campo-rotulo">
                   <span>
-                    Telefone <span className="campo-obrigatorio">*</span>
+                    {paraOutraPessoa ? "Seu telefone (WhatsApp)" : "Telefone"}{" "}
+                    <span className="campo-obrigatorio">*</span>
                   </span>
                   <input
                     type="tel"
@@ -603,6 +684,15 @@ export function AgendamentoPage() {
                     <span className="campo-erro">{errosDosDados.telefone}</span>
                   )}
                 </label>
+                <SeletorFormaDePagamento
+                  valor={formaDePagamento}
+                  onEscolher={setFormaDePagamento}
+                  erro={tentouConfirmar ? errosDosDados.formaDePagamento : null}
+                  totais={{
+                    normal: valorSemCredito,
+                    credito: tratamentosSelecionados.getValorTotal("CARTAO_CREDITO"),
+                  }}
+                />
                 <p className="campo-legenda">
                   <span className="campo-obrigatorio">*</span> Campos obrigatórios
                 </p>

@@ -5,7 +5,7 @@
  *               [C3] profissional null ou inteiro positivo ok
  *  filtro:      [C4] só FINALIZADO entra | [C5] outro mês fica fora (2º termo do &&)
  *               [C6] com profissional, só os dele entram (3º termo do &&)
- *  periodo:     [C7] mês inválido lança | [C8] meses de 31, 30, 28 e 29 dias (bissexto), dezembro
+ *  período (via MesReferencia): [C7] mês inexistente (13) lança | [C8] meses de 31, 30, 28 e 29 dias (bissexto), dezembro
  *  getTicketMedio: [C9] sem atendimentos devolve 0 (sem dividir por zero) | [C10] média
  *  getFaturamentoPorDia: [C11] mês vazio: todos os dias com 0 | [C12] soma no dia certo (1º e último dia)
  *  getFaturamentoPorProfissional: [C13] agrupa e ordena pelo faturamento
@@ -88,17 +88,22 @@ describe("RelatorioMensal — quais agendamentos entram", () => {
   });
 });
 
-describe("RelatorioMensal.periodo", () => {
-  test("[C7] mês inválido lança erro", () => {
-    assert.throws(() => RelatorioMensal.periodo("2026-13"), ErroDeValidacao);
+describe("RelatorioMensal — período do mês", () => {
+  const dias = (mes: string) => new RelatorioMensal(mes, []).getFaturamentoPorDia();
+
+  test("[C7] mês inexistente lança erro", () => {
+    assert.throws(() => new RelatorioMensal("2026-13", []), ErroDeValidacao);
+    assert.throws(() => new RelatorioMensal("2026-00", []), ErroDeValidacao);
   });
 
   test("[C8] último dia certo para cada tamanho de mês", () => {
-    assert.deepEqual(RelatorioMensal.periodo("2026-10"), { inicio: "2026-10-01", fim: "2026-10-31" });
-    assert.equal(RelatorioMensal.periodo("2026-11").fim, "2026-11-30");
-    assert.equal(RelatorioMensal.periodo("2026-02").fim, "2026-02-28");
-    assert.equal(RelatorioMensal.periodo("2028-02").fim, "2028-02-29"); // bissexto
-    assert.equal(RelatorioMensal.periodo("2026-12").fim, "2026-12-31"); // mês 12 não vira o ano seguinte
+    const outubro = dias("2026-10");
+    assert.equal(outubro[0].data, "2026-10-01");
+    assert.equal(outubro.at(-1)?.data, "2026-10-31");
+    assert.equal(dias("2026-11").at(-1)?.data, "2026-11-30");
+    assert.equal(dias("2026-02").at(-1)?.data, "2026-02-28");
+    assert.equal(dias("2028-02").at(-1)?.data, "2028-02-29"); // bissexto
+    assert.equal(dias("2026-12").at(-1)?.data, "2026-12-31"); // mês 12 não vira o ano seguinte
   });
 });
 

@@ -15,13 +15,18 @@ export function LayoutCliente({ children }: Props) {
   // Até as configurações chegarem, os botões ficam escondidos para não "piscarem" na tela.
   const mostrarEntrar = configuracoes?.botaoEntrarVisivel ?? false;
   const mostrarCadastrar = configuracoes?.cadastroLiberado ?? false;
+  const nomeClinica = configuracoes?.nomeClinica ?? Clinica.NOME_PADRAO;
 
   return (
     <div className="cliente">
       <header className="cliente-cabecalho">
         <span className="cliente-marca">
-          <IconeCalendario tamanho={24} />
-          <span>{Clinica.NOME}</span>
+          {configuracoes?.logo ? (
+            <img className="cliente-marca-logo" src={configuracoes.logo} alt="" />
+          ) : (
+            <IconeCalendario tamanho={24} />
+          )}
+          <span>{nomeClinica}</span>
         </span>
         <nav className="cliente-cabecalho-acoes">
           {logado ? (
@@ -46,7 +51,7 @@ export function LayoutCliente({ children }: Props) {
       </header>
       <main className="cliente-conteudo">{children}</main>
       <footer className="cliente-rodape">
-        © {new Date().getFullYear()} {Clinica.NOME} - Todos os direitos reservados
+        © {new Date().getFullYear()} {nomeClinica} - Todos os direitos reservados
       </footer>
     </div>
   );

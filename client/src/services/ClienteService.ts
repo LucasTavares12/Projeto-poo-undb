@@ -8,8 +8,12 @@ export class ClienteService extends ApiClient {
     return this.get<ClienteResumo[]>(`/clientes?${query.toString()}`);
   }
 
-  /** Ficha com todo o histórico; `telefone` só com os números. */
-  public ficha(telefone: string): Promise<FichaDoCliente> {
-    return this.get<FichaDoCliente>(`/clientes/${telefone}`);
+  /**
+   * Ficha com todo o histórico; `telefone` só com os números. O `nome` diz qual pessoa do
+   * telefone (um número pode ter várias: a mãe e a filha que ela agendou).
+   */
+  public ficha(telefone: string, nome: string): Promise<FichaDoCliente> {
+    const query = new URLSearchParams({ nome });
+    return this.get<FichaDoCliente>(`/clientes/${telefone}?${query.toString()}`);
   }
 }

@@ -11,7 +11,7 @@ export class BloqueioAgendaController extends Controlador {
   /** Painel: folgas e feriados (?incluirPassados=true traz também os que já terminaram). */
   public async listar(req: Request, res: Response): Promise<void> {
     const bloqueios = await this.servico.listar(
-      SessaoDaRequisicao.profissionalId(res),
+      SessaoDaRequisicao.profissionalNaGestao(res),
       req.query.incluirPassados === "true"
     );
     res.json(bloqueios);
@@ -33,7 +33,7 @@ export class BloqueioAgendaController extends Controlador {
     try {
       const { bloqueio, agendamentosAfetados } = await this.servico.criar(
         this.lerDadosNovoBloqueio(req),
-        SessaoDaRequisicao.profissionalId(res)
+        SessaoDaRequisicao.profissionalNaGestao(res)
       );
       res.status(201).json({ bloqueio, agendamentosAfetados });
     } catch (erro) {
@@ -43,7 +43,7 @@ export class BloqueioAgendaController extends Controlador {
 
   public async deletar(req: Request, res: Response): Promise<void> {
     try {
-      await this.servico.remover(this.lerId(req.params.id), SessaoDaRequisicao.profissionalId(res));
+      await this.servico.remover(this.lerId(req.params.id), SessaoDaRequisicao.profissionalNaGestao(res));
       res.status(204).send();
     } catch (erro) {
       this.responderErro(res, erro);

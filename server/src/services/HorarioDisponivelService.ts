@@ -7,6 +7,7 @@ import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 import { ErroDeConflito } from "../erros/ErroDeConflito";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
 
 /**
  * Grade semanal de cada profissional (aba "Horários"). Conta ligada a profissional
@@ -17,6 +18,7 @@ export class HorarioDisponivelService {
 
   private readonly repositorio = new HorarioDisponivelRepository();
   private readonly profissionalRepo = new ProfissionalRepository();
+  private readonly configuracaoRepo = new ConfiguracaoRepository();
 
   public listarDoProfissional(
     profissionalId: number,
@@ -51,6 +53,15 @@ export class HorarioDisponivelService {
       diaSemana as DiaSemana,
       new Horario(horaInicio)
     );
+    // Com o funcionamento definido, só dá para liberar horários dentro dele.
+    const funcionamento = (await this.configuracaoRepo.carregar()).getHorarioFuncionamento();
+    if (funcionamento && !funcionamento.permite(horario.getDiaSemana(), horario.getHoraInicio())) {
+      throw new ErroDeValidacao(
+        `Esse horário está fora do funcionamento da clínica. ${funcionamento.explicarRecusa(
+          horario.getDiaSemana()
+        )}`
+      );
+    }
     try {
       return await this.repositorio.salvar(horario);
     } catch (erro) {

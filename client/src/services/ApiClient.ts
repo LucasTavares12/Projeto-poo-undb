@@ -36,8 +36,9 @@ export abstract class ApiClient {
     });
   }
 
-  protected async excluir(caminho: string): Promise<void> {
-    await this.requisitar<void>(caminho, { method: "DELETE" });
+  /** DELETE; `T` = o que o servidor devolve depois de apagar (padrão: nada). */
+  protected async excluir<T = void>(caminho: string): Promise<T> {
+    return this.requisitar<T>(caminho, { method: "DELETE" });
   }
 
   private async requisitar<T>(caminho: string, opcoes: RequestInit): Promise<T> {

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { CampoFormaDePagamento } from "./CampoFormaDePagamento";
+import type { CodigoFormaDePagamento } from "../../services/types";
 import type { FormEvent } from "react";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import { TratamentoService } from "../../services/TratamentoService";
@@ -42,6 +44,10 @@ export function ModalAgendamentoManual({
 
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
+  // Quando a pessoa do telefone marca para outra (a mãe para a filha). Vazio = a própria.
+  const [responsavelNome, setResponsavelNome] = useState("");
+  // Opcional no painel: quem liga nem sempre já sabe como vai pagar.
+  const [formaDePagamento, setFormaDePagamento] = useState<CodigoFormaDePagamento | null>(null);
   const profissionalInicial = inicial.profissionalId;
   const [profissionalId, setProfissionalId] = useState<number | null>(
     profissionalFixo ?? profissionalInicial ?? null
@@ -180,10 +186,12 @@ export function ModalAgendamentoManual({
       const criado = await agendamentoService.criar({
         clienteNome: clienteNome.trim(),
         clienteTelefone: clienteTelefone.trim(),
+        responsavelNome: responsavelNome.trim(),
         profissionalId,
         tratamentoIds,
         data,
         horarioInicio: horarioEscolhido,
+        formaDePagamento,
       });
       onCriado(criado);
     } catch (erroRequisicao) {
@@ -249,6 +257,21 @@ export function ModalAgendamentoManual({
               {mostrarErro("telefone") && <span className="campo-erro">{erros.telefone}</span>}
             </label>
             <label className="admin-campo-largo">
+              <span>Marcado por (opcional)</span>
+              <input
+                type="text"
+                placeholder="Se for para outra pessoa: o nome do dono do telefone (ex.: a mãe)"
+                value={responsavelNome}
+                onChange={(evento) => setResponsavelNome(evento.target.value)}
+              />
+            </label>
+            <CampoFormaDePagamento
+              className="admin-campo-largo"
+              rotulo="Forma de pagamento (opcional)"
+              valor={formaDePagamento}
+              onAlterar={setFormaDePagamento}
+            />
+            <label className="admin-campo-largo">
               <span>
                 Profissional <span className="campo-obrigatorio">*</span>
               </span>
@@ -311,7 +334,7 @@ export function ModalAgendamentoManual({
               <p className="modal-total">
                 Total:{" "}
                 <strong>{new Duracao(selecionados.getDuracaoTotalMinutos()).formatar()}</strong> ·{" "}
-                <strong>{new Dinheiro(selecionados.getValorTotal()).formatar()}</strong>
+                <strong>{new Dinheiro(selecionados.getValorTotal(formaDePagamento)).formatar()}</strong>
               </p>
             )}
           </fieldset>

@@ -7,6 +7,9 @@ import { GradeSemanal } from "../../models/GradeSemanal";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
+import { HorarioDeFuncionamento } from "../../models/HorarioDeFuncionamento";
+import { EditorDeFuncionamento } from "../../components/admin/EditorDeFuncionamento";
+import { useConfiguracoes } from "../../hooks/useConfiguracoes";
 
 const profissionalService = new ProfissionalService();
 const horarioService = new HorarioDisponivelService();
@@ -14,7 +17,16 @@ const horarioService = new HorarioDisponivelService();
 const grade = new GradeSemanal();
 
 export function HorariosPage() {
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  const perfil = new PerfilDeAcesso(useUsuarioLogado());
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = perfil.naGestao().getProfissionalId();
+  // Funcionamento da clínica: limita a grade (null = ainda não definido, sem limite).
+  const configuracoes = useConfiguracoes();
+  const funcionamentoSalvo = configuracoes?.horarioFuncionamento ?? null;
+  const funcionamento = useMemo(
+    () => HorarioDeFuncionamento.de(funcionamentoSalvo),
+    [funcionamentoSalvo]
+  );
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [profissionalId, setProfissionalId] = useState<number | null>(null);
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
@@ -63,11 +75,18 @@ export function HorariosPage() {
     [horarios]
   );
 
-  // Inclui horários já liberados que estejam fora da grade padrão, para nunca escondê-los.
-  const linhas = useMemo(
-    () => grade.getHoras(horarios.map((horario) => horario.horaInicio)),
-    [horarios]
-  );
+  // Com o funcionamento definido, as linhas vão da abertura ao fechamento. Horários já
+  // liberados fora dele também aparecem (marcados), para poderem ser removidos.
+  const linhas = useMemo(() => {
+    const liberados = horarios.map((horario) => horario.horaInicio);
+    return funcionamento
+      ? GradeSemanal.unir(funcionamento.horasDaGrade(), liberados)
+      : grade.getHoras(liberados);
+  }, [horarios, funcionamento]);
+
+  const foraDoFuncionamento = funcionamento
+    ? horarios.filter((horario) => !funcionamento.permite(horario.diaSemana, horario.horaInicio)).length
+    : 0;
 
   async function selecionarProfissional(id: number): Promise<void> {
     setProfissionalId(id);
@@ -126,6 +145,10 @@ export function HorariosPage() {
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
+      {configuracoes && (
+        <EditorDeFuncionamento salvo={funcionamentoSalvo} podeEditar={perfil.administraClinica()} />
+      )}
+
       {profissionais.length === 0 ? (
         <p>
           Cadastre um <Link to="/admin/profissionais">profissional</Link> antes de liberar os
@@ -152,7 +175,16 @@ export function HorariosPage() {
             <p className="admin-dica">
               Clique em um horário para liberá-lo ou bloqueá-lo. Os horários marcados se repetem
               toda semana e são os que aparecem para o cliente agendar.
+              {funcionamento && " Só dá para liberar horários dentro do funcionamento da clínica."}
             </p>
+            {foraDoFuncionamento > 0 && (
+              <p className="admin-dica grade-aviso-fora">
+                {foraDoFuncionamento === 1
+                  ? "1 horário liberado está fora do funcionamento"
+                  : `${foraDoFuncionamento} horários liberados estão fora do funcionamento`}{" "}
+                (marcados em cinza): ele não aparece para o cliente. Clique para remover.
+              </p>
+            )}
             <p className="admin-dica">
               Vai tirar folga, férias ou é feriado? Feche só aqueles dias em{" "}
               <Link to="/admin/bloqueios">Folgas e feriados</Link>, sem mexer na grade.
@@ -164,9 +196,15 @@ export function HorariosPage() {
             <thead>
               <tr>
                 <th />
-                {GradeSemanal.DIAS.map((dia) => (
-                  <th key={dia.numero}>{dia.nome}</th>
-                ))}
+                {GradeSemanal.DIAS.map((dia) => {
+                  const fechado = funcionamento !== null && !funcionamento.abreNo(dia.numero);
+                  return (
+                    <th key={dia.numero} className={fechado ? "dia-fechado" : ""}>
+                      {dia.nome}
+                      {fechado && <small>fechado</small>}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -176,14 +214,24 @@ export function HorariosPage() {
                   {GradeSemanal.DIAS.map((dia) => {
                     const chaveCelula = GradeSemanal.chave(dia.numero, horaInicio);
                     const liberado = horariosPorChave.has(chaveCelula);
+                    const dentro = !funcionamento || funcionamento.permite(dia.numero, horaInicio);
                     return (
                       <td key={dia.numero}>
                         <button
                           type="button"
-                          className={`admin-grade-celula ${liberado ? "liberado" : ""}`}
+                          className={`admin-grade-celula ${liberado ? "liberado" : ""} ${
+                            dentro ? "" : "fora"
+                          }`}
                           aria-pressed={liberado}
-                          aria-label={`${dia.nome} ${horaInicio}`}
-                          disabled={processando.includes(chaveCelula)}
+                          aria-label={`${dia.nome} ${horaInicio}${dentro ? "" : " (fora do funcionamento)"}`}
+                          title={
+                            dentro
+                              ? undefined
+                              : liberado
+                                ? "Fora do funcionamento: não aparece para o cliente. Clique para remover."
+                                : "Fora do funcionamento da clínica"
+                          }
+                          disabled={processando.includes(chaveCelula) || (!dentro && !liberado)}
                           onClick={() => alternarHorario(dia.numero, horaInicio)}
                         >
                           {liberado ? "✓" : ""}

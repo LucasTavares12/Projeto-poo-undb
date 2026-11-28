@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { TratamentoService } from "../../services/TratamentoService";
 import { ProfissionalService } from "../../services/ProfissionalService";
 import type { Profissional, Tratamento } from "../../services/types";
 import { Duracao } from "../../models/Duracao";
-import { Dinheiro } from "../../models/Dinheiro";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { OpcaoProfissional } from "../../models/OpcaoProfissional";
+import { GruposDeTratamentos } from "../../models/GruposDeTratamentos";
+import { TabelaDeTratamentos } from "../../components/admin/TabelaDeTratamentos";
+import { FotoDoTratamento } from "../../models/FotoDoTratamento";
+import { IconeImagem } from "../../components/Icones";
 
 const tratamentoService = new TratamentoService();
 const profissionalService = new ProfissionalService();
@@ -15,17 +18,23 @@ interface Formulario {
   nome: string;
   descricao: string;
   valor: string;
+  /** Vazio = no cartão de crédito vale o mesmo valor. */
+  valorCartaoCredito: string;
   duracaoMinutos: number;
   /** null = todos os profissionais. */
   profissionalId: number | null;
+  /** Foto que demonstra o tratamento (data URL); null = sem foto. */
+  foto: string | null;
 }
 
 const FORMULARIO_VAZIO: Formulario = {
   nome: "",
   descricao: "",
   valor: "",
+  valorCartaoCredito: "",
   duracaoMinutos: Duracao.SLOT_MINUTOS,
   profissionalId: null,
+  foto: null,
 };
 
 export function TratamentosPage() {
@@ -38,7 +47,12 @@ export function TratamentosPage() {
   const [confirmandoExclusaoId, setConfirmandoExclusaoId] = useState<number | null>(null);
 
   const [salvando, setSalvando] = useState(false);
+  const [preparandoFoto, setPreparandoFoto] = useState(false);
+  const [salvandoOrdem, setSalvandoOrdem] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [mensagem, setMensagem] = useState<string | null>(null);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const campoFoto = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function carregar() {
@@ -64,18 +78,71 @@ export function TratamentosPage() {
       nome: tratamento.nome,
       descricao: tratamento.descricao,
       valor: String(tratamento.valor),
+      valorCartaoCredito:
+        tratamento.valorCartaoCredito == null ? "" : String(tratamento.valorCartaoCredito),
       duracaoMinutos: tratamento.duracaoMinutos,
       profissionalId: tratamento.profissionalId,
+      foto: tratamento.foto ?? null,
     });
     setConfirmandoExclusaoId(null);
     setErro(null);
+    setMensagem(null);
+    formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function nomeDoProfissional(profissionalId: number | null): string {
-    if (profissionalId === null) {
-      return "Todos";
+  /** "Novo" na tabela de um profissional: o formulário já vem com ele escolhido. */
+  function novoPara(profissionalId: number | null): void {
+    setEditandoId(null);
+    setFormulario({ ...FORMULARIO_VAZIO, profissionalId });
+    setErro(null);
+    setMensagem(null);
+    formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /**
+   * Nova ordem de um grupo (arrastando ou pelas setas): já muda na tela e grava; se o
+   * servidor recusar, a ordem anterior volta.
+   */
+  async function reordenar(profissionalId: number | null, novaOrdem: Tratamento[]): Promise<void> {
+    const anteriores = tratamentos;
+    const numerados = new Map(
+      GruposDeTratamentos.numerar(novaOrdem).map((tratamento) => [tratamento.id, tratamento])
+    );
+    setTratamentos((atual) => atual.map((tratamento) => numerados.get(tratamento.id) ?? tratamento));
+    setSalvandoOrdem(true);
+    setErro(null);
+    setMensagem(null);
+    try {
+      await tratamentoService.reordenar(
+        profissionalId,
+        novaOrdem.map((tratamento) => tratamento.id)
+      );
+      setMensagem("Ordem salva. É assim que os serviços aparecem para o cliente.");
+    } catch (erroRequisicao) {
+      setTratamentos(anteriores);
+      setErro((erroRequisicao as Error).message);
+    } finally {
+      setSalvandoOrdem(false);
     }
-    return profissionais.find((profissional) => profissional.id === profissionalId)?.nome ?? "—";
+  }
+
+  /** Foto escolhida no computador/celular: reduz no navegador e coloca no formulário. */
+  async function escolherFoto(evento: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const arquivo = evento.target.files?.[0];
+    evento.target.value = ""; // permite escolher o mesmo arquivo de novo
+    if (!arquivo) {
+      return;
+    }
+    setErro(null);
+    setPreparandoFoto(true);
+    try {
+      const foto = await FotoDoTratamento.preparar(arquivo);
+      setFormulario((atual) => ({ ...atual, foto }));
+    } catch (erroFoto) {
+      setErro((erroFoto as Error).message);
+    } finally {
+      setPreparandoFoto(false);
+    }
   }
 
   function limparFormulario(): void {
@@ -90,8 +157,11 @@ export function TratamentosPage() {
       nome: formulario.nome.trim(),
       descricao: formulario.descricao.trim(),
       valor: Number(formulario.valor),
+      valorCartaoCredito:
+        formulario.valorCartaoCredito.trim() === "" ? null : Number(formulario.valorCartaoCredito),
       duracaoMinutos: formulario.duracaoMinutos,
       profissionalId: formulario.profissionalId,
+      foto: formulario.foto,
     };
 
     setSalvando(true);
@@ -100,6 +170,7 @@ export function TratamentosPage() {
       if (editandoId === null) {
         const criado = await tratamentoService.criar(dados);
         setTratamentos((atual) => [...atual, criado]);
+        setMensagem(`"${criado.nome}" cadastrado no fim da lista. Arraste para mudar a posição.`);
       } else {
         const atualizado = await tratamentoService.atualizar(editandoId, dados);
         setTratamentos((atual) =>
@@ -132,12 +203,12 @@ export function TratamentosPage() {
     <section className="pagina">
       <CabecalhoPagina
         titulo="Tratamentos"
-        descricao="Procedimentos oferecidos, com duração e valor."
+        descricao="Procedimentos oferecidos por profissional, com duração, valor e a ordem em que o cliente vê."
       />
 
       {erro && <p className="mensagem-erro">{erro}</p>}
 
-      <form className="admin-formulario" onSubmit={salvar}>
+      <form ref={formularioRef} className="admin-formulario" onSubmit={salvar}>
         <h2>{editandoId === null ? "Novo tratamento" : "Editar tratamento"}</h2>
         <div className="admin-campos">
           <label>
@@ -159,6 +230,23 @@ export function TratamentosPage() {
               value={formulario.valor}
               onChange={(evento) => setFormulario({ ...formulario, valor: evento.target.value })}
             />
+          </label>
+          <label>
+            No cartão de crédito (R$)
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Opcional: mesmo valor"
+              value={formulario.valorCartaoCredito}
+              onChange={(evento) =>
+                setFormulario({ ...formulario, valorCartaoCredito: evento.target.value })
+              }
+            />
+            <small className="admin-dica tratamento-dica-credito">
+              Preencha só se o valor muda no crédito (ex.: taxa da maquininha). O cliente vê o novo
+              valor ao escolher cartão de crédito.
+            </small>
           </label>
           <label>
             Duração
@@ -204,9 +292,52 @@ export function TratamentosPage() {
               }
             />
           </label>
+          <div className="admin-campo-largo tratamento-foto-campo">
+            <span className="tratamento-foto-previa">
+              {formulario.foto ? (
+                <img src={formulario.foto} alt="Foto do tratamento" />
+              ) : (
+                <IconeImagem tamanho={26} />
+              )}
+            </span>
+            <div>
+              <strong>Foto (opcional)</strong>
+              <p className="admin-dica">
+                {formulario.foto
+                  ? "Aparece para o cliente ao lado do tratamento, na hora de escolher o serviço."
+                  : "Sem foto, o cliente vê o tratamento só com nome, descrição, valor e duração."}
+              </p>
+              <div className="admin-acoes tratamento-foto-acoes">
+                <button
+                  type="button"
+                  className="admin-botao"
+                  onClick={() => campoFoto.current?.click()}
+                  disabled={preparandoFoto}
+                >
+                  {preparandoFoto ? "Preparando..." : formulario.foto ? "Trocar foto" : "Enviar foto"}
+                </button>
+                {formulario.foto && (
+                  <button
+                    type="button"
+                    className="admin-botao perigo"
+                    onClick={() => setFormulario((atual) => ({ ...atual, foto: null }))}
+                  >
+                    Remover foto
+                  </button>
+                )}
+              </div>
+              <input
+                ref={campoFoto}
+                type="file"
+                accept={FotoDoTratamento.ACEITAR}
+                hidden
+                onChange={escolherFoto}
+              />
+            </div>
+          </div>
         </div>
         <div className="admin-acoes">
-          <button type="submit" className="admin-botao principal" disabled={salvando}>
+          <button type="submit" className="admin-botao principal" disabled={salvando || preparandoFoto}>
             {salvando ? "Salvando..." : editandoId === null ? "Cadastrar" : "Salvar alterações"}
           </button>
           {editandoId !== null && (
@@ -219,73 +350,32 @@ export function TratamentosPage() {
 
       {carregando ? (
         <p>Carregando...</p>
-      ) : tratamentos.length === 0 ? (
-        <p>Nenhum tratamento cadastrado ainda.</p>
       ) : (
-        <table className="admin-tabela admin-tabela-cartoes">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Descrição</th>
-              <th>Profissional</th>
-              <th>Duração</th>
-              <th className="admin-tabela-valor">Valor</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {tratamentos.map((tratamento) => (
-              <tr key={tratamento.id}>
-                <td className="admin-tabela-titulo">{tratamento.nome}</td>
-                <td data-rotulo="Descrição">{tratamento.descricao || "—"}</td>
-                <td data-rotulo="Profissional">{nomeDoProfissional(tratamento.profissionalId)}</td>
-                <td data-rotulo="Duração">
-                  <span className="admin-etiqueta">
-                    {new Duracao(tratamento.duracaoMinutos).formatar()}
-                  </span>
-                </td>
-                <td className="admin-tabela-valor" data-rotulo="Valor">{new Dinheiro(tratamento.valor).formatar()}</td>
-                <td className="admin-tabela-acoes">
-                  {confirmandoExclusaoId === tratamento.id ? (
-                    <>
-                      <button
-                        type="button"
-                        className="admin-botao perigo"
-                        onClick={() => remover(tratamento.id)}
-                      >
-                        Confirmar exclusão
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-botao"
-                        onClick={() => setConfirmandoExclusaoId(null)}
-                      >
-                        Cancelar
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="admin-botao"
-                        onClick={() => iniciarEdicao(tratamento)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-botao perigo"
-                        onClick={() => setConfirmandoExclusaoId(tratamento.id)}
-                      >
-                        Excluir
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <p className="admin-dica tratamentos-dica">
+            Arraste as linhas pela alça (ou use as setas) para mudar a ordem: é a ordem em que o
+            cliente vê os serviços ao agendar. Deixe no topo os mais procurados, combos e
+            promoções. Para cada profissional, o cliente vê primeiro os tratamentos dele e depois
+            os de "Todos os profissionais".
+          </p>
+          {mensagem && <p className="mensagem-sucesso admin-mensagem-topo">{mensagem}</p>}
+          {GruposDeTratamentos.agrupar(tratamentos, profissionais).map((grupo) => (
+            <TabelaDeTratamentos
+              key={grupo.chave}
+              grupo={grupo}
+              salvandoOrdem={salvandoOrdem}
+              confirmandoExclusaoId={confirmandoExclusaoId}
+              onNovo={novoPara}
+              onEditar={iniciarEdicao}
+              onPedirExclusao={setConfirmandoExclusaoId}
+              onExcluir={remover}
+              onReordenar={reordenar}
+            />
+          ))}
+          {profissionais.length === 0 && tratamentos.length === 0 && (
+            <p>Nenhum tratamento cadastrado ainda.</p>
+          )}
+        </>
       )}
     </section>
   );

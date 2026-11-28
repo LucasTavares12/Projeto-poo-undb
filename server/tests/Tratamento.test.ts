@@ -8,6 +8,8 @@
  *  vincularProfissional: [C12] null ok | [C13] inteiro positivo ok | [C14] zero/negativo | [C15] não inteiro
  *  ehRealizadoPor: [C16] sem dono → qualquer um | [C17] dono igual | [C18] dono diferente
  *  atualizarDados: [C19] atualiza tudo | [C20] para no primeiro dado inválido
+ *  setFoto: [C21] sem foto por padrão | [C22] PNG/JPG/WebP aceitos | [C23] null/"" tira a foto
+ *           [C24] formato inválido | [C25] maior que o limite
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -120,6 +122,9 @@ describe("Tratamento.atualizarDados", () => {
       valor: 250,
       duracaoMinutos: 120,
       profissionalId: 3,
+      ordem: 0,
+      valorCartaoCredito: null,
+      foto: null,
       quantidadeSlots: 4,
     });
   });
@@ -130,5 +135,52 @@ describe("Tratamento.atualizarDados", () => {
     // Caixa branca: setNome roda antes de setValor, então o nome já mudou (atualização não é atômica).
     assert.equal(t.getNome(), "Trocado");
     assert.equal(t.getValor(), 100);
+  });
+});
+
+describe("Tratamento — foto", () => {
+  const foto = (tipo = "png", dados = "iVBORw0KGgo=") => `data:image/${tipo};base64,${dados}`;
+
+  test("[C21] tratamento novo vem sem foto (e o JSON leva null)", () => {
+    const t = novo();
+    assert.equal(t.getFoto(), null);
+    assert.equal(t.toJSON().foto, null);
+  });
+
+  test("[C22] PNG, JPG e WebP em base64 são aceitos", () => {
+    for (const tipo of ["png", "jpeg", "webp"]) {
+      const t = novo();
+      t.setFoto(foto(tipo));
+      assert.equal(t.getFoto(), foto(tipo));
+      assert.equal(t.toJSON().foto, foto(tipo));
+    }
+  });
+
+  test('[C23] null ou "" tira a foto', () => {
+    const t = novo();
+    t.setFoto(foto());
+    t.setFoto(null);
+    assert.equal(t.getFoto(), null);
+    t.setFoto(foto());
+    t.setFoto("");
+    assert.equal(t.getFoto(), null);
+  });
+
+  test("[C24] formato que não é imagem base64 lança erro", () => {
+    const t = novo();
+    assert.throws(() => t.setFoto("https://exemplo.com/foto.png"), ErroDeValidacao);
+    assert.throws(() => t.setFoto(foto("gif")), ErroDeValidacao);
+    assert.throws(() => t.setFoto(foto("svg+xml")), ErroDeValidacao);
+    assert.throws(() => t.setFoto("data:image/png;base64,<script>"), ErroDeValidacao);
+    assert.equal(t.getFoto(), null); // continua como estava
+  });
+
+  test("[C25] foto maior que o limite lança erro", () => {
+    const t = novo();
+    const prefixo = "data:image/png;base64,";
+    const noLimite = prefixo + "A".repeat(Tratamento.TAMANHO_MAXIMO_FOTO - prefixo.length);
+    t.setFoto(noLimite);
+    assert.equal(t.getFoto(), noLimite);
+    assert.throws(() => t.setFoto(noLimite + "A"), ErroDeValidacao);
   });
 });

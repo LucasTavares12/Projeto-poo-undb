@@ -1,4 +1,6 @@
 import { Cliente } from "./Cliente";
+import { Pessoa } from "./Pessoa";
+import { Responsavel } from "./Responsavel";
 import { Profissional } from "./Profissional";
 import { Tratamento } from "./Tratamento";
 import { StatusAgendamento } from "./StatusAgendamento";
@@ -6,7 +8,15 @@ import { Horario } from "./Horario";
 import { DataAgenda } from "./DataAgenda";
 import { TipoMensagem } from "./TipoMensagem";
 import { AntecedenciaMinima } from "./AntecedenciaMinima";
+import { FormaDePagamento } from "./FormaDePagamento";
+import { RelogioClinica } from "./RelogioClinica";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+
+/** Dados do agendamento que vieram depois (todos opcionais, para não mexer nos construtores antigos). */
+export interface DetalhesDoAgendamento {
+  /** Como o cliente pretende pagar (null = não informou). */
+  formaDePagamento?: FormaDePagamento | null;
+}
 
 export class Agendamento {
   /**
@@ -42,6 +52,13 @@ export class Agendamento {
    * finalizado antes de o sistema guardar essa data; aí vale a data do agendamento).
    */
   private finalizadoEm: Date | null;
+  /**
+   * Quem marcou, quando o atendimento é para outra pessoa (ex.: a mãe que agenda para a
+   * filha com o próprio telefone). null = a própria pessoa atendida marcou. O cliente do
+   * agendamento é sempre quem vai ser atendido; o telefone dele é o contato de quem marcou.
+   */
+  private responsavel: Responsavel | null;
+  private formaDePagamento: FormaDePagamento | null;
 
   constructor(
     cliente: Cliente,
@@ -54,7 +71,9 @@ export class Agendamento {
     arquivado = false,
     lembreteEnviadoEm: Date | null = null,
     agradecimentoEnviadoEm: Date | null = null,
-    finalizadoEm: Date | null = null
+    finalizadoEm: Date | null = null,
+    responsavel: Responsavel | null = null,
+    detalhes: DetalhesDoAgendamento = {}
   ) {
     if (tratamentos.length === 0) {
       throw new ErroDeValidacao("O agendamento precisa ter ao menos um tratamento.");
@@ -71,6 +90,8 @@ export class Agendamento {
     this.lembreteEnviadoEm = lembreteEnviadoEm;
     this.agradecimentoEnviadoEm = agradecimentoEnviadoEm;
     this.finalizadoEm = finalizadoEm;
+    this.responsavel = responsavel;
+    this.formaDePagamento = detalhes.formaDePagamento ?? null;
   }
 
   public getId(): number | undefined {
@@ -81,6 +102,43 @@ export class Agendamento {
     return this.cliente;
   }
 
+  /** Quem marcou para outra pessoa; null = a própria pessoa atendida marcou. */
+  public getResponsavel(): Responsavel | null {
+    return this.responsavel;
+  }
+
+  public getResponsavelNome(): string | null {
+    return this.responsavel?.getNome() ?? null;
+  }
+
+  public foiMarcadoPorOutraPessoa(): boolean {
+    return this.responsavel !== null;
+  }
+
+  /**
+   * Com quem a clínica fala sobre este horário: o dono do telefone. É quem marcou para
+   * outra pessoa ou, se a própria pessoa marcou, o cliente atendido.
+   */
+  public getContato(): Pessoa {
+    return this.responsavel ?? this.cliente;
+  }
+
+  /**
+   * Agendamento novo feito para outra pessoa: guarda quem marcou.
+   * Vazio ou igual ao nome de quem vai ser atendido = a própria pessoa marcou (fica null).
+   */
+  public definirResponsavel(nome: string | null | undefined): void {
+    this.responsavel = Responsavel.para(nome, this.cliente);
+  }
+
+  /**
+   * Pela página do cliente, ver, remarcar e cancelar valem para quem tem o telefone do
+   * agendamento: a própria pessoa ou quem marcou para ela (a mãe gerencia o da filha).
+   */
+  public pertenceAoTelefone(telefone: string): boolean {
+    return this.getContato().temTelefone(telefone);
+  }
+
   public getProfissional(): Profissional {
     return this.profissional;
   }
@@ -89,9 +147,17 @@ export class Agendamento {
     return this.tratamentos;
   }
 
-  /** Soma os valores de todos os tratamentos escolhidos neste agendamento. */
+  /**
+   * Soma os valores de todos os tratamentos escolhidos neste agendamento, na forma de
+   * pagamento escolhida (no cartão de crédito vale o valor do crédito de cada tratamento).
+   */
   public getValorTotal(): number {
-    return this.tratamentos.reduce((total, tratamento) => total + tratamento.getValor(), 0);
+    return this.tratamentos.reduce((total, tratamento) => total + this.getValorDo(tratamento), 0);
+  }
+
+  /** Quanto este tratamento custa neste agendamento (depende da forma de pagamento). */
+  public getValorDo(tratamento: Tratamento): number {
+    return tratamento.getValorPara(this.formaDePagamento);
   }
 
   /** Soma a duração (em minutos) de todos os tratamentos escolhidos. */
@@ -145,6 +211,54 @@ export class Agendamento {
     } else if (this.status === StatusAgendamento.EM_ATENDIMENTO) {
       this.moverPara(StatusAgendamento.FINALIZADO);
     }
+  }
+
+  /** true se o horário marcado já começou (ou passou). */
+  public jaComecou(agora: Date = new Date()): boolean {
+    return RelogioClinica.momento(this.data, this.horarioInicio).getTime() <= agora.getTime();
+  }
+
+  // ---------- Forma de pagamento ----------
+
+  public getFormaDePagamento(): FormaDePagamento | null {
+    return this.formaDePagamento;
+  }
+
+  /**
+   * Muda a forma de pagamento (null = não informada). Vale a qualquer momento: o cliente
+   * pode mudar de ideia na hora de pagar.
+   */
+  public definirFormaDePagamento(forma: FormaDePagamento | null): void {
+    this.formaDePagamento = forma;
+  }
+
+  // ---------- Faltas ----------
+
+  public faltou(): boolean {
+    return this.status === StatusAgendamento.FALTOU;
+  }
+
+  /** Atendimento encerrado: foi finalizado ou o cliente faltou. */
+  public estaEncerrado(): boolean {
+    return this.status === StatusAgendamento.FINALIZADO || this.faltou();
+  }
+
+  /**
+   * A equipe marca que o cliente não veio. Só para quem ainda estava "Agendado" e depois
+   * que o horário começou (antes disso ele ainda pode chegar).
+   */
+  public registrarFalta(agora: Date = new Date()): void {
+    if (this.status !== StatusAgendamento.AGENDADO) {
+      throw new ErroDeValidacao("Só dá para marcar falta em agendamentos que aguardam atendimento.");
+    }
+    if (!this.jaComecou(agora)) {
+      throw new ErroDeValidacao(
+        "Só dá para marcar falta depois que o horário começar. Antes disso, o cliente ainda pode vir."
+      );
+    }
+    this.status = StatusAgendamento.FALTOU;
+    // Igual aos finalizados: sai sozinho do quadro depois de alguns dias.
+    this.finalizadoEm = agora;
   }
 
   /** Só dá para cancelar o que ainda não começou a ser atendido. */
@@ -224,9 +338,9 @@ export class Agendamento {
     return this.arquivado;
   }
 
-  /** Só sai do Kanban o que já foi atendido: o resto ainda precisa ser acompanhado. */
+  /** Só sai do Kanban o que já foi encerrado (atendido ou falta): o resto ainda precisa ser acompanhado. */
   public podeSerArquivado(): boolean {
-    return this.status === StatusAgendamento.FINALIZADO && !this.arquivado;
+    return this.estaEncerrado() && !this.arquivado;
   }
 
   /** Tira o agendamento do Kanban sem apagar nada dele. */
@@ -251,12 +365,19 @@ export class Agendamento {
     return this.finalizadoEm;
   }
 
-  /** Usado quando o admin arrasta o card diretamente para outra coluna do Kanban. */
-  public moverPara(novoStatus: StatusAgendamento): void {
+  /**
+   * Usado quando o admin arrasta o card diretamente para outra coluna do Kanban (ou usa os
+   * botões). Ir para "Não compareceu" segue as regras de `registrarFalta`; sair dele desfaz a falta.
+   */
+  public moverPara(novoStatus: StatusAgendamento, agora: Date = new Date()): void {
     if (!Object.values(StatusAgendamento).includes(novoStatus)) {
       throw new ErroDeValidacao(`Status de agendamento inválido: ${novoStatus}.`);
     }
     if (novoStatus === this.status) {
+      return;
+    }
+    if (novoStatus === StatusAgendamento.FALTOU) {
+      this.registrarFalta(agora);
       return;
     }
     this.status = novoStatus;
@@ -271,12 +392,14 @@ export class Agendamento {
       horarioInicio: this.horarioInicio,
       status: this.status,
       cliente: this.cliente,
+      responsavelNome: this.getResponsavelNome(),
       profissional: this.profissional,
       tratamentos: this.tratamentos,
       valorTotal: this.getValorTotal(),
       duracaoTotalMinutos: this.getDuracaoTotalMinutos(),
       lembreteEnviadoEm: this.lembreteEnviadoEm?.toISOString() ?? null,
       agradecimentoEnviadoEm: this.agradecimentoEnviadoEm?.toISOString() ?? null,
+      formaDePagamento: this.formaDePagamento,
     };
   }
 }

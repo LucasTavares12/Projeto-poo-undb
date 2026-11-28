@@ -233,6 +233,7 @@ export function AgendaPage() {
         <li className="agendado">Agendado</li>
         <li className="em-atendimento">Em atendimento</li>
         <li className="finalizado">Finalizado</li>
+        <li className="faltou">Não compareceu</li>
         <li className="fechado">Folga / feriado</li>
         <li className="passado">Já passou</li>
       </ul>

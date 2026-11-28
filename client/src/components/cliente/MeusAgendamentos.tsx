@@ -9,12 +9,15 @@ import { RemarcarAgendamento } from "./RemarcarAgendamento";
 import {
   IconeBrilho,
   IconeCalendario,
+  IconeCliente,
   IconePessoas,
   IconeRelogio,
   IconeSetaEsquerda,
 } from "../Icones";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { Clinica } from "../../models/Clinica";
+import { AgendamentosDoTelefone } from "../../models/AgendamentosDoTelefone";
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 
 const agendamentoService = new AgendamentoService();
 
@@ -22,20 +25,17 @@ interface Props {
   onVoltar: () => void;
 }
 
-/** Agendamentos achados para um telefone: remarcar e cancelar usam o mesmo telefone da busca. */
-interface Busca {
-  telefone: string;
-  agendamentos: Agendamento[];
-}
-
 /**
  * "Meus agendamentos" da página do cliente: a pessoa informa o telefone usado ao agendar,
  * vê os agendamentos que ainda não foram atendidos e pode remarcar para outro horário livre
- * ou cancelar o que não vai poder comparecer.
+ * ou cancelar o que não vai poder comparecer. Quem marcou para outras pessoas com o próprio
+ * telefone (a mãe para a filha) vê e gerencia os horários delas também, com o nome de cada uma.
  */
 export function MeusAgendamentos({ onVoltar }: Props) {
   const [telefone, setTelefone] = useState("");
-  const [busca, setBusca] = useState<Busca | null>(null);
+  const [busca, setBusca] = useState<AgendamentosDoTelefone | null>(null);
+  // Telefone com horários de várias pessoas: mostrar só os de uma (null = de todas).
+  const [pessoaEscolhida, setPessoaEscolhida] = useState<string | null>(null);
   const [buscando, setBuscando] = useState(false);
 
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
@@ -60,7 +60,8 @@ export function MeusAgendamentos({ onVoltar }: Props) {
     setRemarcandoId(null);
     try {
       const agendamentos = await agendamentoService.listarDoCliente(telefone);
-      setBusca({ telefone, agendamentos });
+      setBusca(new AgendamentosDoTelefone(telefone, agendamentos));
+      setPessoaEscolhida(null);
     } catch (erroRequisicao) {
       setBusca(null);
       setErro((erroRequisicao as Error).message);
@@ -78,14 +79,11 @@ export function MeusAgendamentos({ onVoltar }: Props) {
     setErro(null);
     setMensagem(null);
     try {
-      await agendamentoService.cancelarDoCliente(agendamento.id, busca.telefone);
-      setBusca({
-        telefone: busca.telefone,
-        agendamentos: busca.agendamentos.filter((item) => item.id !== agendamento.id),
-      });
+      await agendamentoService.cancelarDoCliente(agendamento.id, busca.getTelefone());
+      setBusca(busca.sem(agendamento));
       setMensagem(
-        `Agendamento de ${HorarioMarcado.de(agendamento).formatar()} cancelado. ` +
-          "O horário foi liberado."
+        `Agendamento de ${HorarioMarcado.de(agendamento).formatar()}${new PessoasDoAgendamento(agendamento).paraQuem()} ` +
+          "cancelado. O horário foi liberado."
       );
     } catch (erroRequisicao) {
       setErro((erroRequisicao as Error).message);
@@ -99,19 +97,20 @@ export function MeusAgendamentos({ onVoltar }: Props) {
     if (busca === null) {
       return;
     }
-    setBusca({
-      telefone: busca.telefone,
-      // Continua em ordem de data/horário depois da mudança.
-      agendamentos: busca.agendamentos
-        .map((item) => (item.id === atualizado.id ? atualizado : item))
-        .sort((a, b) => HorarioMarcado.de(a).compararCom(HorarioMarcado.de(b))),
-    });
+    setBusca(busca.comAtualizado(atualizado));
     setRemarcandoId(null);
     setMensagem(
-      `Pronto! Seu agendamento de ${HorarioMarcado.de(anterior).formatar()} ` +
+      `Pronto! O agendamento de ${HorarioMarcado.de(anterior).formatar()}${new PessoasDoAgendamento(anterior).paraQuem()} ` +
         `foi remarcado para ${HorarioMarcado.de(atualizado).formatar()}.`
     );
   }
+
+  // A pessoa escolhida pode ter saído da lista (cancelou o último horário dela).
+  const pessoaDoFiltro =
+    busca !== null && pessoaEscolhida !== null && busca.pessoas().includes(pessoaEscolhida)
+      ? pessoaEscolhida
+      : null;
+  const visiveis = busca?.de(pessoaDoFiltro) ?? [];
 
   return (
     <section className="passo">
@@ -123,7 +122,8 @@ export function MeusAgendamentos({ onVoltar }: Props) {
         <p className="passo-dica">
           Precisa mudar o dia ou não vai poder comparecer? Informe o telefone usado no agendamento
           para encontrá-lo. Você pode remarcar para outro horário livre ou cancelar até{" "}
-          {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas antes do horário marcado.
+          {Clinica.ANTECEDENCIA_MINIMA_HORAS} horas antes do horário marcado. Se agendou para
+          outras pessoas com o seu telefone, os horários delas também aparecem aqui.
         </p>
 
         <form className="busca-agendamento" onSubmit={buscar}>
@@ -148,22 +148,38 @@ export function MeusAgendamentos({ onVoltar }: Props) {
         {erro && <p className="mensagem-erro">{erro}</p>}
         {mensagem && <p className="mensagem-sucesso">{mensagem}</p>}
 
-        {busca !== null && busca.agendamentos.length === 0 && (
+        {busca !== null && busca.quantidade() === 0 && (
           <p className="passo-dica">
-            Nenhum agendamento em aberto para o telefone {busca.telefone}. Confira se é o mesmo
-            número informado ao agendar.
+            Nenhum agendamento em aberto para o telefone {busca.getTelefone()}. Confira se é o mesmo
+            número informado ao agendar. Se outra pessoa agendou para você, use o telefone que
+            ela informou.
           </p>
         )}
 
-        {busca !== null && busca.agendamentos.length > 0 && (
+        {busca !== null && busca.quantidade() > 0 && (
           <>
             <h3>
-              {busca.agendamentos.length === 1
+              {visiveis.length === 1
                 ? "Encontramos 1 agendamento"
-                : `Encontramos ${busca.agendamentos.length} agendamentos`}
+                : `Encontramos ${visiveis.length} agendamentos`}
             </h3>
+            {busca.temVariasPessoas() && (
+              <div className="filtro-pessoas" role="group" aria-label="Mostrar os horários de">
+                {[null, ...busca.pessoas()].map((pessoa) => (
+                  <button
+                    key={pessoa ?? "todas"}
+                    type="button"
+                    className={`filtro-pessoa ${pessoaDoFiltro === pessoa ? "selecionada" : ""}`}
+                    aria-pressed={pessoaDoFiltro === pessoa}
+                    onClick={() => setPessoaEscolhida(pessoa)}
+                  >
+                    {pessoa ?? "Todas as pessoas"}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="lista-agendamentos-cliente">
-              {busca.agendamentos.map((agendamento) => (
+              {visiveis.map((agendamento) => (
                 <article key={agendamento.id} className="agendamento-cliente">
                   <ul className="agendamento-cliente-detalhes">
                     <li>
@@ -175,6 +191,13 @@ export function MeusAgendamentos({ onVoltar }: Props) {
                     <li>
                       <IconePessoas tamanho={16} /> {agendamento.profissional.nome}
                     </li>
+                    {(busca.temVariasPessoas() ||
+                      new PessoasDoAgendamento(agendamento).foiMarcadoPorOutraPessoa()) && (
+                      <li>
+                        <IconeCliente tamanho={16} /> Para{" "}
+                        <strong>{agendamento.cliente.nome}</strong>
+                      </li>
+                    )}
                     <li>
                       <IconeBrilho tamanho={16} />
                       {agendamento.tratamentos.map((tratamento) => tratamento.nome).join(", ")}
@@ -194,14 +217,18 @@ export function MeusAgendamentos({ onVoltar }: Props) {
                   ) : remarcandoId === agendamento.id ? (
                     <RemarcarAgendamento
                       agendamento={agendamento}
-                      telefone={busca.telefone}
+                      telefone={busca.getTelefone()}
                       onRemarcado={(atualizado) => aoRemarcar(agendamento, atualizado)}
                       onDesistir={() => setRemarcandoId(null)}
                     />
                   ) : confirmandoId === agendamento.id ? (
                     <div className="agendamento-cliente-confirmacao">
                       <p>
-                        <strong>Tem certeza que deseja cancelar?</strong> O horário será liberado
+                        <strong>
+                          Tem certeza que deseja cancelar{" "}
+                          {new PessoasDoAgendamento(agendamento).horarioDe()}?
+                        </strong>{" "}
+                        O horário será liberado
                         para outras pessoas e não dá para desfazer: se mudar de ideia, será
                         preciso agendar de novo.
                       </p>

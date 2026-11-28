@@ -1,4 +1,5 @@
 import { RelatorioMensal } from "../module/RelatorioMensal";
+import { MesReferencia } from "../module/MesReferencia";
 import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 import { AgendamentoRepository } from "../repositories/AgendamentoRepository";
 import { AgendamentoService } from "./AgendamentoService";
@@ -17,13 +18,17 @@ export class RelatorioService {
     filtroProfissional: number | null,
     profissionalDoUsuario: number | null = null
   ): Promise<RelatorioMensal> {
-    const perfil = new PerfilDeAcesso(profissionalDoUsuario);
-    const profissionalId = perfil.temAcessoTotal() ? filtroProfissional : perfil.getProfissionalId();
+    const profissionalId = new PerfilDeAcesso(profissionalDoUsuario).aplicarFiltro(
+      filtroProfissional
+    );
 
-    const { inicio, fim } = RelatorioMensal.periodo(mes);
+    const referencia = new MesReferencia(mes);
     // O relatório conta os finalizados: finaliza antes os que ficaram esquecidos no Kanban.
     await this.agendamentoService.finalizarAtrasados();
-    const agendamentos = await this.agendamentoRepo.listarPorPeriodo(inicio, fim);
+    const agendamentos = await this.agendamentoRepo.listarPorPeriodo(
+      referencia.getPrimeiroDia(),
+      referencia.getUltimoDia()
+    );
     return new RelatorioMensal(mes, agendamentos, profissionalId);
   }
 }

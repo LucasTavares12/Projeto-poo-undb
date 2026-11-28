@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { Faltas } from "../../models/Faltas";
 import { Link } from "react-router-dom";
 import { ClienteService } from "../../services/ClienteService";
 import type { ClienteResumo } from "../../services/types";
 import { DataAgenda } from "../../models/DataAgenda";
 import { Dinheiro } from "../../models/Dinheiro";
 import { Telefone } from "../../models/Telefone";
+import { FichaDoClienteLink } from "../../models/FichaDoClienteLink";
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { CabecalhoPagina } from "../../components/admin/CabecalhoPagina";
 import { useUsuarioLogado } from "../../hooks/useUsuarioLogado";
@@ -94,12 +96,24 @@ export function ClientesPage() {
           </p>
           <ul className={`clientes-lista ${buscando ? "atualizando" : ""}`}>
             {clientes.map((cliente) => (
-              <li key={cliente.telefone}>
-                <Link to={`/admin/clientes/${cliente.telefone}`} className="cliente-item">
+              <li key={`${cliente.telefone}|${cliente.nome}`}>
+                <Link
+                  to={FichaDoClienteLink.para(cliente.telefone, cliente.nome)}
+                  className="cliente-item"
+                >
                   <span className="admin-avatar">{cliente.nome.charAt(0).toUpperCase()}</span>
                   <span className="cliente-item-texto">
                     <strong>{cliente.nome}</strong>
                     <span>{new Telefone(cliente.telefone).formatar()}</span>
+                    {new Faltas(cliente.faltas).temFaltas() && (
+                      <span
+                        className={`faltas-cliente ${
+                          new Faltas(cliente.faltas).deveAlertar() ? "alerta" : ""
+                        }`}
+                      >
+                        {new Faltas(cliente.faltas).descrever()}
+                      </span>
+                    )}
                   </span>
                   <span className="cliente-item-numeros">
                     <span>

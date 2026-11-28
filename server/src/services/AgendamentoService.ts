@@ -21,14 +21,21 @@ import { NotificadorNoPainel } from "./NotificadorNoPainel";
 import { OrigemDaAcao } from "../module/OrigemDaAcao";
 import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+import { FormaDePagamento } from "../module/FormaDePagamento";
 
 export interface DadosNovoAgendamento {
+  /** Quem vai ser atendido. */
   clienteNome: string;
+  /** Contato (WhatsApp) de quem marcou: o da própria pessoa ou o de quem marcou para ela. */
   clienteTelefone: string;
+  /** Quem marcou, quando é para outra pessoa (vazio/ausente = a própria pessoa marcou). */
+  responsavelNome?: string | null;
   profissionalId: number;
   tratamentoIds: number[];
   data: Date;
   horarioInicio: Horario;
+  /** Como o cliente pretende pagar. Obrigatória pela página do cliente; opcional no painel. */
+  formaDePagamento?: FormaDePagamento | null;
 }
 
 /**
@@ -62,6 +69,9 @@ export class AgendamentoService {
   ): Promise<Agendamento> {
     const novo = await this.montarNovoAgendamento(dados);
 
+    if (peloCliente && !novo.getFormaDePagamento()) {
+      throw new ErroDeValidacao("Escolha a forma de pagamento.");
+    }
     if (peloCliente && !AntecedenciaMinima.permite(dados.data, dados.horarioInicio)) {
       throw new ErroDeValidacao(AntecedenciaMinima.mensagemParaAgendar());
     }
@@ -123,27 +133,34 @@ export class AgendamentoService {
       );
     }
 
-    return new Agendamento(
+    const agendamento = new Agendamento(
       cliente,
       profissional,
       tratamentos,
       dados.data,
       dados.horarioInicio
     );
+    agendamento.definirResponsavel(dados.responsavelNome);
+    agendamento.definirFormaDePagamento(dados.formaDePagamento ?? null);
+    return agendamento;
   }
 
-  /** Grava o cliente e depois o agendamento já ligado a ele. */
+  /**
+   * Grava o agendamento ligado ao cliente: reaproveita quem já tem o mesmo telefone e nome
+   * (a mesma pessoa voltando) ou cadastra a pessoa nova.
+   */
   private async salvarComCliente(novo: Agendamento): Promise<Agendamento> {
-    const cliente = await this.clienteRepo.salvar(novo.getCliente());
-    return this.agendamentoRepo.salvar(
-      new Agendamento(
-        cliente,
-        novo.getProfissional(),
-        novo.getTratamentos(),
-        novo.getData(),
-        novo.getHorarioInicio()
-      )
+    const cliente = await this.clienteRepo.buscarOuSalvar(novo.getCliente());
+    const agendamento = new Agendamento(
+      cliente,
+      novo.getProfissional(),
+      novo.getTratamentos(),
+      novo.getData(),
+      novo.getHorarioInicio()
     );
+    agendamento.definirResponsavel(novo.getResponsavelNome());
+    agendamento.definirFormaDePagamento(novo.getFormaDePagamento());
+    return this.agendamentoRepo.salvar(agendamento);
   }
 
   /**
@@ -155,6 +172,23 @@ export class AgendamentoService {
     return profissionalId === null
       ? this.agendamentoRepo.listarNoQuadro()
       : this.agendamentoRepo.listarNoQuadroPorProfissional(profissionalId);
+  }
+
+  /** Quantas vezes cada cliente já faltou (chave = id do cliente), para os cards do Kanban. */
+  public faltasPorCliente(): Promise<Map<number, number>> {
+    return this.agendamentoRepo.contarFaltasPorCliente();
+  }
+
+  /** Painel: muda a forma de pagamento (ex: o cliente mudou de ideia na hora de pagar). */
+  public async alterarFormaDePagamento(
+    id: number,
+    forma: FormaDePagamento | null,
+    profissionalDoUsuario: number | null = null
+  ): Promise<Agendamento> {
+    const agendamento = await this.buscarVisivel(id, profissionalDoUsuario);
+    agendamento.definirFormaDePagamento(forma);
+    await this.agendamentoRepo.salvarFormaDePagamento(agendamento);
+    return agendamento;
   }
 
   /**
@@ -262,8 +296,9 @@ export class AgendamentoService {
   }
 
   /**
-   * Página do cliente: agendamentos que a pessoa ainda pode cancelar, encontrados pelo
-   * telefone informado na hora de agendar.
+   * Página do cliente: agendamentos que ainda dá para cancelar, encontrados pelo telefone
+   * informado na hora de agendar. Vêm os de todas as pessoas do telefone: quem marcou para
+   * outra pessoa (a mãe para a filha) também gerencia esses horários.
    */
   public async listarDoCliente(telefone: string): Promise<Agendamento[]> {
     const agendamentos = await this.agendamentoRepo.listarAgendadosPorTelefone(
@@ -448,13 +483,13 @@ export class AgendamentoService {
   }
 
   /**
-   * Agendamento procurado pela página do cliente: só vale se foi feito com este telefone.
-   * Agendamento de outro telefone é tratado como inexistente.
+   * Agendamento procurado pela página do cliente: só vale se foi feito com este telefone
+   * (pela própria pessoa ou por quem marcou para ela). De outro telefone = inexistente.
    */
   private async buscarDoCliente(id: number, telefone: string): Promise<Agendamento> {
     const digitos = this.lerTelefone(telefone);
     const agendamento = await this.agendamentoRepo.buscarPorId(id);
-    if (!agendamento || !agendamento.getCliente().temTelefone(digitos)) {
+    if (!agendamento || !agendamento.pertenceAoTelefone(digitos)) {
       throw new ErroNaoEncontrado("Agendamento não encontrado para este telefone.");
     }
     return agendamento;

@@ -1,14 +1,24 @@
 import { ApiClient } from "./ApiClient";
-import type { Agendamento, StatusAgendamento } from "./types";
+import type {
+  Agendamento,
+  CodigoFormaDePagamento,
+  StatusAgendamento,
+} from "./types";
 import type { TipoMensagem } from "../models/MensagemWhatsApp";
 
 export interface DadosNovoAgendamento {
+  /** Quem vai ser atendido. */
   clienteNome: string;
+  /** Contato (WhatsApp) de quem marcou. */
   clienteTelefone: string;
+  /** Quem marcou, quando é para outra pessoa (vazio = a própria pessoa). */
+  responsavelNome?: string;
   profissionalId: number;
   tratamentoIds: number[];
   data: string; // "YYYY-MM-DD"
   horarioInicio: string; // "HH:MM"
+  /** Obrigatória pela página do cliente; opcional no painel (null = não informada). */
+  formaDePagamento: CodigoFormaDePagamento | null;
 }
 
 export class AgendamentoService extends ApiClient {
@@ -119,7 +129,16 @@ export class AgendamentoService extends ApiClient {
     return this.post<Agendamento>(`/agendamentos/${id}/mensagens`, { tipo });
   }
 
+  /** Muda a etapa. "FALTOU" marca que o cliente não veio (só depois que o horário começou). */
   public atualizarStatus(id: number, status: StatusAgendamento): Promise<Agendamento> {
     return this.patch<Agendamento>(`/agendamentos/${id}/status`, { status });
+  }
+
+  /** Painel: muda a forma de pagamento (null = não informada). */
+  public alterarFormaDePagamento(
+    id: number,
+    formaDePagamento: CodigoFormaDePagamento | null
+  ): Promise<Agendamento> {
+    return this.patch<Agendamento>(`/agendamentos/${id}/pagamento`, { formaDePagamento });
   }
 }

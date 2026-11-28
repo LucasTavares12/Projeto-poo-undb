@@ -110,7 +110,7 @@ describe("Administrador — vínculo e JSON", () => {
   test("[C13] toJSON nunca expõe o hash da senha", () => {
     const criadoEm = new Date("2026-10-01T10:00:00Z");
     const json = new Administrador("a@b.com", "salt:hash", 3, criadoEm, 2).toJSON();
-    assert.deepEqual(json, { id: 3, email: "a@b.com", criadoEm: "2026-10-01T10:00:00.000Z", profissionalId: 2 });
+    assert.deepEqual(json, { id: 3, email: "a@b.com", criadoEm: "2026-10-01T10:00:00.000Z", profissionalId: 2, administrador: false });
     assert.ok(!JSON.stringify(json).includes("hash"));
     assert.equal(new Administrador("a@b.com", "x:y").toJSON().criadoEm, null);
     assert.equal(new Administrador("a@b.com", "x:y", 3).getId(), 3);

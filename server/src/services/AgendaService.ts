@@ -6,6 +6,7 @@ import { HorarioDisponivelRepository } from "../repositories/HorarioDisponivelRe
 import { ProfissionalRepository } from "../repositories/ProfissionalRepository";
 import { ErroNaoEncontrado } from "../erros/ErroNaoEncontrado";
 import { PerfilDeAcesso } from "../module/PerfilDeAcesso";
+import { ConfiguracaoRepository } from "../repositories/ConfiguracaoRepository";
 
 /** Visão de agenda do painel: a semana de um profissional, horário a horário. */
 export class AgendaService {
@@ -13,6 +14,7 @@ export class AgendaService {
   private readonly horarioRepo = new HorarioDisponivelRepository();
   private readonly agendamentoRepo = new AgendamentoRepository();
   private readonly bloqueioRepo = new BloqueioAgendaRepository();
+  private readonly configuracaoRepo = new ConfiguracaoRepository();
 
   public async montar(
     profissionalId: number,
@@ -31,7 +33,7 @@ export class AgendaService {
 
     const fim = new Date(inicio);
     fim.setUTCDate(fim.getUTCDate() + quantidadeDias - 1);
-    const [grade, agendamentos, bloqueios] = await Promise.all([
+    const [gradeCompleta, agendamentos, bloqueios, configuracoes] = await Promise.all([
       this.horarioRepo.listarPorProfissional(profissionalId),
       this.agendamentoRepo.listarPorProfissionalEPeriodo(
         profissionalId,
@@ -40,7 +42,11 @@ export class AgendaService {
       ),
       // Folgas do profissional e feriados da clínica que terminam a partir do início do período.
       this.bloqueioRepo.listar(profissionalId, DataAgenda.paraTexto(inicio)),
+      this.configuracaoRepo.carregar(),
     ]);
+    // Horários liberados fora do funcionamento da clínica não aparecem como livres.
+    const funcionamento = configuracoes.getHorarioFuncionamento();
+    const grade = funcionamento ? funcionamento.filtrarGrade(gradeCompleta) : gradeCompleta;
 
     return new AgendaSemanal(profissional, inicio, quantidadeDias, grade, agendamentos, bloqueios);
   }

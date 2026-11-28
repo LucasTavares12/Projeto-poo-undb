@@ -56,9 +56,12 @@ export class Notificacao {
       agendamento,
       TipoNotificacao.NOVO_AGENDAMENTO,
       "Novo agendamento",
-      (origem === OrigemDaAcao.CLIENTE
-        ? `${agendamento.getCliente().getNome()} agendou `
-        : `Agendado para ${agendamento.getCliente().getNome()}: `) +
+      (origem !== OrigemDaAcao.CLIENTE
+        ? `Agendado para ${agendamento.getCliente().getNome()}: `
+        : agendamento.foiMarcadoPorOutraPessoa()
+          ? `${Notificacao.quemFezPeloSite(agendamento, "agendou")} para ` +
+            `${agendamento.getCliente().getNome()}: `
+          : `${Notificacao.quemFezPeloSite(agendamento, "agendou")} `) +
         `${Notificacao.servicos(agendamento)} em ` +
         `${Notificacao.quando(agendamento.getData(), agendamento.getHorarioInicio())}`,
       origem,
@@ -77,7 +80,11 @@ export class Notificacao {
       agendamento,
       TipoNotificacao.AGENDAMENTO_REMARCADO,
       "Agendamento remarcado",
-      `${agendamento.getCliente().getNome()}: de ${Notificacao.quando(dataAnterior, horarioAnterior)} ` +
+      (origem === OrigemDaAcao.CLIENTE && agendamento.foiMarcadoPorOutraPessoa()
+        ? `${Notificacao.quemFezPeloSite(agendamento, "remarcou")} o horário de ` +
+          `${agendamento.getCliente().getNome()}: `
+        : `${agendamento.getCliente().getNome()}: `) +
+        `de ${Notificacao.quando(dataAnterior, horarioAnterior)} ` +
         `para ${Notificacao.quando(agendamento.getData(), agendamento.getHorarioInicio())}`,
       origem,
       autorId
@@ -93,9 +100,12 @@ export class Notificacao {
       agendamento,
       TipoNotificacao.AGENDAMENTO_CANCELADO,
       "Agendamento cancelado",
-      (origem === OrigemDaAcao.CLIENTE
-        ? `${agendamento.getCliente().getNome()} cancelou `
-        : `Cancelado o agendamento de ${agendamento.getCliente().getNome()}: `) +
+      (origem !== OrigemDaAcao.CLIENTE
+        ? `Cancelado o agendamento de ${agendamento.getCliente().getNome()}: `
+        : agendamento.foiMarcadoPorOutraPessoa()
+          ? `${Notificacao.quemFezPeloSite(agendamento, "cancelou")} o horário de ` +
+            `${agendamento.getCliente().getNome()}: `
+          : `${Notificacao.quemFezPeloSite(agendamento, "cancelou")} `) +
         `${Notificacao.servicos(agendamento)} de ` +
         `${Notificacao.quando(agendamento.getData(), agendamento.getHorarioInicio())}`,
       origem,
@@ -103,6 +113,14 @@ export class Notificacao {
       // O agendamento cancelado é apagado: o aviso não aponta mais para ele.
       false
     );
+  }
+
+  /**
+   * "Maria cancelou": pelo site, quem age é o dono do telefone (o contato do agendamento),
+   * que pode ser a própria pessoa atendida ou quem marcou para ela.
+   */
+  private static quemFezPeloSite(agendamento: Agendamento, acao: string): string {
+    return `${agendamento.getContato().getNome()} ${acao}`;
   }
 
   private static sobre(

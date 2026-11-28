@@ -3,12 +3,15 @@ import { Clinica } from "./Clinica";
 import { DataAgenda } from "./DataAgenda";
 import { Duracao } from "./Duracao";
 import { Telefone } from "./Telefone";
+import { PessoasDoAgendamento } from "./PessoasDoAgendamento";
+import { FormaDePagamento } from "./FormaDePagamento";
 
 export type TipoMensagem = "LEMBRETE" | "AGRADECIMENTO";
 
 /**
  * Mensagem pronta para o cliente no WhatsApp: lembrete do horário (antes do atendimento)
- * ou agradecimento (depois). Abre a conversa no WhatsApp Web/app já com o texto escrito;
+ * ou agradecimento (depois). Se o horário foi marcado para outra pessoa (a mãe para a filha),
+ * a mensagem vai para quem marcou, que é o dono do telefone, e cita quem vai ser atendido. Abre a conversa no WhatsApp Web/app já com o texto escrito;
  * quem manda de fato é a pessoa da clínica, conferindo antes de enviar.
  */
 export class MensagemWhatsApp {
@@ -22,10 +25,13 @@ export class MensagemWhatsApp {
 
   private readonly tipo: TipoMensagem;
   private readonly agendamento: Agendamento;
+  /** Quem vai ser atendido e quem recebe a mensagem (o dono do telefone). */
+  private readonly pessoas: PessoasDoAgendamento;
 
   constructor(tipo: TipoMensagem, agendamento: Agendamento) {
     this.tipo = tipo;
     this.agendamento = agendamento;
+    this.pessoas = new PessoasDoAgendamento(agendamento);
   }
 
   /** "hoje às 10:32", "ontem às 18:05" ou "21/10 às 09:00": quando a mensagem foi mandada. */
@@ -63,8 +69,21 @@ export class MensagemWhatsApp {
     return `${telefone.linkWhatsApp()}?text=${encodeURIComponent(this.getTexto())}`;
   }
 
+  /** Primeiro nome de quem recebe a mensagem: o dono do telefone (quem marcou). */
   private primeiroNome(): string {
-    return this.agendamento.cliente.nome.trim().split(/\s+/)[0];
+    return this.pessoas.contato().primeiroNome();
+  }
+
+  /** "do seu horário" ou "do horário de *Ana*", quando foi marcado para outra pessoa. */
+  private doHorarioDeQuem(): string {
+    return this.pessoas.foiMarcadoPorOutraPessoa()
+      ? `do horário de *${this.pessoas.atendido()}*`
+      : "do seu horário";
+  }
+
+  /** "você" ou "*Ana*", quando foi marcado para outra pessoa. */
+  private quemFoiAtendido(): string {
+    return this.pessoas.foiMarcadoPorOutraPessoa() ? `*${this.pessoas.atendido()}*` : "você";
   }
 
   /** "Limpeza de pele", "Limpeza de pele e Massagem" ou "A, B e C". */
@@ -81,7 +100,7 @@ export class MensagemWhatsApp {
     return [
       `Olá, *${this.primeiroNome()}*! 🌸`,
       "",
-      `Tudo bem? Passando para lembrar do seu horário na *${Clinica.NOME}* ✨`,
+      `Tudo bem? Passando para lembrar ${this.doHorarioDeQuem()} na *${Clinica.nome()}* ✨`,
       "",
       MensagemWhatsApp.SEPARADOR,
       `📅 *Data:* ${this.capitalizar(data.formatarPorExtenso())}`,
@@ -89,6 +108,7 @@ export class MensagemWhatsApp {
       `💆 *${this.agendamento.tratamentos.length === 1 ? "Serviço" : "Serviços"}:* ${this.tratamentos()}`,
       `⏳ *Duração:* ${new Duracao(this.agendamento.duracaoTotalMinutos).formatar()}`,
       `👤 *Profissional:* ${this.agendamento.profissional.nome}`,
+      ...this.linhaDoPagamento(),
       MensagemWhatsApp.SEPARADOR,
       "",
       "💡 Chegue alguns minutinhos antes para aproveitar o atendimento com tranquilidade.",
@@ -98,17 +118,24 @@ export class MensagemWhatsApp {
       `e informar o seu telefone (até ${Clinica.ANTECEDENCIA_MINIMA_HORAS}h antes do horário).`,
       "",
       "Te esperamos! 💕",
-      `_${Clinica.NOME}_`,
+      `_${Clinica.nome()}_`,
     ].join("\n");
+  }
+
+  /** "💳 Pagamento: Pix" (some quando o cliente não informou). */
+  private linhaDoPagamento(): string[] {
+    const forma = FormaDePagamento.de(this.agendamento.formaDePagamento);
+    return forma ? [`💳 *Pagamento:* ${forma.getNome()}`] : [];
   }
 
   private textoDoAgradecimento(): string {
     return [
       `Olá, *${this.primeiroNome()}*! 💖`,
       "",
-      `Muito obrigado por escolher a *${Clinica.NOME}* ✨`,
+      `Muito obrigado por escolher a *${Clinica.nome()}* ✨`,
       "",
-      `Foi um prazer cuidar de você ${this.quandoFoiAtendido()} com *${this.tratamentos()}*. ` +
+      `Foi um prazer cuidar de ${this.quemFoiAtendido()} ${this.quandoFoiAtendido()} ` +
+        `com *${this.tratamentos()}*. ` +
         "Esperamos que tenha amado o resultado! 🌸",
       "",
       "💬 Sua opinião é muito importante para nós. Se quiser, responda esta mensagem " +
@@ -118,7 +145,7 @@ export class MensagemWhatsApp {
       `👉 ${Clinica.enderecoDeAgendamento()}`,
       "",
       "Até a próxima! 🤗",
-      `_Equipe ${Clinica.NOME}_`,
+      `_Equipe ${Clinica.nome()}_`,
     ].join("\n");
   }
 

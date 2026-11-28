@@ -59,6 +59,25 @@ export abstract class Pessoa {
     return Telefone.somenteDigitos(this.telefone);
   }
 
+  /**
+   * Nome para comparar pessoas: sem acentos, sem diferença de maiúsculas e com espaços
+   * repetidos juntados ("  Mônica  SILVA " e "monica silva" dão o mesmo resultado).
+   */
+  public static normalizarNome(nome: string): string {
+    return String(nome ?? "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** true se é o mesmo nome, ignorando acentos, maiúsculas e espaços a mais. */
+  public temNome(nome: string): boolean {
+    const normalizado = Pessoa.normalizarNome(nome);
+    return normalizado !== "" && Pessoa.normalizarNome(this.nome) === normalizado;
+  }
+
   /** Valida nome e telefone de uma pessoa nova (usado pelas fábricas das subclasses). */
   protected validarContato(): void {
     this.setNome(this.nome);

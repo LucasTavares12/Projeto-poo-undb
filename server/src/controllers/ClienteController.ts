@@ -17,14 +17,20 @@ export class ClienteController extends Controlador {
     res.json(historicos.map((historico) => historico.paraResumo(hoje)));
   }
 
-  /** Ficha do cliente com todo o histórico (o telefone, só números, identifica o cliente). */
+  /**
+   * Ficha do cliente com todo o histórico. Telefone (só números) + `?nome=` identificam a
+   * pessoa: um mesmo telefone pode ter várias (ex.: a mãe e a filha que ela agendou).
+   */
   public async ficha(req: Request, res: Response): Promise<void> {
     try {
-      const historico = await this.servico.buscar(
+      const doTelefone = await this.servico.buscarDoTelefone(
         String(req.params.telefone),
         SessaoDaRequisicao.profissionalId(res)
       );
-      res.json(historico.paraFicha(RelogioClinica.hoje()));
+      const historico = doTelefone.pessoa(String(req.query.nome ?? ""));
+      res.json(
+        historico.paraFicha(RelogioClinica.hoje(), doTelefone.outrasPessoasAlemDe(historico))
+      );
     } catch (erro) {
       this.responderErro(res, erro);
     }

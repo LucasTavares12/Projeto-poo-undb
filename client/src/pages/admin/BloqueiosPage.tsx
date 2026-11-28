@@ -1,3 +1,4 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -34,7 +35,8 @@ interface Aviso {
 
 export function BloqueiosPage() {
   // Conta ligada a profissional: só bloqueia a própria agenda (feriado da clínica é do acesso total).
-  const { profissionalId: proprioId } = useUsuarioLogado();
+  // Na gestão, o profissional administrador age como acesso total.
+  const proprioId = new PerfilDeAcesso(useUsuarioLogado()).naGestao().getProfissionalId();
   const perfil = new PerfilDeAcesso({ profissionalId: proprioId });
   const acessoTotal = perfil.temAcessoTotal();
   const hoje = DataAgenda.hoje().toString();
@@ -192,6 +194,8 @@ export function BloqueiosPage() {
                 </span>
                 <span className="bloqueio-aviso-telefone">
                   <IconeTelefone tamanho={13} /> {agendamento.cliente.telefone}
+                  {new PessoasDoAgendamento(agendamento).foiMarcadoPorOutraPessoa() &&
+                    ` (${new PessoasDoAgendamento(agendamento).contato()})`}
                 </span>
               </li>
             ))}

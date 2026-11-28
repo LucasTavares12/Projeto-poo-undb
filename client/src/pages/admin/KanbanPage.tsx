@@ -1,3 +1,4 @@
+import { PessoasDoAgendamento } from "../../models/PessoasDoAgendamento";
 import { useCallback, useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { AgendamentoService } from "../../services/AgendamentoService";
@@ -24,10 +25,13 @@ import {
 import { HorarioMarcado } from "../../models/HorarioMarcado";
 import { PerfilDeAcesso } from "../../models/PerfilDeAcesso";
 import { Link } from "react-router-dom";
-import { Telefone } from "../../models/Telefone";
+import { FichaDoClienteLink } from "../../models/FichaDoClienteLink";
 import { BotaoWhatsApp } from "../../components/admin/BotaoWhatsApp";
 import { EtapaAgendamento } from "../../models/EtapaAgendamento";
 import { AgendamentosAtualizados } from "../../models/AgendamentosAtualizados";
+import { PresencaDoAgendamento } from "../../models/PresencaDoAgendamento";
+import { Faltas } from "../../models/Faltas";
+import { FormaDePagamento } from "../../models/FormaDePagamento";
 
 const agendamentoService = new AgendamentoService();
 const relatorioService = new RelatorioService();
@@ -185,6 +189,10 @@ export function KanbanPage() {
     setErro(null);
     try {
       await agendamentoService.atualizarStatus(id, novoStatus);
+      // Marcar ou desfazer uma falta muda o "faltou X vezes" de todos os cards do cliente.
+      if (statusAnterior === "FALTOU" || novoStatus === "FALTOU") {
+        await atualizarLista();
+      }
       // Entrar ou sair de "Finalizados" muda o faturado do dia.
       if (statusAnterior === "FINALIZADO" || novoStatus === "FINALIZADO") {
         // Falha aqui não desfaz o movimento: o card já mudou de etapa no servidor.
@@ -282,6 +290,12 @@ export function KanbanPage() {
   }
 
   const hoje = DataAgenda.hoje().toString();
+  /** Cards da coluna (as faltas ficam na coluna "Finalizados"). */
+  const daColuna = (status: StatusAgendamento) =>
+    agendamentos.filter(
+      (agendamento) => new EtapaAgendamento(agendamento.status).colunaDoQuadro() === status
+    );
+  const naFila = agendamentos.filter((agendamento) => agendamento.status === "AGENDADO");
   const resumo = [
     {
       rotulo: "Hoje",
@@ -291,7 +305,7 @@ export function KanbanPage() {
     },
     {
       rotulo: "Na fila",
-      valor: String(agendamentos.filter((agendamento) => agendamento.status === "AGENDADO").length),
+      valor: String(naFila.length),
       detalhe: "aguardando atendimento",
       icone: <IconeRelogio />,
     },
@@ -404,17 +418,14 @@ export function KanbanPage() {
                 onClick={() => setColunaVisivel(coluna.status)}
               >
                 {coluna.titulo}
-                <span className="kanban-contador">
-                  {agendamentos.filter((agendamento) => agendamento.status === coluna.status).length}
-                </span>
+                <span className="kanban-contador">{daColuna(coluna.status).length}</span>
               </button>
             ))}
           </div>
 
           <div className="kanban">
             {COLUNAS.map((coluna, indice) => {
-              const cartoes = agendamentos
-                .filter((agendamento) => agendamento.status === coluna.status)
+              const cartoes = daColuna(coluna.status)
                 .sort((a, b) =>
                   coluna.maisRecentePrimeiro
                     ? HorarioMarcado.de(b).compararCom(HorarioMarcado.de(a))
@@ -466,8 +477,9 @@ export function KanbanPage() {
 
                   {coluna.status === "FINALIZADO" && (
                     <p className="kanban-dica">
-                      Saem do quadro sozinhos {EtapaAgendamento.DIAS_PARA_OCULTAR_FINALIZADO} dias depois de
-                      finalizados e ficam em "Mostrar ocultos". Os relatórios continuam contando.
+                      Atendidos e faltas. Saem do quadro sozinhos{" "}
+                      {EtapaAgendamento.DIAS_PARA_OCULTAR_FINALIZADO} dias depois e ficam em "Mostrar
+                      ocultos". Os relatórios continuam contando.
                     </p>
                   )}
 
@@ -502,10 +514,16 @@ export function KanbanPage() {
 
                   {cartoes.length === 0 && <p className="kanban-vazio">Nenhum agendamento.</p>}
 
-                  {cartoes.map((agendamento) => (
+                  {cartoes.map((agendamento) => {
+                    const presenca = new PresencaDoAgendamento(agendamento);
+                    const faltas = new Faltas(agendamento.faltasDoCliente);
+                    const formaDePagamento = FormaDePagamento.de(agendamento.formaDePagamento);
+                    return (
                     <article
                       key={agendamento.id}
-                      className={`kanban-cartao ${arrastandoId === agendamento.id ? "arrastando" : ""}`}
+                      className={`kanban-cartao ${arrastandoId === agendamento.id ? "arrastando" : ""} ${
+                        presenca.faltou() ? "faltou" : ""
+                      }`}
                       draggable
                       onDragStart={(evento) => iniciarArraste(evento, agendamento.id)}
                       onDragEnd={encerrarArraste}
@@ -527,7 +545,10 @@ export function KanbanPage() {
                         <span>
                           <strong>
                             <Link
-                              to={`/admin/clientes/${new Telefone(agendamento.cliente.telefone).getDigitos()}`}
+                              to={FichaDoClienteLink.para(
+                                agendamento.cliente.telefone,
+                                agendamento.cliente.nome
+                              )}
                               className="kanban-cartao-nome"
                               title="Abrir a ficha do cliente"
                               draggable={false}
@@ -538,6 +559,11 @@ export function KanbanPage() {
                           <span className="kanban-cartao-telefone">
                             <IconeTelefone tamanho={12} /> {agendamento.cliente.telefone}
                           </span>
+                          {new PessoasDoAgendamento(agendamento).marcadoPor() && (
+                            <span className="kanban-cartao-responsavel">
+                              {new PessoasDoAgendamento(agendamento).marcadoPor()}
+                            </span>
+                          )}
                         </span>
                       </div>
 
@@ -553,7 +579,26 @@ export function KanbanPage() {
                           <IconeRelogio tamanho={14} />
                           {new Duracao(agendamento.duracaoTotalMinutos).formatar()}
                         </li>
+                        <li>
+                          <IconeDinheiro tamanho={14} />
+                          {formaDePagamento ? formaDePagamento.getNome() : "Pagamento não informado"}
+                        </li>
                       </ul>
+                      {(presenca.rotulo() || faltas.temFaltas()) && (
+                        <div className="kanban-cartao-selos">
+                          {presenca.rotulo() && (
+                            <span className={presenca.classe()}>{presenca.rotulo()}</span>
+                          )}
+                          {faltas.temFaltas() && (
+                            <span
+                              className={`faltas-cliente ${faltas.deveAlertar() ? "alerta" : ""}`}
+                              title="Vezes que este cliente não compareceu"
+                            >
+                              {faltas.descrever()}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {(agendamento.status === "AGENDADO" || agendamento.status === "FINALIZADO") && (
                         <BotaoWhatsApp
                           agendamento={agendamento}
@@ -584,6 +629,26 @@ export function KanbanPage() {
                         </div>
                       ) : (
                         <div className="kanban-cartao-acoes">
+                          {presenca.faltou() && (
+                            <button
+                              type="button"
+                              className="admin-botao"
+                              title="O cliente veio: volta para Agendados"
+                              onClick={() => mover(agendamento.id, "AGENDADO")}
+                            >
+                              Desfazer falta
+                            </button>
+                          )}
+                          {presenca.podeMarcarFalta() && (
+                            <button
+                              type="button"
+                              className="admin-botao perigo"
+                              title="O horário já começou e o cliente não veio"
+                              onClick={() => mover(agendamento.id, "FALTOU")}
+                            >
+                              Não compareceu
+                            </button>
+                          )}
                           {agendamento.status === "AGENDADO" && (
                             <>
                               <button
@@ -606,7 +671,7 @@ export function KanbanPage() {
                               </button>
                             </>
                           )}
-                          {anterior && (
+                          {anterior && !presenca.faltou() && (
                             <button
                               type="button"
                               className="admin-botao"
@@ -615,7 +680,7 @@ export function KanbanPage() {
                               ← {anterior.titulo}
                             </button>
                           )}
-                          {proxima && (
+                          {proxima && !presenca.faltou() && (
                             <button
                               type="button"
                               className="admin-botao principal"
@@ -627,7 +692,8 @@ export function KanbanPage() {
                         </div>
                       )}
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}

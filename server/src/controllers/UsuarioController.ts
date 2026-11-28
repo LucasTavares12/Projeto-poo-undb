@@ -13,8 +13,13 @@ export class UsuarioController extends Controlador {
 
   public async criar(req: Request, res: Response): Promise<void> {
     await this.responder(res, 201, async () => {
-      const { email, senha, profissionalId } = req.body ?? {};
-      return this.servico.criar(email, senha, this.lerProfissional(profissionalId));
+      const { email, senha, profissionalId, administrador } = req.body ?? {};
+      return this.servico.criar(
+        email,
+        senha,
+        this.lerProfissional(profissionalId),
+        this.lerAdministrador(administrador)
+      );
     });
   }
 
@@ -31,12 +36,16 @@ export class UsuarioController extends Controlador {
     });
   }
 
-  /** Liga a conta a um profissional ou, com `profissionalId: null`, devolve o acesso total. */
+  /**
+   * Liga a conta a um profissional ou, com `profissionalId: null`, devolve o acesso total.
+   * `administrador: true` faz o profissional também administrar a clínica.
+   */
   public async vincularProfissional(req: Request, res: Response): Promise<void> {
     await this.responder(res, 200, () =>
       this.servico.vincularProfissional(
         this.lerId(req.params.id),
-        this.lerProfissional(req.body?.profissionalId)
+        this.lerProfissional(req.body?.profissionalId),
+        this.lerAdministrador(req.body?.administrador)
       )
     );
   }
@@ -53,6 +62,11 @@ export class UsuarioController extends Controlador {
   /** Vazio/null = sem profissional (acesso total). */
   private lerProfissional(valor: unknown): number | null {
     return this.lerIdOpcional(valor, "Profissional inválido.");
+  }
+
+  /** Ausente = não é administrador. */
+  private lerAdministrador(valor: unknown): boolean {
+    return valor === true;
   }
 
   /** Executa a ação e responde: erro esperado com o status dele; validação do modelo = 400. */

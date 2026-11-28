@@ -87,6 +87,9 @@ describe("ConfiguracoesClinica", () => {
   test("[C10] toJSON traz as duas opções", () => {
     const config = new ConfiguracoesClinica();
     config.setBotaoEntrarVisivel(false);
-    assert.deepEqual(config.toJSON(), { botaoEntrarVisivel: false, cadastroLiberado: true });
+    // Os demais campos (personalização, contatos, funcionamento) são testados em ConfiguracoesClinica.test.ts.
+    const json = config.toJSON();
+    assert.equal(json.botaoEntrarVisivel, false);
+    assert.equal(json.cadastroLiberado, true);
   });
 });

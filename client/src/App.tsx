@@ -13,11 +13,15 @@ import { AgendaPage } from "./pages/admin/AgendaPage";
 import { FichaClientePage } from "./pages/admin/FichaClientePage";
 import { ConfiguracoesPage } from "./pages/admin/ConfiguracoesPage";
 import { RelatoriosPage } from "./pages/admin/RelatoriosPage";
+import { PersonalizacaoPage } from "./pages/admin/PersonalizacaoPage";
+import { VisualDaClinica } from "./components/VisualDaClinica";
 import "./App.css";
 
 function App() {
   return (
-    <Routes>
+    <>
+      <VisualDaClinica />
+      <Routes>
       <Route path="/" element={<AgendamentoPage />} />
 
       <Route path="/admin/login" element={<LoginPage />} />
@@ -33,8 +37,10 @@ function App() {
         <Route path="bloqueios" element={<BloqueiosPage />} />
         <Route path="relatorios" element={<RelatoriosPage />} />
         <Route path="configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="personalizacao" element={<PersonalizacaoPage />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

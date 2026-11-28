@@ -86,6 +86,7 @@ export class AutenticacaoService {
       email: usuario.getEmail(),
       profissionalId,
       profissionalNome: profissional?.getNome() ?? null,
+      administrador: usuario.ehProfissionalAdministrador(),
     };
   }
 

@@ -8,14 +8,40 @@ import { TipoMensagem } from "../module/TipoMensagem";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 import { DataAgenda } from "../module/DataAgenda";
 import { ErroDeValidacao } from "../erros/ErroDeValidacao";
+import { FormaDePagamento } from "../module/FormaDePagamento";
 
 export class AgendamentoController extends Controlador {
   private readonly servico = new AgendamentoService();
 
-  /** Kanban: todos os agendamentos, ou só os do profissional ligado ao usuário logado. */
+  /**
+   * Kanban: todos os agendamentos, ou só os do profissional ligado ao usuário logado.
+   * Cada um vem com quantas vezes o cliente já faltou (`faltasDoCliente`).
+   */
   public async listar(req: Request, res: Response): Promise<void> {
-    const agendamentos = await this.servico.listarTodos(SessaoDaRequisicao.profissionalId(res));
-    res.json(agendamentos);
+    const [agendamentos, faltas] = await Promise.all([
+      this.servico.listarTodos(SessaoDaRequisicao.profissionalId(res)),
+      this.servico.faltasPorCliente(),
+    ]);
+    res.json(
+      agendamentos.map((agendamento) => ({
+        ...agendamento.toJSON(),
+        faltasDoCliente: faltas.get(agendamento.getCliente().getId() ?? 0) ?? 0,
+      }))
+    );
+  }
+
+  /** Painel: muda a forma de pagamento ({ formaDePagamento: "PIX" | ... | null }). */
+  public async alterarFormaDePagamento(req: Request, res: Response): Promise<void> {
+    try {
+      const agendamento = await this.servico.alterarFormaDePagamento(
+        this.lerId(req.params.id),
+        FormaDePagamento.lerOpcional(req.body?.formaDePagamento),
+        SessaoDaRequisicao.profissionalId(res)
+      );
+      res.json(agendamento);
+    } catch (erro) {
+      this.responderErro(res, erro);
+    }
   }
 
   /** Tela do cliente: quais horários aparecem como clicáveis para a data/tratamentos escolhidos. */
@@ -62,8 +88,16 @@ export class AgendamentoController extends Controlador {
   }
 
   private lerDadosNovoAgendamento(req: Request): DadosNovoAgendamento {
-    const { clienteNome, clienteTelefone, profissionalId, tratamentoIds, data, horarioInicio } =
-      req.body ?? {};
+    const {
+      clienteNome,
+      clienteTelefone,
+      responsavelNome,
+      profissionalId,
+      tratamentoIds,
+      data,
+      horarioInicio,
+      formaDePagamento,
+    } = req.body ?? {};
 
     if (!data) {
       throw new ErroDeValidacao("Informe a data do agendamento.");
@@ -75,10 +109,12 @@ export class AgendamentoController extends Controlador {
     return {
       clienteNome,
       clienteTelefone,
+      responsavelNome: typeof responsavelNome === "string" ? responsavelNome : null,
       profissionalId: this.lerId(profissionalId, "Escolha um profissional."),
       tratamentoIds: this.lerIds(tratamentoIds, "Tratamento inválido."),
       data: DataAgenda.ler(data),
       horarioInicio: new Horario(String(horarioInicio ?? "")),
+      formaDePagamento: FormaDePagamento.lerOpcional(formaDePagamento),
     };
   }
 
