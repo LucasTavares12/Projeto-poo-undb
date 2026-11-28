@@ -5,6 +5,7 @@
  *             [C8] início == fim (1 dia)
  * valeParaProfissional: [C9] clínica inteira | [C10] mesmo profissional | [C11] outro profissional
  * abrange: [C12] primeiro dia | [C13] último dia | [C14] antes | [C15] depois
+ * toJSON/paraPublico: [C16] JSON completo para o painel | [C17] página do cliente não vê o motivo
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -106,4 +107,27 @@ describe("BloqueioAgenda.abrange", () => {
   test("[C13] último dia está incluído", () => assert.ok(b.abrange(d("2026-10-12"))));
   test("[C14] dia anterior não está incluído", () => assert.equal(b.abrange(d("2026-10-09")), false));
   test("[C15] dia seguinte não está incluído", () => assert.equal(b.abrange(d("2026-10-13")), false));
+});
+
+describe("BloqueioAgenda — saída para o painel e para o cliente", () => {
+  const b = new BloqueioAgenda(3, d("2026-10-10"), d("2026-10-12"), "Férias", 8);
+
+  test("[C16] toJSON traz o período, o motivo e a quantidade de dias", () => {
+    assert.equal(b.getId(), 8);
+    assert.equal(b.getProfissionalId(), 3);
+    assert.equal(DataAgenda.paraTexto(b.getDataInicio()), "2026-10-10");
+    assert.equal(DataAgenda.paraTexto(b.getDataFim()), "2026-10-12");
+    assert.deepEqual(b.toJSON(), {
+      id: 8,
+      profissionalId: 3,
+      dataInicio: "2026-10-10",
+      dataFim: "2026-10-12",
+      motivo: "Férias",
+      quantidadeDias: 3,
+    });
+  });
+
+  test("[C17] a página do cliente só vê o período, sem o motivo", () => {
+    assert.deepEqual(b.paraPublico(), { dataInicio: "2026-10-10", dataFim: "2026-10-12" });
+  });
 });

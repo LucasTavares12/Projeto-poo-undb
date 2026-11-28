@@ -36,21 +36,38 @@ Nenhuma biblioteca nova foi adicionada ao projeto.
 | `DataAgenda.test.ts` | `DataAgenda`, `AntecedenciaMinima` | leitura de `YYYY-MM-DD`, mesmo dia, antecedência mínima de 2h (exatamente 2h, 2h − 1 ms) |
 | `Horario.test.ts` | `Horario` | formato `HH:MM`, grade de 30 min, soma de horários passando da meia-noite |
 | `Telefone.test.ts` | `Telefone` | 10 e 11 dígitos, máscara, formatação de fixo e celular |
+| `RelatorioMensal.test.ts` | `RelatorioMensal` | só finalizados do mês e do profissional, último dia do mês (bissexto), ticket médio sem atendimentos, faturamento por dia, ordenação e desempates |
+| `HistoricoCliente.test.ts` | `HistoricoCliente` | agrupar pelo telefone, ordem dos agendamentos, busca sem acento e por 3+ dígitos, próximo agendamento, resumo e ficha |
+| `AgendaSemanal.test.ts` | `AgendaSemanal` | período de 1 a 31 dias, linhas da grade, blocos livre/passado/fechado/agendamento, agendamento sobreposto |
+| `Notificacao.test.ts` | `Notificacao` | textos para cliente e equipe, lista de serviços ("A, B e C"), cancelado sem vínculo, quem vê cada aviso |
+| `Administrador.test.ts` | `Administrador` | e-mail, senha mínima de 6, hash com salt, conferência de senha (certa, errada, hash inválido), vínculo com profissional, JSON sem hash |
+| `PerfilEConfiguracoes.test.ts` | `PerfilDeAcesso`, `ConfiguracoesClinica` | acesso total × conta de profissional, `exigir` (403), opções liga/desliga só com boolean |
+| `Pessoa.test.ts` | `Pessoa`, `Cliente`, `Profissional` | nome (vazio, 150/151), telefone, `temTelefone`, fábricas `novo()`, especialidade (100/101), `atualizarDados`, polimorfismo de `apresentar()` |
+| `RelogioClinica.test.ts` | `RelogioClinica` | fuso da clínica, deslocamento UTC (-03:00, +00:00, +05:30), hoje, momento, horário que já passou (com relógio controlado) |
+| `Erros.test.ts` | hierarquia de erros | status HTTP de cada erro, `name` da classe concreta |
 
 No início de cada arquivo há a lista dos caminhos testados, numerados
 (`[C1]`, `[C2]`, …). Cada teste traz o número do caminho que cobre.
 
 ## Resultado atual
 
-- **100 testes**, todos passando.
-- Cobertura das classes testadas: cerca de **95% das linhas** e **95% dos desvios**.
+- **213 testes**, todos passando.
+- Todas as classes de `src/module` e `src/erros` têm teste.
+- Cobertura: cerca de **99% das linhas**, **96% dos desvios** e **99% das funções**.
 
-## Observação encontrada nos testes
+## Observações encontradas nos testes
 
-`Tratamento.atualizarDados()` valida e altera os campos um por um. Se um campo
-do meio for inválido (por exemplo, valor negativo), os campos anteriores (como
-o nome) já foram alterados quando o erro acontece. O teste `[C20]` de
-`Tratamento.test.ts` mostra esse comportamento.
+1. `Tratamento.atualizarDados()` valida e altera os campos um por um. Se um campo
+   do meio for inválido (por exemplo, valor negativo), os campos anteriores (como
+   o nome) já foram alterados quando o erro acontece. O teste `[C20]` de
+   `Tratamento.test.ts` mostra esse comportamento.
+2. `Profissional.atualizarDados()` tem o mesmo comportamento: com telefone
+   inválido, o nome já foi trocado quando o erro acontece (`[C14]` de
+   `Pessoa.test.ts`).
+3. Na `AgendaSemanal`, se dois agendamentos se sobrepõem (um começa no meio do
+   outro), só o primeiro aparece na agenda; o segundo fica escondido (`[C7]` de
+   `AgendaSemanal.test.ts`). O serviço de agendamento não deixa isso acontecer,
+   então só apareceria com dados gravados fora do sistema.
 
 ## Como escrever um novo teste
 
